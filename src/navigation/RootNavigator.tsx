@@ -1,41 +1,17 @@
-
-import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, View} from 'react-native';
-
-import {NavigationContainer} from '@react-navigation/native';
-
-import AuthStack from './AuthStack';
+// src/navigation/RootNavigator.tsx
+import React, { useState, useEffect } from 'react';
 import AppTabs from './AppTabs';
+import AuthStack from './AuthStack';
 
 export default function RootNavigator() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
 
-  // Fake bootstrap: replace with real token check (SecureStore/AsyncStorage)
   useEffect(() => {
-    const bootstrap = async () => {
-      // const token = await AsyncStorage.getItem('token');
-      // setIsSignedIn(!!token);
-      setLoading(false);
-    };
-    bootstrap();
+    // TODO: check token/session and set isSignedIn
   }, []);
 
-  if (loading) {
-    return (
-      <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
+  if (loading) return null;
 
-  return (
-    <NavigationContainer>
-      {isSignedIn ? (
-        <AppTabs />
-      ) : (
-        <AuthStack onSignedIn={() => setIsSignedIn(true)} />
-      )}
-    </NavigationContainer>
-  );
+  return isSignedIn ? <AppTabs /> : <AuthStack />;
 }
