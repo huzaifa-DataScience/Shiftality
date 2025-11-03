@@ -2,25 +2,37 @@ import { palette, rgba } from './colors';
 
 export type AppTheme = {
   colors: {
-    background: string;  // default screen bg (Sign In / Sign Up)
-    text: string;        // default text color
-    textMuted: string;   // subtitles / placeholders
-    primary: string;     // main CTA (Get started)
-    onPrimary: string;   // text on primary
-    card: string;        // inputs/cards
-    border: string;      // input borders & dividers
+    background: string; // screen bg
+    text: string; // primary text
+    textMuted: string; // secondary text / placeholders
+    primary: string; // legacy solid primary (not used for gradient btn)
+    onPrimary: string; // text on primary
+    card: string; // panel / input bg
+    border: string; // outlines & dividers
+
+    // NEW (optional): gradient helpers
+    primaryGradient: [string, string];
+    cardGradient: [string, string];
   };
 };
 
-// DEFAULT (no light/dark yet). We’ll add scheme switching here later.
+// Hard-coded DARK theme (no light/dark switch yet)
 export const appTheme: AppTheme = {
   colors: {
-    background: palette.white,
-    text: palette.black,
-    textMuted: rgba(palette.black, 0.6),
-    primary: palette.lightBlue,     // matches your SignIn/SignUp button
+    background: palette.bg,
+    text: palette.text,
+    textMuted: palette.textMuted,
+
+    // Kept for compatibility; your gradient button ignores this and uses the gradient stops.
+    primary: palette.lightBlue,
     onPrimary: palette.white,
-    card: palette.white,
-    border: rgba(palette.black, 0.08),
+
+    // Inputs/panels default bg; your GradientCard uses its own gradient.
+    card: rgba('#FFFFFF', 0.04),
+    border: palette.stroke,
+
+    // Helpful pre-bundled gradients
+    primaryGradient: [palette.primaryStart, palette.primaryEnd],
+    cardGradient: [palette.cardStart, palette.cardEnd],
   },
 };

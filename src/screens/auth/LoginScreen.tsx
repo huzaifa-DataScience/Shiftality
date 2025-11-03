@@ -1,113 +1,178 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
-  Image,
-  StatusBar,
   TouchableOpacity,
-  Alert,
+  ScrollView,
+  Image,
 } from 'react-native';
-import {useAppTheme} from '../../theme/ThemeProvider';
-import {palette} from '../../theme/colors';
-import TextField from '../../components/TextField';
+import { scale as s, verticalScale as vs, moderateScale as ms, scale } from 'react-native-size-matters';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+import GradientCard from '../../components/GradientCard';
+import GradientInput from '../../components/GradientInput';
 import PrimaryButton from '../../components/PrimaryButton';
+import { palette } from '../../theme';
+import type { AuthStackParamList } from '../../navigation/AuthStack';
 
-export default function SignInScreen({navigation}: any) {
-  const {colors} = useAppTheme();
+// TODO: swap with your actual icons
+const eyeOpen   = require('../../assets/eye-off.png');
+const eyeClosed = require('../../assets/eye-off.png');
 
-  const [email, setEmail] = useState('sofiaasseggaf@gmail.com');
+type Nav = NativeStackNavigationProp<AuthStackParamList>;
+
+export default function LoginScreen({
+  onSignedIn,
+}: {
+  onSignedIn?: () => void;
+}) {
+  const navigation = useNavigation<Nav>();
+
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
+  const [showPwd, setShowPwd]   = useState(false);
 
-  const onSubmit = () => {
-    if (!email || !password) {
-      Alert.alert('Missing info', 'Please enter email and password.');
-      return;
-    }
-    // TODO: call your login API
-    Alert.alert('Sign In', 'Logged in!');
+  const handleSignIn = () => {
+    // TODO: do validation / API, then:
+    onSignedIn?.();
   };
 
   return (
-    <SafeAreaView style={[styles.root, {backgroundColor: colors.background}]}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.root, { backgroundColor: palette.darkBlue }]}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <GradientCard style={{ marginTop: vs(24), width: scale(330) }}>
+          {/* Header */}
+          <View style={{ alignItems: 'center' }}>
+            <Text style={styles.title}>Sign In</Text>
+            <Text style={styles.subtitle}>
+              Best and popular apps for live education course from home
+            </Text>
+          </View>
 
-      {/* Top graphic */}
-      <View style={styles.header}>
-        {/* <Image
-          source={require('../../assets/signin_hero.png')} // replace with your asset or remove
-          resizeMode="contain"
-          style={{width: 120, height: 120}}
-        /> */}
-      </View>
+          {/* Email */}
+          <Text style={styles.label}>Email</Text>
+          <GradientInput
+            placeholder="Enter your email"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
 
-      <View style={styles.body}>
-        <Text style={[styles.title, {color: palette.darkBlue}]}>Sign In</Text>
-        <Text style={[styles.subtitle, {color: colors.text}]}>
-          Enter your email below to login to{'\n'}your account
-        </Text>
+          {/* Password */}
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.inputWithIcon}>
+            <GradientInput
+              placeholder="************"
+              secureTextEntry={!showPwd}
+              value={password}
+              onChangeText={setPassword}
+              style={{ paddingRight: s(44) }}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPwd(v => !v)}
+              style={styles.eyeBtn}
+              hitSlop={{ top: vs(8), bottom: vs(8), left: s(8), right: s(8) }}
+            >
+              <Image
+                source={showPwd ? eyeOpen : eyeClosed}
+                style={styles.eyeIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
 
-        <View style={{height: 16}} />
+          {/* Forgot password */}
+          <TouchableOpacity onPress={() => { /* TODO: navigate to ForgotPassword when you add it */ }}>
+            <Text style={styles.forgot}>Forget Password?</Text>
+          </TouchableOpacity>
 
-        <TextField
-          label="Email/Phone Number"
-          placeholder="name@example.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          containerStyle={styles.field}
-        />
+          <View style={{ height: vs(16) }} />
 
-        <TextField
-          label="Password"
-          placeholder="************"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          secureToggle
-          containerStyle={styles.field}
-        />
+          {/* CTA */}
+          <PrimaryButton
+            backgroundColor={palette.white}
+            textColor={palette.darkBlue}
+            title="Get Started"
+            onPress={handleSignIn}
+          />
 
-        <TouchableOpacity
-          onPress={() => Alert.alert('Forgot Password', 'Handle reset flow')}
-          style={{alignSelf: 'flex-end', marginTop: 8}}
-        >
-          <Text style={{color: palette.darkBlue}}>Forget Password?</Text>
-        </TouchableOpacity>
-
-        <View style={{height: 16}} />
-
-        <PrimaryButton
-          title="Get started"
-          onPress={onSubmit}
-          backgroundColor={palette.darkBlue}
-          textColor={palette.white}
-        />
-
-        <View style={{height: 18}} />
-
-        <Text style={styles.footerText}>
-          Don’t have account?{' '}
-          <Text
-            style={{color: palette.darkBlue, fontWeight: '700'}}
-            onPress={() => navigation.navigate('Signup')}
-          >
-            Sign Up
+          {/* Footer */}
+          <Text style={styles.footerText}>
+            Don’t have account?{' '}
+            <Text style={styles.link} onPress={() => navigation.navigate('Signup')}>
+              Sign Up
+            </Text>
           </Text>
-        </Text>
-      </View>
-    </SafeAreaView>
+        </GradientCard>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {flex: 1},
-  header: {alignItems: 'center', paddingTop: 24},
-  body: {flex: 1, paddingHorizontal: 20, paddingTop: 6},
-  title: {fontSize: 28, fontWeight: '800', letterSpacing: 0.3, textAlign: 'center'},
-  subtitle: {marginTop: 8, fontSize: 14, textAlign: 'center', lineHeight: 20},
-  field: {marginTop: 14},
-  footerText: {textAlign: 'center', fontSize: 14, color: 'rgba(15,23,42,0.55)'},
+  root: {
+    flex: 1,
+  },
+  scroll: {
+    alignItems: 'center',
+    paddingVertical: vs(48),
+    paddingBottom: vs(64),
+  },
+  title: {
+    color: '#FFFFFF',
+    fontSize: ms(26),
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: vs(4),
+  },
+  subtitle: {
+    color: '#B0B6C3',
+    fontSize: ms(14),
+    textAlign: 'center',
+    width: '80%',
+    marginTop: vs(6),
+    lineHeight: ms(20),
+  },
+  label: {
+    color: '#FFFFFF',
+    fontSize: ms(14),
+    marginTop: vs(16),
+    marginBottom: vs(6),
+    fontWeight: '600',
+  },
+  inputWithIcon: {
+    position: 'relative',
+    width: '100%',
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: s(14),
+    top: '50%',
+    transform: [{ translateY: -vs(12) }],
+  },
+  eyeIcon: {
+    width: s(22),
+    height: s(22),
+    opacity: 0.9,
+  },
+  forgot: {
+    alignSelf: 'flex-end',
+    color: '#FFFFFF',
+    fontSize: ms(14),
+    marginTop: vs(8),
+    opacity: 0.9,
+  },
+  footerText: {
+    color: '#B0B6C3',
+    marginTop: vs(18),
+    fontSize: ms(14),
+    textAlign: 'center',
+  },
+  link: {
+    color: '#3DA9FF',
+    fontWeight: '600',
+  },
 });

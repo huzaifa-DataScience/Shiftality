@@ -1,17 +1,33 @@
 // src/navigation/RootNavigator.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AppTabs from './AppTabs';
 import AuthStack from './AuthStack';
+import FinanceSurveyScreen from '../screens/survey/FinanceSurveyScreen';
+
+export type RootStackParamList = {
+  Auth: undefined;                  // auth flow (stack)
+  Main: undefined;                  // tabs
+  FinanceSurvey: undefined;         // push-over screen
+};
+
+const Root = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
-  const [loading, setLoading] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
 
-  useEffect(() => {
-    // TODO: check token/session and set isSignedIn
-  }, []);
-
-  if (loading) return null;
-
-  return isSignedIn ? <AppTabs /> : <AuthStack />;
+  return (
+    <Root.Navigator screenOptions={{ headerShown: false }}>
+      {!isSignedIn ? (
+        <Root.Screen name="Auth">
+          {() => <AuthStack onSignedIn={() => setIsSignedIn(true)} />}
+        </Root.Screen>
+      ) : (
+        <>
+          <Root.Screen name="Main" component={AppTabs} />
+          <Root.Screen name="FinanceSurvey" component={FinanceSurveyScreen} />
+        </>
+      )}
+    </Root.Navigator>
+  );
 }

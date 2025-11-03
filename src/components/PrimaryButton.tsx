@@ -1,4 +1,3 @@
-// src/components/PrimaryButton.tsx
 import React from 'react';
 import {
   TouchableOpacity,
@@ -9,7 +8,8 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
-import {useAppTheme} from '../theme/ThemeProvider';
+import LinearGradient from 'react-native-linear-gradient';
+import { useAppTheme } from '../theme/ThemeProvider';
 
 type Props = {
   title: string;
@@ -17,62 +17,69 @@ type Props = {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  /** Optional color overrides */
-  backgroundColor?: string;
-  textColor?: string;
   style?: StyleProp<ViewStyle>;
+  /** Optional: override gradient stops */
+  gradientColors?: string[];
 };
 
-const PrimaryButton: React.FC<Props> = ({
+export default function PrimaryButton({
   title,
   onPress,
   loading = false,
   disabled = false,
   fullWidth = true,
-  backgroundColor,
-  textColor,
   style,
-}) => {
-  const {colors} = useAppTheme();
+  gradientColors,
+}: Props) {
+  const { colors } = useAppTheme();
+  const stops = gradientColors ?? colors.primaryGradient; // [start, end]
   const isDisabled = disabled || loading;
-
-  const bg = backgroundColor ?? colors.primary;
-  const fg = textColor ?? colors.onPrimary;
 
   return (
     <TouchableOpacity
-      accessibilityRole="button"
-      activeOpacity={0.85}
+      activeOpacity={0.9}
       onPress={onPress}
       disabled={isDisabled}
       style={[
-        styles.button,
-        fullWidth && styles.fullWidth,
-        { backgroundColor: bg, borderColor: colors.border },
-        isDisabled && styles.disabled,
+        fullWidth && { alignSelf: 'stretch' },
         style,
+        isDisabled && { opacity: 0.6 },
       ]}
+      accessibilityRole="button"
     >
-      {loading ? (
-        <ActivityIndicator color={fg} />
-      ) : (
-        <Text style={[styles.text, { color: fg }]}>{title}</Text>
-      )}
+      <LinearGradient
+        colors={stops}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={styles.grad}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={[styles.text, style]}>{title}</Text>
+        )}
+      </LinearGradient>
     </TouchableOpacity>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  button: {
+  grad: {
     height: 56,
-    borderRadius: 14,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    // soft glow
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
-  fullWidth: { alignSelf: 'stretch' },
-  text: { fontSize: 16, fontWeight: '700' },
-  disabled: { opacity: 0.6 },
+  text: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
 });
-
-export default PrimaryButton;
