@@ -115,7 +115,7 @@ export default function SearchScreen() {
               <LikertPill
                 label="Shift Map"
                 width={s(120)}
-                borderRadius={s(12)} // adjustable pill corners
+                borderRadius={s(12)}
                 selected={selected === 'map'}
                 onPress={() => setSelected('map')}
               />

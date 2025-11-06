@@ -1,5 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  LayoutChangeEvent,
+  Platform,
+} from 'react-native';
 import Svg, {
   Defs,
   Line,
@@ -97,9 +103,9 @@ export default function ShiftGridChart() {
               yAxisThickness={0}
               xAxisThickness={0}
               initialSpacing={25}
-              spacing={40}
+              spacing={Platform.OS === 'ios' ? 40 : 30}
               endSpacing={25}
-              showVerticalLines={false} // hide built-in ones
+              showVerticalLines={false}
             />
 
             {/* Custom dotted verticals */}
@@ -157,7 +163,7 @@ const styles = StyleSheet.create({
     borderRadius: s(12),
     position: 'relative',
     overflow: 'hidden',
-    height: scale(270),
+    height: scale(300),
   },
   innerBox: {
     paddingVertical: vs(8),

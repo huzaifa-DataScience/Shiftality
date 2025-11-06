@@ -7,6 +7,7 @@ import {
   GestureResponderEvent,
   StyleProp,
   ViewStyle,
+  Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -65,7 +66,7 @@ export default function PrimaryButton({
 
 const styles = StyleSheet.create({
   grad: {
-    height: 56,
+    height: Platform.OS === 'ios' ? 56 : 42,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',

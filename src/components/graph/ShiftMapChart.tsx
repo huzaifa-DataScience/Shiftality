@@ -1,5 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  LayoutChangeEvent,
+  Platform,
+} from 'react-native';
 import Svg, {
   Defs,
   Line,
@@ -96,7 +102,7 @@ export default function ShiftMapChart() {
               yAxisThickness={0}
               xAxisThickness={0}
               initialSpacing={25}
-              spacing={40}
+              spacing={Platform.OS === 'ios' ? 40 : 30}
               endSpacing={25}
               showVerticalLines={false}
             />
@@ -144,7 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: s(12),
     position: 'relative',
     overflow: 'hidden',
-    height: scale(240),
+    height: scale(270),
   },
   innerBox: {
     paddingVertical: vs(8),
