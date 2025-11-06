@@ -20,14 +20,14 @@ import {
 } from 'react-native-size-matters';
 import { palette } from '../../theme';
 
-const PILL_H = vs(44);
-const PILL_R = s(24);
+const DEFAULT_H = vs(44);
 
 type OutlineProps = {
   width: number;
   onPress?: () => void;
   children: React.ReactNode;
   stroke?: number;
+  borderRadius?: number;
 };
 
 const OutlinePill = ({
@@ -35,10 +35,11 @@ const OutlinePill = ({
   onPress,
   children,
   stroke = 1,
+  borderRadius = s(24),
 }: OutlineProps) => {
-  const [h, setH] = useState(PILL_H);
+  const [h, setH] = useState(DEFAULT_H);
   const onLayout = useCallback((e: LayoutChangeEvent) => {
-    setH(Math.max(PILL_H, Math.round(e.nativeEvent.layout.height)));
+    setH(Math.max(DEFAULT_H, Math.round(e.nativeEvent.layout.height)));
   }, []);
 
   return (
@@ -48,8 +49,8 @@ const OutlinePill = ({
       onLayout={onLayout}
       style={{
         width,
-        height: PILL_H,
-        borderRadius: PILL_R,
+        height: DEFAULT_H,
+        borderRadius,
         justifyContent: 'center',
       }}
     >
@@ -72,14 +73,14 @@ const OutlinePill = ({
           y={stroke / 2}
           width={width - stroke}
           height={h - stroke}
-          rx={PILL_R}
-          ry={PILL_R}
+          rx={borderRadius}
+          ry={borderRadius}
           fill="transparent"
           stroke="url(#pillBorderGrad)"
           strokeWidth={stroke}
         />
       </Svg>
-      <View style={styles.pillInnerBase}>{children}</View>
+      <View style={[styles.pillInnerBase, { borderRadius }]}>{children}</View>
     </TouchableOpacity>
   );
 };
@@ -88,12 +89,18 @@ type FilledProps = {
   width: number;
   onPress?: () => void;
   children: React.ReactNode;
+  borderRadius?: number;
 };
-const FilledPill = ({ width, onPress, children }: FilledProps) => (
+const FilledPill = ({
+  width,
+  onPress,
+  children,
+  borderRadius = s(24),
+}: FilledProps) => (
   <TouchableOpacity
     activeOpacity={0.92}
     onPress={onPress}
-    style={{ width, borderRadius: PILL_R, overflow: 'hidden' }}
+    style={{ width, borderRadius, overflow: 'hidden' }}
   >
     <LinearGradient
       colors={['#56adc7ff', '#03adf0ff']}
@@ -101,8 +108,8 @@ const FilledPill = ({ width, onPress, children }: FilledProps) => (
       end={{ x: 1, y: 0.5 }}
       style={{
         width,
-        height: PILL_H,
-        borderRadius: PILL_R,
+        height: DEFAULT_H,
+        borderRadius,
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -112,19 +119,12 @@ const FilledPill = ({ width, onPress, children }: FilledProps) => (
   </TouchableOpacity>
 );
 
-export type LikertValue =
-  | 'agree'
-  | 'unsure'
-  | 'disagree'
-  | 's_agree'
-  | 's_disagree'
-  | null;
-
 type PillProps = {
   label: string;
   selected?: boolean;
   width: number;
   onPress?: () => void;
+  borderRadius?: number;
 };
 
 export default function LikertPill({
@@ -132,13 +132,14 @@ export default function LikertPill({
   selected,
   width,
   onPress,
+  borderRadius = s(24),
 }: PillProps) {
   return selected ? (
-    <FilledPill width={width} onPress={onPress}>
+    <FilledPill width={width} onPress={onPress} borderRadius={borderRadius}>
       <Text style={styles.textSelected}>{label}</Text>
     </FilledPill>
   ) : (
-    <OutlinePill width={width} onPress={onPress}>
+    <OutlinePill width={width} onPress={onPress} borderRadius={borderRadius}>
       <Text style={styles.textIdle}>{label}</Text>
     </OutlinePill>
   );
@@ -146,8 +147,7 @@ export default function LikertPill({
 
 const styles = StyleSheet.create({
   pillInnerBase: {
-    height: PILL_H,
-    borderRadius: PILL_R,
+    height: DEFAULT_H,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -23,10 +23,17 @@ import LikertCard from '../../components/survey/LikertCard';
 import { SECTIONS } from './sections';
 import type { LikertValue } from '../../components/survey/LikertPill';
 import PrimaryButton from '../../components/PrimaryButton';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/RootNavigator';
 
 type AnswersForStep = Record<number, LikertValue>;
 
 export default function FinanceSurveyScreen() {
+  type RootNav = NativeStackNavigationProp<RootStackParamList>;
+
+  const navigation = useNavigation<RootNav>();
+
   const scrollRef = useRef<ScrollView>(null);
   const [step, setStep] = useState(0);
   const totalSteps = SECTIONS.length;
@@ -49,6 +56,8 @@ export default function FinanceSurveyScreen() {
     if (step < totalSteps - 1 && isStepComplete) {
       setStep(s => s + 1);
       scrollRef.current?.scrollTo({ y: 0, animated: true });
+    } else {
+      navigation.navigate('Main', { screen: 'Profile' });
     }
   };
   const goBack = () => {
@@ -100,7 +109,7 @@ export default function FinanceSurveyScreen() {
           onPress={goBack}
         >
           <LinearGradient
-            colors={['#355D80', '#1C2A3A']}
+            colors={['#143f65ff', '#1C2A3A']}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={[styles.cta, step === 0 && { opacity: 0.6 }]}
@@ -126,23 +135,6 @@ export default function FinanceSurveyScreen() {
           onPress={goNext}
           disabled={!isStepComplete}
         />
-        {/* <TouchableOpacity
-          activeOpacity={0.9}
-          style={{ marginTop: vs(10) }}
-          onPress={goNext}
-          disabled={!isStepComplete}
-        >
-          <LinearGradient
-            colors={['#8DD5FF', '#3B88F7']}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={[styles.cta, !isStepComplete && { opacity: 0.5 }]}
-          >
-            <Text style={styles.ctaText}>
-              {step === totalSteps - 1 ? 'Complete Scan' : 'Next Section'}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity> */}
       </View>
     </ScrollView>
   );

@@ -36,13 +36,13 @@ const ICONS: Record<string, { inactive: ImageSourcePropType }> = {
 
 export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   // optional: where to go when the hex is pressed (pick anything you want)
-  const onPressHex = () => {
-    // example: go to the middle route or a specific screen
-    const target =
-      state.routes[Math.floor(state.routes.length / 2)]?.name ??
-      state.routes[0].name;
-    navigation.navigate(target as never);
-  };
+  // const onPressHex = () => {
+  //   // example: go to the middle route or a specific screen
+  //   const target =
+  //     state.routes[Math.floor(state.routes.length / 2)]?.name ??
+  //     state.routes[0].name;
+  //   navigation.navigate(target as never);
+  // };
 
   return (
     <View
@@ -103,7 +103,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         <TouchableOpacity
           style={styles.hexWrap}
           activeOpacity={0.9}
-          onPress={onPressHex}
+          // onPress={onPressHex}
         >
           <Image
             source={ICONS.hexaIcon.inactive} // <-- your polygon asset

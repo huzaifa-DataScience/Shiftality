@@ -4,6 +4,7 @@ export const palette = {
   // original
   darkBlue: '#221E2E', // app dark background (welcome/overall)
   lightBlue: '#203A86',
+  txtBlue: '#51cce5ff',
   black: '#0E1117',
   white: '#FFFFFF',
 

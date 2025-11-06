@@ -1,14 +1,15 @@
 // src/navigation/RootNavigator.tsx
 import React, { useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import AppTabs from './AppTabs';
+import AppTabs, { TabParamList } from './AppTabs';
 import AuthStack from './AuthStack';
 import FinanceSurveyScreen from '../screens/survey/FinanceSurveyScreen';
+import { NavigatorScreenParams } from '@react-navigation/native';
 
 export type RootStackParamList = {
-  Auth: undefined;                  // auth flow (stack)
-  Main: undefined;                  // tabs
-  FinanceSurvey: undefined;         // push-over screen
+  Auth: undefined; // auth flow (stack)
+  Main: NavigatorScreenParams<TabParamList>; // tabs
+  FinanceSurvey: undefined; // push-over screen
 };
 
 const Root = createNativeStackNavigator<RootStackParamList>();
