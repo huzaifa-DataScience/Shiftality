@@ -7,7 +7,11 @@ import {
   FlatList,
   Pressable,
 } from 'react-native';
-import { scale as s, verticalScale as vs, moderateScale as ms } from 'react-native-size-matters';
+import {
+  scale as s,
+  verticalScale as vs,
+  moderateScale as ms,
+} from 'react-native-size-matters';
 import GradientInput from './GradientInput';
 import { palette } from '../theme';
 
@@ -23,7 +27,7 @@ type Props = {
 
 const GradientTimezoneSelect: React.FC<Props> = ({
   value,
-  placeholder = 'Select  Time Zone',
+  placeholder = 'Select Time Zone',
   onChange,
   minHeight = vs(48),
 }) => {
@@ -77,7 +81,7 @@ const GradientTimezoneSelect: React.FC<Props> = ({
             <Text style={styles.sheetTitle}>Select Time Zone</Text>
             <FlatList
               data={timezones}
-              keyExtractor={(item) => item}
+              keyExtractor={item => item}
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => {

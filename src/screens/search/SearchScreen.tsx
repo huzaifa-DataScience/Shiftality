@@ -12,7 +12,11 @@ import TripleRingGauge from '../../components/TripleRingGauge';
 import LikertPill from '../../components/survey/LikertPill';
 import ShiftGridChart from '../../components/graph/ShiftGridChart';
 import ShiftMapChart from '../../components/graph/ShiftMapChart';
+import GradientHintBoxWithLikert from '../../components/GradientHintBoxWithLikert';
+import TodaysShiftView from '../../components/TodaysShiftView';
+import { useNavigation } from '@react-navigation/native';
 export default function SearchScreen() {
+  const navigation = useNavigation();
   const [selected, setSelected] = useState<'map' | 'grid'>('grid');
 
   return (
@@ -37,13 +41,13 @@ export default function SearchScreen() {
               width={s(100)}
               label="Demo"
               icon={require('../../assets/play.png')}
-              onPress={() => console.log('Demo pressed')}
+              onPress={() => navigation.navigate('setting')}
             />
             <OutlinePillWithIcon
               width={s(100)}
               label="Setting"
               icon={require('../../assets/gear.png')}
-              onPress={() => console.log('Settings pressed')}
+              onPress={() => navigation.navigate('setting')}
             />
           </View>
           <Text style={styles.title}>Hey Huzaifa, ready to shift?</Text>
@@ -51,12 +55,7 @@ export default function SearchScreen() {
             Your daily reality shift journey continues
           </Text>
           <View style={{ height: scale(10) }} />
-          <GradientBoxWithButton
-            title="Today's Shift"
-            text="Check what felt true today. Empowering Beliefs raise your score; Shadow Beliefs lower it. Max ±10 per day."
-            tickIcon={require('../../assets/tick.png')}
-            onPressDetails={() => console.log('View details pressed')}
-          />
+          <TodaysShiftView />
         </GradientCardHome>
         <View style={{ height: scale(20) }} />
 

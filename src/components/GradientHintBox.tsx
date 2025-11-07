@@ -9,6 +9,7 @@ import {
   ImageSourcePropType,
   TouchableOpacity,
   LayoutChangeEvent,
+  Switch,
 } from 'react-native';
 import {
   scale as s,
@@ -24,37 +25,42 @@ import Svg, {
 } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
 import { palette } from '../theme';
+import GradientInput from './GradientInput';
 
 type Props = {
-  /** Main body text */
   text: string;
-
-  /** Optional heading shown above the text (left aligned) */
   title?: string;
-
-  /** ---- Optional header adornments (design-specific) ---- */
-  /** Show the "Recommended" gradient chip (left side) */
   showRecommendedChip?: boolean;
-  /** Override chip text (default: "Recommended") */
   recommendedText?: string;
-
-  /** Show the edit button (right side) */
   showEditButton?: boolean;
-  /** PNG/SVG source for the edit icon */
   editIcon?: ImageSourcePropType;
-  /** Called when edit is pressed */
   onPressEdit?: () => void;
-
-  /** Sizes/colors/spacing */
   radius?: number;
   stroke?: number;
   bgColor?: string;
   minHeight?: number;
-
-  /** Style overrides */
   style?: ViewStyle;
   titleStyle?: TextStyle;
   textStyle?: TextStyle;
+
+  // +++ OPTIONAL INPUT SECTION
+  showInput?: boolean;
+  inputLabel?: string;
+  inputPlaceholder?: string;
+  inputValue?: string;
+  onChangeInputText?: (t: string) => void;
+  inputProps?: TextInputProps;
+  secondaryText?: string;
+  footerActionLabel?: string;
+  footerIcon?: ImageSourcePropType;
+  onPressFooterAction?: () => void;
+  showSwitch?: boolean;
+  switchValue?: boolean;
+  onToggleSwitch?: (v: boolean) => void;
+  /** Customize colors if you want */
+  switchTrackOn?: string;
+  switchTrackOff?: string;
+  switchThumb?: string;
 };
 
 export default function GradientHintBox({
@@ -76,6 +82,25 @@ export default function GradientHintBox({
   style,
   titleStyle,
   textStyle,
+
+  // +++ INPUT PROPS
+  showInput = false,
+  inputLabel = '',
+  inputPlaceholder = '',
+  inputValue,
+  onChangeInputText,
+  inputProps,
+  secondaryText,
+  footerActionLabel,
+  footerIcon,
+  onPressFooterAction,
+
+  showSwitch = false,
+  switchValue,
+  onToggleSwitch,
+  switchTrackOn = '#4CC3FF', // cyan like your design
+  switchTrackOff = '#334152',
+  switchThumb = '#FFFFFF',
 }: Props) {
   const [w, setW] = useState(0);
   const [h, setH] = useState(minHeight);
@@ -129,7 +154,6 @@ export default function GradientHintBox({
       <View style={[styles.inner, { borderRadius: radius }]}>
         {showHeaderRow && (
           <View style={styles.headerRow}>
-            {/* Left side: optional title (on top of chip) */}
             <View style={{ flex: 1 }}>
               {!!title && (
                 <Text
@@ -152,24 +176,36 @@ export default function GradientHintBox({
               )}
             </View>
 
-            {/* Right side: optional edit button */}
-            {showEditButton && (
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={onPressEdit}
-                style={styles.editBtnHit}
+            {showSwitch ? (
+              <View
+                style={[styles.switchHit, { transform: [{ scale: 0.95 }] }]}
               >
-                {/* gradient ring */}
-                <View style={styles.editInner}>
-                  {editIcon ? (
-                    <Image
-                      source={editIcon}
-                      resizeMode="contain"
-                      style={styles.editIcon}
-                    />
-                  ) : null}
-                </View>
-              </TouchableOpacity>
+                <Switch
+                  value={!!switchValue}
+                  onValueChange={onToggleSwitch}
+                  trackColor={{ false: switchTrackOff, true: switchTrackOn }}
+                  thumbColor={switchThumb}
+                  ios_backgroundColor={switchTrackOff}
+                />
+              </View>
+            ) : (
+              showEditButton && (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={onPressEdit}
+                  style={styles.editBtnHit}
+                >
+                  <View style={styles.editInner}>
+                    {editIcon ? (
+                      <Image
+                        source={editIcon}
+                        resizeMode="contain"
+                        style={styles.editIcon}
+                      />
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+              )
             )}
           </View>
         )}
@@ -177,6 +213,44 @@ export default function GradientHintBox({
         <Text style={[styles.copy, { color: palette.white }, textStyle]}>
           {text}
         </Text>
+
+        {/* +++ OPTIONAL INPUT BLOCK */}
+        {showInput && (
+          <View style={styles.inputBlock}>
+            {!!inputLabel && (
+              <Text style={styles.inputLabel}>{inputLabel}</Text>
+            )}
+            <GradientInput
+              placeholder={inputPlaceholder}
+              value={inputValue}
+              onChangeText={onChangeInputText}
+              {...inputProps}
+            />
+          </View>
+        )}
+
+        {/* ---- NEW: secondary line (Baseline) ---- */}
+        {!!secondaryText && (
+          <Text style={styles.secondary}>{secondaryText}</Text>
+        )}
+
+        {/* ---- NEW: footer action row ---- */}
+        {!!footerActionLabel && (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={onPressFooterAction}
+            style={styles.footerRow}
+          >
+            {footerIcon ? (
+              <Image
+                source={footerIcon}
+                resizeMode="contain"
+                style={styles.footerIcon}
+              />
+            ) : null}
+            <Text style={styles.footerText}>{footerActionLabel}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -190,21 +264,18 @@ const styles = StyleSheet.create({
   wrap: { width: '100%', position: 'relative' },
   inner: { paddingHorizontal: s(16), paddingVertical: vs(12) },
 
-  /* header row contains (title + chip) on the left, edit on the right */
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: vs(8),
     gap: s(10),
   },
-
   title: {
     fontSize: ms(16),
     fontWeight: '700',
     marginBottom: vs(6),
   },
 
-  // "Recommended" gradient pill
   recoChip: {
     alignSelf: 'flex-start',
     height: CHIP_H,
@@ -219,7 +290,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Edit button (rounded square with gradient border and dark center)
   editBtnHit: {
     marginLeft: s(8),
     paddingTop: vs(2),
@@ -236,5 +306,43 @@ const styles = StyleSheet.create({
     fontSize: ms(14),
     lineHeight: ms(20),
     fontWeight: '600',
+  },
+
+  // +++ INPUT styles
+  inputBlock: {
+    marginTop: vs(14),
+  },
+  inputLabel: {
+    color: palette.white,
+    fontWeight: '800',
+    fontSize: ms(14),
+    marginBottom: vs(8),
+  },
+  secondary: {
+    color: palette.white,
+    opacity: 0.9,
+    marginTop: vs(10),
+    fontSize: ms(14.5),
+    fontWeight: '700',
+  },
+
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: vs(10),
+  },
+  footerIcon: {
+    width: s(18),
+    height: s(18),
+    tintColor: '#50bafbff',
+    marginRight: s(10),
+  },
+  footerText: {
+    color: palette.white,
+    fontSize: ms(15),
+    fontWeight: '700',
+  },
+  switchHit: {
+    paddingLeft: s(6),
   },
 });
