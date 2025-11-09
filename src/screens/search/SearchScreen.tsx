@@ -41,7 +41,7 @@ export default function SearchScreen() {
               width={s(100)}
               label="Demo"
               icon={require('../../assets/play.png')}
-              onPress={() => navigation.navigate('setting')}
+              onPress={() => navigation.navigate('DemoScreen')}
             />
             <OutlinePillWithIcon
               width={s(100)}

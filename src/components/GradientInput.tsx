@@ -12,6 +12,7 @@ import {
   Text,
   ViewStyle,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {
   scale as s,
   verticalScale as vs,
@@ -164,7 +165,7 @@ const GradientInput: React.FC<Props> = ({
           style={styles.rightIconBtn}
         >
           <View style={styles.rightIconBg}>
-            <Image
+            <FastImage
               source={rightIconSource}
               style={styles.rightIcon}
               resizeMode="contain"
@@ -208,6 +209,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rightIcon: { width: s(16), height: s(16), tintColor: '#8EDAFF' },
+  rightIcon: { width: s(20), height: s(20), tintColor: '#8EDAFF' },
 });
 export default GradientInput;

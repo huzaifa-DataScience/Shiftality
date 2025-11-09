@@ -1,12 +1,27 @@
 // src/screens/SearchScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Switch,
+  TouchableOpacity,
+} from 'react-native';
 import { palette } from '../../theme';
 import GradientCardHome from '../../components/GradientCardHome';
-import { ms, scale } from 'react-native-size-matters';
+import { ms, s, scale, vs } from 'react-native-size-matters';
 import GradientHintBox from '../../components/GradientHintBox';
 import GradientHintBoxVibe from '../../components/GradientHintBoxVibe';
 import PrimaryButton from '../../components/PrimaryButton';
+import GradientSelect from '../../components/GradientSelect';
+import LinearGradient from 'react-native-linear-gradient';
+import FastImage from 'react-native-fast-image';
+import ReminderPills from '../../components/ReminderPills';
+
+const themeOptions = ['System', 'Light', 'Dark'];
+const fontSizeOptions = ['Small', 'Normal', 'Large'];
+
 export default function SettingScreen() {
   const [firstName, setFirstName] = useState('');
   const [reflectionEnabled, setReflectionEnabled] = useState(true);
@@ -17,6 +32,12 @@ export default function SettingScreen() {
   const [shadowPath, setShadowPath] = useState(
     'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
   );
+
+  const [themeVal, setThemeVal] = useState<string>('System');
+  const [fontVal, setFontVal] = useState<string>('Normal');
+  const [colorBlind, setColorBlind] = useState<boolean>(true);
+  const [reminder, setReminder] = useState<boolean>(true);
+  const [which, setWhich] = useState<number | null>(0);
 
   return (
     <View style={styles.root}>
@@ -206,18 +227,170 @@ export default function SettingScreen() {
           showSwitch
           switchValue={reflectionEnabled}
           onToggleSwitch={setReflectionEnabled}
-          // optional custom colors to match your mock
           switchTrackOn="#50B9FF"
           switchTrackOff="#2E3A49"
           switchThumb="#FFFFFF"
         />
         <View style={{ height: scale(20) }} />
 
-        <GradientCardHome>
+        <GradientCardHome style={{ width: scale(330) }}>
           <Text style={styles.title}>Appearance</Text>
           <Text style={styles.subTitle}>
             Customize the look and feel of your app
           </Text>
+
+          {/* Theme */}
+          <Text style={styles.label}>Theme</Text>
+          <GradientSelect
+            value={themeVal}
+            options={themeOptions}
+            onChange={setThemeVal}
+            sheetTitle="Select Theme"
+            containerStyle={{ marginTop: s(8) }}
+          />
+
+          {/* Font size */}
+          <Text style={[styles.label, { marginTop: s(18) }]}>Font size</Text>
+          <GradientSelect
+            value={fontVal}
+            options={fontSizeOptions}
+            onChange={setFontVal}
+            sheetTitle="Select Font Size"
+            containerStyle={{ marginTop: s(8) }}
+          />
+
+          {/* Color-blind Mode */}
+          <View
+            style={{
+              marginTop: s(20),
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={styles.sectionHeading}>Color-blind Mode</Text>
+            <View style={styles.switchRow}>
+              <Switch
+                value={colorBlind}
+                onValueChange={setColorBlind}
+                trackColor={{ false: '#243447', true: '#62C1FF' }}
+                thumbColor={colorBlind ? '#FFFFFF' : '#B0C6DB'}
+                ios_backgroundColor="#243447"
+              />
+            </View>
+          </View>
+          <Text style={styles.helper}>
+            Use blue/orange instead of green/red colors
+          </Text>
+        </GradientCardHome>
+        <View style={{ height: scale(20) }} />
+
+        <GradientCardHome style={{ width: scale(330) }}>
+          <Text style={styles.title}>Export All Data</Text>
+          <Text style={styles.subTitle}>
+            Downloads a JSON file with your profile, Shiftality Scan results,
+            check-ins, and reflections
+          </Text>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => console.log('Export Data')}
+            style={{ marginTop: vs(12) }}
+          >
+            <LinearGradient
+              colors={['#143f65ff', '#1C2A3A']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.cta}
+            >
+              <Text style={styles.ctaText}>Export Data</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </GradientCardHome>
+        <View style={{ height: scale(20) }} />
+        <GradientCardHome style={{ width: scale(330) }}>
+          <Text style={styles.title}>Reminders</Text>
+          <Text style={styles.subTitle}>
+            Test reminder notifications and system functionality
+          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              marginTop: scale(30),
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={styles.title}>Enable Reminders</Text>
+            <Switch
+              value={reminder}
+              onValueChange={setReminder}
+              trackColor={{ false: '#243447', true: '#62C1FF' }}
+              thumbColor={colorBlind ? '#FFFFFF' : '#B0C6DB'}
+              ios_backgroundColor="#243447"
+            />
+          </View>
+          <Text style={styles.subTitle}>
+            Get notified if you haven't completed your daily check-in
+          </Text>
+        </GradientCardHome>
+        <View style={{ height: scale(20) }} />
+        <GradientCardHome style={{ width: scale(330) }}>
+          <Text style={styles.title}>Reminders</Text>
+          <Text style={styles.subTitle}>
+            Test reminder notifications and system functionality
+          </Text>
+          <View style={{ height: scale(20) }} />
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Text style={styles.title}>Test Notification Permission</Text>
+            <FastImage
+              source={require('../../assets/notification.png')}
+              style={styles.rightIcon}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.subTitle}>
+            Check if browser notifications are working properly
+          </Text>
+          <View style={{ height: scale(20) }} />
+          <Text style={styles.title}>Test Individual Reminders</Text>
+          <Text style={styles.subTitle}>
+            Test each of the 5 reminder messages individually
+          </Text>
+          <View style={{ height: vs(14) }} />
+
+          <ReminderPills value={which} onChange={setWhich} />
+
+          <View style={{ height: scale(20) }} />
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Text style={styles.title}>Test Notification Permission</Text>
+            <FastImage
+              source={require('../../assets/notificationOutline.png')}
+              style={styles.rightIcon}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.subTitle}>
+            Triggers all 5 reminders with 5-second intervals (instead of
+            30minutes)
+          </Text>
+          <View style={{ height: scale(20) }} />
+
+          <GradientHintBox
+            title="Note:"
+            text='Make sure to allow notifications when
+prompted by your browser. Demo reminders will show "(Demo)" in the title to distinguishthem from real reminders.'
+          />
         </GradientCardHome>
       </ScrollView>
     </View>
@@ -242,4 +415,40 @@ const styles = StyleSheet.create({
     color: palette.white,
     lineHeight: scale(20),
   },
+  label: {
+    color: palette.white,
+    fontSize: s(14),
+    fontWeight: '800',
+  },
+  sectionHeading: {
+    color: palette.white,
+    fontSize: s(16),
+    fontWeight: '800',
+    marginBottom: s(10),
+  },
+  switchRow: {
+    alignItems: 'flex-end',
+    marginBottom: s(8),
+  },
+  helper: {
+    color: palette.white,
+    opacity: 0.9,
+    fontSize: s(16),
+    lineHeight: s(24),
+  },
+  cta: {
+    width: '100%',
+    height: vs(38),
+    justifyContent: 'center',
+    alignItems: 'center',
+
+    borderRadius: s(30),
+  },
+  ctaText: {
+    color: palette.txtBlue,
+    fontSize: ms(18),
+    fontWeight: '700',
+    opacity: 0.9,
+  },
+  rightIcon: { width: s(25), height: s(25), marginBottom: scale(20) },
 });

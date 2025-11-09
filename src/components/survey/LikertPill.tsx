@@ -103,9 +103,11 @@ const FilledPill = ({
     style={{ width, borderRadius, overflow: 'hidden' }}
   >
     <LinearGradient
-      colors={['#56adc7ff', '#03adf0ff']}
-      start={{ x: 0, y: 0.5 }}
-      end={{ x: 1, y: 0.5 }}
+      // light TL  →  deep BR, with a mid-blue stop
+      colors={['#2a84b9ff', '#0890dfff', '#0e5ea4ff']}
+      locations={[0, 0.52, 1]}
+      start={{ x: 0.08, y: 0.05 }}
+      end={{ x: 0.92, y: 0.98 }}
       style={{
         width,
         height: DEFAULT_H,
