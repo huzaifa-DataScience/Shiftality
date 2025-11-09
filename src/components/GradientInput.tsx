@@ -1,4 +1,3 @@
-// src/components/GradientInput.tsx
 import React, { useCallback, useState } from 'react';
 import {
   View,
@@ -6,13 +5,14 @@ import {
   StyleSheet,
   TextInputProps,
   LayoutChangeEvent,
-  Image,
   ImageSourcePropType,
   TouchableOpacity,
   Text,
   ViewStyle,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
+// ❌ remove this line
+// import FastImage from 'react-native-fast-image';
+import AppImage from './AppImage';
 import {
   scale as s,
   verticalScale as vs,
@@ -25,22 +25,15 @@ import Svg, {
   Rect,
 } from 'react-native-svg';
 
-// src/components/GradientInput.tsx
 type BaseProps = {
   radius?: number;
   stroke?: number;
   bgColor?: string;
   containerStyle?: ViewStyle;
-
-  /** Min visual height (border + content). Default is compact 48 */
   minHeight?: number;
-
-  // icons...
   leftIconSource?: ImageSourcePropType;
   rightIconSource?: ImageSourcePropType;
   onRightIconPress?: () => void;
-
-  // pressable mode...
   pressable?: boolean;
   valueText?: string;
   onPress?: () => void;
@@ -50,14 +43,11 @@ type BaseProps = {
 const GradientInput: React.FC<Props> = ({
   radius = s(12),
   stroke = 1,
-  // bgColor = '#0D131C',
   containerStyle,
-  minHeight = vs(45), // ⬅️ smaller default
-
+  minHeight = vs(45),
   leftIconSource,
   rightIconSource,
   onRightIconPress,
-
   pressable,
   valueText,
   onPress,
@@ -71,7 +61,6 @@ const GradientInput: React.FC<Props> = ({
   const onLayout = useCallback(
     (e: LayoutChangeEvent) => {
       const measured = Math.round(e.nativeEvent.layout.height);
-      // never go below the minHeight you want
       setW(Math.round(e.nativeEvent.layout.width));
       setH(Math.max(minHeight, measured || minHeight));
     },
@@ -104,7 +93,7 @@ const GradientInput: React.FC<Props> = ({
             height={h - stroke}
             rx={radius}
             ry={radius}
-            fill={'transparent'}
+            fill="transparent"
             stroke="url(#borderGrad)"
             strokeWidth={stroke}
           />
@@ -112,7 +101,7 @@ const GradientInput: React.FC<Props> = ({
       )}
 
       {leftIconSource && (
-        <Image
+        <AppImage
           source={leftIconSource}
           style={styles.leftIcon}
           resizeMode="contain"
@@ -148,7 +137,7 @@ const GradientInput: React.FC<Props> = ({
             {
               borderRadius: radius,
               minHeight: h,
-              paddingVertical: vs(8), // ⬅️ tighter vertical padding
+              paddingVertical: vs(8),
               paddingLeft: s(16) + contentPaddingLeft,
               paddingRight: s(16) + contentPaddingRight,
             },
@@ -165,7 +154,7 @@ const GradientInput: React.FC<Props> = ({
           style={styles.rightIconBtn}
         >
           <View style={styles.rightIconBg}>
-            <FastImage
+            <AppImage
               source={rightIconSource}
               style={styles.rightIcon}
               resizeMode="contain"
@@ -211,4 +200,5 @@ const styles = StyleSheet.create({
   },
   rightIcon: { width: s(20), height: s(20), tintColor: '#8EDAFF' },
 });
+
 export default GradientInput;

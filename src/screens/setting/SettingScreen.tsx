@@ -18,6 +18,7 @@ import GradientSelect from '../../components/GradientSelect';
 import LinearGradient from 'react-native-linear-gradient';
 import FastImage from 'react-native-fast-image';
 import ReminderPills from '../../components/ReminderPills';
+import AppImage from '../../components/AppImage';
 
 const themeOptions = ['System', 'Light', 'Dark'];
 const fontSizeOptions = ['Small', 'Normal', 'Large'];
@@ -348,7 +349,7 @@ export default function SettingScreen() {
             }}
           >
             <Text style={styles.title}>Test Notification Permission</Text>
-            <FastImage
+            <AppImage
               source={require('../../assets/notification.png')}
               style={styles.rightIcon}
               resizeMode="contain"
@@ -374,7 +375,7 @@ export default function SettingScreen() {
             }}
           >
             <Text style={styles.title}>Test Notification Permission</Text>
-            <FastImage
+            <AppImage
               source={require('../../assets/notificationOutline.png')}
               style={styles.rightIcon}
               resizeMode="contain"

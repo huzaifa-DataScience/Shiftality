@@ -18,6 +18,7 @@ import FastImage from 'react-native-fast-image';
 import PrimaryButton from '../../components/PrimaryButton';
 import ReminderPills from '../../components/ReminderPills';
 import DebugInfoCard from '../../components/DebugInfoCard';
+import AppImage from '../../components/AppImage';
 
 export default function DemoScreen() {
   const navigation = useNavigation();
@@ -159,7 +160,7 @@ export default function DemoScreen() {
             activeOpacity={0.85}
             onPress={onReset}
           >
-            <FastImage source={clear_choices} style={styles.refresh} />
+            <AppImage source={clear_choices} style={styles.refresh} />
             <Text style={styles.rowTxt}>Reset demo data</Text>
           </TouchableOpacity>
 
@@ -168,7 +169,7 @@ export default function DemoScreen() {
             activeOpacity={0.85}
             onPress={onFreshStart}
           >
-            <FastImage source={clear_choices} style={styles.refresh} />
+            <AppImage source={clear_choices} style={styles.refresh} />
             <Text style={styles.rowTxt}>Complete Fresh Start</Text>
           </TouchableOpacity>
         </GradientCardHome>
@@ -189,7 +190,7 @@ export default function DemoScreen() {
             <Text style={[styles.title, { marginBottom: scale(0) }]}>
               Disabled
             </Text>
-            <FastImage
+            <AppImage
               source={notificationOutline}
               style={styles.outilineNotification}
             />

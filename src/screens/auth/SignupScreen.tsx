@@ -6,38 +6,45 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Platform,
 } from 'react-native';
-import { scale as s, verticalScale as vs, moderateScale as ms, scale } from 'react-native-size-matters';
+import {
+  scale as s,
+  verticalScale as vs,
+  moderateScale as ms,
+  scale,
+} from 'react-native-size-matters';
 import GradientCard from '../../components/GradientCard';
 import { palette } from '../../theme';
 import PrimaryButton from '../../components/PrimaryButton';
 import GradientInput from '../../components/GradientInput';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../../navigation/AuthStack'; 
+import type { AuthStackParamList } from '../../navigation/AuthStack';
 import { useNavigation } from '@react-navigation/native';
 
 // TODO: replace with your actual assets
-const eyeOpen   = require('../../assets/eye-off.png');
+const eyeOpen = require('../../assets/eye-off.png');
 const eyeClosed = require('../../assets/eye-off.png');
 
 export default function SignUpScreen() {
-  
+  // inside component
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
 
-// inside component
-const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
-
-
-  const [name, setName]         = useState('');
-  const [email, setEmail]       = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm]   = useState('');
-  const [showPwd, setShowPwd]   = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
   const [showCPwd, setShowCPwd] = useState(false);
 
   return (
     <View style={[styles.root, { backgroundColor: palette.darkBlue }]}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <GradientCard style={{ marginTop: vs(24),width:scale(330) }}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
+        <GradientCard style={{ marginTop: vs(24), width: scale(330) }}>
           <View style={{ alignItems: 'center' }}>
             <Text style={styles.title}>Sign Up</Text>
             <Text style={styles.subtitle}>
@@ -74,7 +81,7 @@ const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>(
               style={{ paddingRight: s(44) }}
             />
             <TouchableOpacity
-              onPress={() => setShowPwd((v) => !v)}
+              onPress={() => setShowPwd(v => !v)}
               style={styles.eyeBtn}
               hitSlop={{ top: vs(8), bottom: vs(8), left: s(8), right: s(8) }}
             >
@@ -97,7 +104,7 @@ const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>(
               style={{ paddingRight: s(44) }}
             />
             <TouchableOpacity
-              onPress={() => setShowCPwd((v) => !v)}
+              onPress={() => setShowCPwd(v => !v)}
               style={styles.eyeBtn}
               hitSlop={{ top: vs(8), bottom: vs(8), left: s(8), right: s(8) }}
             >
@@ -111,17 +118,25 @@ const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>(
 
           <View style={{ height: vs(24) }} />
 
-         <PrimaryButton
-  backgroundColor={palette.white}
-  textColor={palette.darkBlue}
-  title="Get started"
-  onPress={() => {
-    navigation.navigate('Login');
-  }}
-/>
+          <PrimaryButton
+            backgroundColor={palette.white}
+            textColor={palette.darkBlue}
+            title="Get started"
+            onPress={() => {
+              navigation.navigate('Login');
+            }}
+          />
 
           <Text style={styles.footerText}>
-            Do you have account? <TouchableOpacity onPress={() => { navigation.navigate('Login');}} > <Text style={styles.link}>Sign In</Text></TouchableOpacity>
+            Do you have account?{' '}
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('Login');
+              }}
+            >
+              {' '}
+              <Text style={styles.link}>Sign In</Text>
+            </TouchableOpacity>
           </Text>
         </GradientCard>
       </ScrollView>
@@ -183,5 +198,7 @@ const styles = StyleSheet.create({
   link: {
     color: '#3DA9FF',
     fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: Platform.OS === 'ios' ? scale(-2) : scale(-4),
   },
 });
