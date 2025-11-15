@@ -8,7 +8,11 @@ import {
   Image,
   StatusBar,
 } from 'react-native';
-import { scale as s, verticalScale as vs, moderateScale as ms } from 'react-native-size-matters';
+import {
+  scale as s,
+  verticalScale as vs,
+  moderateScale as ms,
+} from 'react-native-size-matters';
 import PrimaryButton from '../../components/PrimaryButton';
 import { palette } from '../../theme/colors';
 
@@ -76,11 +80,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     textAlign: 'center',
     marginTop: vs(70),
+    fontFamily: 'SourceSansPro-Regular',
   },
 
   sub: {
     fontSize: ms(14),
     textAlign: 'center',
     lineHeight: ms(20),
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

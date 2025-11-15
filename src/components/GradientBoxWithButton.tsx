@@ -130,12 +130,14 @@ const styles = StyleSheet.create({
     color: palette.white,
     marginBottom: vs(6),
     lineHeight: ms(22),
+    fontFamily: 'SourceSansPro-Regular',
   },
   text: {
     fontSize: ms(15),
     fontWeight: '500',
     lineHeight: ms(19),
     color: palette.white,
+    fontFamily: 'SourceSansPro-Regular',
   },
   successText: {
     fontSize: ms(14),
@@ -143,6 +145,7 @@ const styles = StyleSheet.create({
     color: '#04ac6eff',
     textAlign: 'center',
     lineHeight: ms(18),
+    fontFamily: 'SourceSansPro-Regular',
   },
   subText: {
     fontSize: ms(15),
@@ -151,12 +154,14 @@ const styles = StyleSheet.create({
     marginTop: vs(6),
     textAlign: 'left',
     lineHeight: ms(18),
+    fontFamily: 'SourceSansPro-Regular',
   },
   scoreText: {
     fontSize: ms(14),
     fontWeight: '500',
     color: palette.white,
     marginTop: vs(8),
+    fontFamily: 'SourceSansPro-Regular',
   },
   cta: {
     width: '100%',
@@ -171,5 +176,6 @@ const styles = StyleSheet.create({
     fontSize: ms(14.5),
     fontWeight: '700',
     opacity: 0.9,
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

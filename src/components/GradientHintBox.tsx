@@ -274,6 +274,7 @@ const styles = StyleSheet.create({
     fontSize: ms(16),
     fontWeight: '700',
     marginBottom: vs(6),
+    fontFamily: 'SourceSansPro-Regular',
   },
 
   recoChip: {
@@ -288,6 +289,7 @@ const styles = StyleSheet.create({
     fontSize: ms(12.5),
     fontWeight: '700',
     textAlign: 'center',
+    fontFamily: 'SourceSansPro-Regular',
   },
 
   editBtnHit: {
@@ -306,6 +308,7 @@ const styles = StyleSheet.create({
     fontSize: ms(14),
     lineHeight: ms(20),
     fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
   },
 
   // +++ INPUT styles
@@ -324,6 +327,7 @@ const styles = StyleSheet.create({
     marginTop: vs(10),
     fontSize: ms(14.5),
     fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
 
   footerRow: {
@@ -341,6 +345,7 @@ const styles = StyleSheet.create({
     color: palette.white,
     fontSize: ms(15),
     fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
   switchHit: {
     paddingLeft: s(6),

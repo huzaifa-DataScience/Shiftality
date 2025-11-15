@@ -121,6 +121,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: vs(14),
+    fontFamily: 'SourceSansPro-Regular',
   },
   likertRow: {
     flexDirection: 'row',

@@ -128,6 +128,7 @@ export default function FinanceSurveyScreen() {
             textAlign: 'center',
             color: palette.white,
             fontSize: ms(14.5),
+            fontFamily: 'SourceSansPro-Regular',
             fontWeight: '700',
             opacity: 0.9,
           }}
@@ -146,10 +147,12 @@ const styles = StyleSheet.create({
     fontSize: ms(28),
     fontWeight: '800',
     marginTop: vs(6),
+    fontFamily: 'SourceSansPro-Regular',
   },
   headerSub: {
     color: palette.white,
     fontSize: ms(18),
+    fontFamily: 'SourceSansPro-Regular',
     marginTop: vs(2),
     textAlign: 'center',
   },
@@ -162,10 +165,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaText: { color: palette.white, fontSize: ms(14.5), fontWeight: '800' },
+  ctaText: {
+    color: palette.white,
+    fontSize: ms(14.5),
+    fontWeight: '800',
+    fontFamily: 'SourceSansPro-Regular',
+  },
   ctaTextMuted: {
     color: palette.white,
     fontSize: ms(14.5),
+    fontFamily: 'SourceSansPro-Regular',
     fontWeight: '700',
     opacity: 0.9,
   },

@@ -7,7 +7,7 @@ import { palette } from '../theme/colors';
 type Props = {
   showBack?: boolean;
   onBack?: () => void;
-  height?: number;              // visible height below the notch
+  height?: number; // visible height below the notch
 };
 
 export default function BlueHeader({ showBack, onBack, height = 120 }: Props) {
@@ -20,7 +20,11 @@ export default function BlueHeader({ showBack, onBack, height = 120 }: Props) {
 
       <View style={[styles.bar, { height }]}>
         {showBack ? (
-          <TouchableOpacity onPress={onBack} style={styles.backBtn} hitSlop={12}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={styles.backBtn}
+            hitSlop={12}
+          >
             <Text style={styles.backGlyph}>‹</Text>
           </TouchableOpacity>
         ) : (
@@ -38,6 +42,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingBottom: 12,
   },
-  backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  backGlyph: { color: '#fff', fontSize: 28, lineHeight: 28 },
+  backBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backGlyph: {
+    color: '#fff',
+    fontSize: 28,
+    lineHeight: 28,
+    fontFamily: 'SourceSansPro-Regular',
+  },
 });

@@ -179,12 +179,18 @@ export default function DebugInfoCard({
 }
 
 const styles = StyleSheet.create({
-  title: { color: palette.white, fontSize: s(18), fontWeight: '800' },
+  title: {
+    color: palette.white,
+    fontSize: s(18),
+    fontWeight: '800',
+    fontFamily: 'SourceSansPro-Regular',
+  },
   sub: {
     color: palette.white,
     fontSize: s(16),
     lineHeight: s(22),
     marginTop: vs(6),
+    fontFamily: 'SourceSansPro-Regular',
   },
 
   sectionGap: { height: vs(14) },
@@ -196,7 +202,12 @@ const styles = StyleSheet.create({
     paddingVertical: vs(6),
   },
   label: { color: '#C9D9F6', fontWeight: '800', fontSize: ms(14) },
-  value: { color: '#EAF2FF', fontSize: ms(14.5), fontWeight: '600' },
+  value: {
+    color: '#EAF2FF',
+    fontSize: ms(14.5),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+  },
 
   h2: {
     color: palette.white,
@@ -211,7 +222,12 @@ const styles = StyleSheet.create({
     borderRadius: scale(8),
     paddingHorizontal: s(12),
   },
-  innerTitle: { color: '#EAF2FF', fontWeight: '800', fontSize: ms(14.5) },
+  innerTitle: {
+    color: '#EAF2FF',
+    fontWeight: '800',
+    fontSize: ms(14.5),
+    fontFamily: 'SourceSansPro-Regular',
+  },
 
   gridRow: {
     flexDirection: 'row',
@@ -219,9 +235,19 @@ const styles = StyleSheet.create({
     columnGap: s(12),
   },
   gridCol: { flex: 1, rowGap: vs(6) },
-  gridText: { color: '#EAF2FF', fontSize: ms(14), lineHeight: ms(18) },
+  gridText: {
+    color: '#EAF2FF',
+    fontSize: ms(14),
+    lineHeight: ms(18),
+    fontFamily: 'SourceSansPro-Regular',
+  },
 
-  ruleText: { color: '#EAF2FF', fontSize: ms(14), lineHeight: ms(20) },
+  ruleText: {
+    color: '#EAF2FF',
+    fontSize: ms(14),
+    lineHeight: ms(20),
+    fontFamily: 'SourceSansPro-Regular',
+  },
   wrap: {
     position: 'relative',
     paddingHorizontal: s(12),

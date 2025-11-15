@@ -121,11 +121,13 @@ const styles = StyleSheet.create({
     color: '#00BFFF',
     fontSize: ms(16),
     fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
   label: {
     color: palette.white,
     fontSize: ms(13),
     fontWeight: '600',
     marginTop: vs(2),
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

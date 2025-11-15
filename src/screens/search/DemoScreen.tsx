@@ -126,6 +126,7 @@ export default function DemoScreen() {
               textAlign: 'center',
               color: palette.white,
               fontSize: ms(14.5),
+              fontFamily: 'SourceSansPro-Regular',
               fontWeight: '700',
               opacity: 0.9,
             }}
@@ -230,6 +231,7 @@ system properly."
               textAlign: 'center',
               color: palette.white,
               fontSize: ms(14.5),
+              fontFamily: 'SourceSansPro-Regular',
               fontWeight: '700',
               opacity: 0.9,
             }}
@@ -289,19 +291,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: palette.white,
     marginBottom: scale(10),
+    fontFamily: 'SourceSansPro-Regular',
   },
   subTitle: {
     fontSize: scale(16),
     fontWeight: '500',
     color: palette.white,
     lineHeight: scale(20),
+    fontFamily: 'SourceSansPro-Regular',
   },
-  h1: { color: palette.white, fontSize: s(18), fontWeight: '800' },
+  h1: {
+    color: palette.white,
+    fontSize: s(18),
+    fontWeight: '800',
+    fontFamily: 'SourceSansPro-Regular',
+  },
   sub: {
     color: palette.white,
     fontSize: s(16),
     lineHeight: s(22),
     marginTop: vs(6),
+    fontFamily: 'SourceSansPro-Regular',
   },
   fieldBlock: { marginTop: vs(10) },
   label: {
@@ -310,6 +320,7 @@ const styles = StyleSheet.create({
     fontSize: ms(14),
     marginBottom: vs(8),
     marginTop: vs(6),
+    fontFamily: 'SourceSansPro-Regular',
   },
   cta: {
     height: vs(39),
@@ -319,9 +330,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaText: { color: '#0E2440', fontSize: ms(15), fontWeight: '800' },
+  ctaText: {
+    color: '#0E2440',
+    fontSize: ms(15),
+    fontWeight: '800',
+    fontFamily: 'SourceSansPro-Regular',
+  },
   row: { flexDirection: 'row', alignItems: 'center' },
-  rowTxt: { color: palette.white, fontSize: ms(15), fontWeight: '700' },
+  rowTxt: {
+    color: palette.white,
+    fontSize: ms(15),
+    fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
+  },
   refresh: {
     width: s(18),
     height: s(18),

@@ -157,6 +157,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: palette.white,
     marginBottom: vs(12),
+    fontFamily: 'SourceSansPro-Regular',
   },
   outlineWrap: {
     width: '100%',
@@ -172,10 +173,12 @@ const styles = StyleSheet.create({
   yAxisText: {
     color: '#FFFFFF',
     fontSize: ms(10),
+    fontFamily: 'SourceSansPro-Regular',
   },
   xAxisLabel: {
     color: '#FFFFFF',
     fontSize: ms(10),
+    fontFamily: 'SourceSansPro-Regular',
   },
   legendRowOne: {
     flexDirection: 'row',
@@ -197,5 +200,6 @@ const styles = StyleSheet.create({
   legendLabel: {
     color: palette.white,
     fontSize: ms(12.5),
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

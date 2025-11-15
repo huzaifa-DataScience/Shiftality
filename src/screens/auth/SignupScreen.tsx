@@ -158,6 +158,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginTop: vs(4),
+    fontFamily: 'SourceSansPro-Regular',
   },
   subtitle: {
     color: '#B0B6C3',
@@ -166,6 +167,7 @@ const styles = StyleSheet.create({
     width: '80%',
     marginTop: vs(6),
     lineHeight: ms(20),
+    fontFamily: 'SourceSansPro-Regular',
   },
   label: {
     color: '#FFFFFF',
@@ -173,6 +175,7 @@ const styles = StyleSheet.create({
     marginTop: vs(16),
     marginBottom: vs(6),
     fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
   },
   inputWithIcon: {
     position: 'relative',
@@ -194,6 +197,7 @@ const styles = StyleSheet.create({
     marginTop: vs(18),
     fontSize: ms(14),
     textAlign: 'center',
+    fontFamily: 'SourceSansPro-Regular',
   },
   link: {
     color: '#3DA9FF',

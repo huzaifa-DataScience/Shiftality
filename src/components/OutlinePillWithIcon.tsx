@@ -126,5 +126,6 @@ const styles = StyleSheet.create({
     color: palette.white,
     fontSize: ms(14),
     fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

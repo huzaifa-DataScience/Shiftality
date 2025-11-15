@@ -151,12 +151,14 @@ const styles = StyleSheet.create({
     fontSize: scale(22),
     color: palette.white,
     fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
   subTitle: {
     fontSize: scale(16),
     color: palette.white,
     fontWeight: '400',
     lineHeight: scale(30),
+    fontFamily: 'SourceSansPro-Regular',
   },
   gaugeContainer: {
     alignItems: 'center',
@@ -168,6 +170,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: ms(13.5),
     marginTop: vs(12),
+    fontFamily: 'SourceSansPro-Regular',
   },
   toggleRow: {
     flexDirection: 'row',

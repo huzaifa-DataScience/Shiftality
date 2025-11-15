@@ -7,7 +7,12 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import { scale as s, verticalScale as vs, moderateScale as ms, scale } from 'react-native-size-matters';
+import {
+  scale as s,
+  verticalScale as vs,
+  moderateScale as ms,
+  scale,
+} from 'react-native-size-matters';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -18,7 +23,7 @@ import { palette } from '../../theme';
 import type { AuthStackParamList } from '../../navigation/AuthStack';
 
 // TODO: swap with your actual icons
-const eyeOpen   = require('../../assets/eye-off.png');
+const eyeOpen = require('../../assets/eye-off.png');
 const eyeClosed = require('../../assets/eye-off.png');
 
 type Nav = NativeStackNavigationProp<AuthStackParamList>;
@@ -30,9 +35,9 @@ export default function LoginScreen({
 }) {
   const navigation = useNavigation<Nav>();
 
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPwd, setShowPwd]   = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
 
   const handleSignIn = () => {
     // TODO: do validation / API, then:
@@ -41,7 +46,10 @@ export default function LoginScreen({
 
   return (
     <View style={[styles.root, { backgroundColor: palette.darkBlue }]}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <GradientCard style={{ marginTop: vs(24), width: scale(330) }}>
           {/* Header */}
           <View style={{ alignItems: 'center' }}>
@@ -85,7 +93,11 @@ export default function LoginScreen({
           </View>
 
           {/* Forgot password */}
-          <TouchableOpacity onPress={() => { /* TODO: navigate to ForgotPassword when you add it */ }}>
+          <TouchableOpacity
+            onPress={() => {
+              /* TODO: navigate to ForgotPassword when you add it */
+            }}
+          >
             <Text style={styles.forgot}>Forget Password?</Text>
           </TouchableOpacity>
 
@@ -102,7 +114,10 @@ export default function LoginScreen({
           {/* Footer */}
           <Text style={styles.footerText}>
             Don’t have account?{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('Signup')}>
+            <Text
+              style={styles.link}
+              onPress={() => navigation.navigate('Signup')}
+            >
               Sign Up
             </Text>
           </Text>
@@ -127,6 +142,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginTop: vs(4),
+    fontFamily: 'SourceSansPro-Regular',
   },
   subtitle: {
     color: '#B0B6C3',
@@ -135,6 +151,7 @@ const styles = StyleSheet.create({
     width: '80%',
     marginTop: vs(6),
     lineHeight: ms(20),
+    fontFamily: 'SourceSansPro-Regular',
   },
   label: {
     color: '#FFFFFF',
@@ -142,6 +159,7 @@ const styles = StyleSheet.create({
     marginTop: vs(16),
     marginBottom: vs(6),
     fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
   },
   inputWithIcon: {
     position: 'relative',
@@ -164,12 +182,14 @@ const styles = StyleSheet.create({
     fontSize: ms(14),
     marginTop: vs(8),
     opacity: 0.9,
+    fontFamily: 'SourceSansPro-Regular',
   },
   footerText: {
     color: '#B0B6C3',
     marginTop: vs(18),
     fontSize: ms(14),
     textAlign: 'center',
+    fontFamily: 'SourceSansPro-Regular',
   },
   link: {
     color: '#3DA9FF',

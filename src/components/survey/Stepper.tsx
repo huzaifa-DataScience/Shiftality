@@ -69,5 +69,10 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
   },
-  stepNum: { fontSize: ms(12), fontWeight: '700', color: palette.white },
+  stepNum: {
+    fontSize: ms(12),
+    fontWeight: '700',
+    color: palette.white,
+    fontFamily: 'SourceSansPro-Regular',
+  },
 });

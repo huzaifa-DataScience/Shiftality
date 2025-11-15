@@ -206,6 +206,7 @@ export default function SettingScreen() {
               height: 'auto',
               fontSize: ms(14.5),
               fontWeight: '700',
+              fontFamily: 'SourceSansPro-Regular',
             }}
             title={'Add Custom Shadow Beliefs '}
             onPress={() => console.log('Start')}
@@ -409,23 +410,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: palette.white,
     marginBottom: scale(10),
+    fontFamily: 'SourceSansPro-Regular',
   },
   subTitle: {
     fontSize: scale(16),
     fontWeight: '500',
     color: palette.white,
     lineHeight: scale(20),
+    fontFamily: 'SourceSansPro-Regular',
   },
   label: {
     color: palette.white,
     fontSize: s(14),
     fontWeight: '800',
+    fontFamily: 'SourceSansPro-Regular',
   },
   sectionHeading: {
     color: palette.white,
     fontSize: s(16),
     fontWeight: '800',
     marginBottom: s(10),
+    fontFamily: 'SourceSansPro-Regular',
   },
   switchRow: {
     alignItems: 'flex-end',
@@ -436,6 +441,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     fontSize: s(16),
     lineHeight: s(24),
+    fontFamily: 'SourceSansPro-Regular',
   },
   cta: {
     width: '100%',
@@ -450,6 +456,7 @@ const styles = StyleSheet.create({
     fontSize: ms(18),
     fontWeight: '700',
     opacity: 0.9,
+    fontFamily: 'SourceSansPro-Regular',
   },
   rightIcon: { width: s(25), height: s(25), marginBottom: scale(20) },
 });

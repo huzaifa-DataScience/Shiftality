@@ -254,24 +254,28 @@ const styles = StyleSheet.create({
     fontSize: s(20),
     fontWeight: '700',
     marginBottom: vs(6),
+    fontFamily: 'SourceSansPro-Regular',
   },
   desc: {
     color: palette.white,
     fontSize: s(14),
     lineHeight: s(19),
     marginBottom: vs(14),
+    fontFamily: 'SourceSansPro-Regular',
   },
   sectionTitle: {
     color: '#9AD9FF',
     fontWeight: '700',
     fontSize: s(14),
     marginVertical: vs(6),
+    fontFamily: 'SourceSansPro-Regular',
   },
   scoreText: {
     color: palette.white,
     fontSize: s(15),
     fontWeight: '600',
     marginTop: vs(14),
+    fontFamily: 'SourceSansPro-Regular',
   },
   lockButton: {
     width: '100%',
@@ -284,6 +288,7 @@ const styles = StyleSheet.create({
     color: palette.txtBlue,
     fontSize: s(14.5),
     fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
   clearRow: {
     flexDirection: 'row',
@@ -301,6 +306,7 @@ const styles = StyleSheet.create({
     color: '#EAF4FF',
     fontSize: s(15),
     fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
   },
   sectionToolbar: {
     flexDirection: 'row',
@@ -312,6 +318,7 @@ const styles = StyleSheet.create({
     color: '#f4f5f6ff',
     fontSize: s(13),
     fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
   sectionActions: {
     flexDirection: 'row',
@@ -322,5 +329,6 @@ const styles = StyleSheet.create({
     color: '#f9fbfbff', // link-like cyan
     fontSize: s(12.5),
     fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

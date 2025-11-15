@@ -173,6 +173,7 @@ const styles = StyleSheet.create({
     fontSize: ms(16),
     fontWeight: '500',
     backgroundColor: 'transparent',
+    fontFamily: 'SourceSansPro-Regular',
   },
   pressable: { justifyContent: 'center', backgroundColor: 'transparent' },
   leftIcon: {

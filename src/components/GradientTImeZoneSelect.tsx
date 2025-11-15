@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     paddingHorizontal: s(16),
     paddingVertical: vs(12),
+    fontFamily: 'SourceSansPro-Regular',
   },
   optionRow: {
     paddingVertical: vs(12),
@@ -131,6 +132,7 @@ const styles = StyleSheet.create({
   optionText: {
     color: '#E9F1FF',
     fontSize: ms(14),
+    fontFamily: 'SourceSansPro-Regular',
   },
 });
 

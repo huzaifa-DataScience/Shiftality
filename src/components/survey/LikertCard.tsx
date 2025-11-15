@@ -77,6 +77,7 @@ const styles = StyleSheet.create({
     fontSize: ms(16),
     fontWeight: '700',
     marginBottom: vs(12),
+    fontFamily: 'SourceSansPro-Regular',
   },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
 });

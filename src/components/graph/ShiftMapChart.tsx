@@ -144,6 +144,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: palette.white,
     marginBottom: vs(12),
+    fontFamily: 'SourceSansPro-Regular',
   },
   outlineWrap: {
     width: '100%',
@@ -159,18 +160,22 @@ const styles = StyleSheet.create({
   yAxisText: {
     color: '#FFFFFF',
     fontSize: ms(10),
+    fontFamily: 'SourceSansPro-Regular',
   },
   xAxisLabel: {
     color: '#FFFFFF',
     fontSize: ms(10),
+    fontFamily: 'SourceSansPro-Regular',
   },
   footerBox: {
     marginTop: vs(10),
     marginLeft: scale(20),
+    fontFamily: 'SourceSansPro-Regular',
   },
   footerText: {
     color: palette.white,
     fontSize: ms(13),
     fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

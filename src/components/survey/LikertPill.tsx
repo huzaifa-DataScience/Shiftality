@@ -52,6 +52,11 @@ const OutlinePill = ({
         height: DEFAULT_H,
         borderRadius,
         justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 5,
       }}
     >
       <Svg
@@ -80,7 +85,14 @@ const OutlinePill = ({
           strokeWidth={stroke}
         />
       </Svg>
-      <View style={[styles.pillInnerBase, { borderRadius }]}>{children}</View>
+      <View
+        style={[
+          styles.pillInnerBase,
+          { borderRadius, backgroundColor: 'rgba(3, 149, 193, 0.1)' },
+        ]}
+      >
+        {children}
+      </View>
     </TouchableOpacity>
   );
 };

@@ -178,6 +178,7 @@ export default function ProfileScreen() {
                 color: palette.white,
                 fontSize: ms(14.5),
                 fontWeight: '700',
+                fontFamily: 'SourceSansPro-Regular',
               }}
               title={'Start Your Reality Shift'}
               onPress={() => console.log('Start')}
@@ -259,6 +260,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginVertical: vs(4),
     textAlign: 'left',
+    fontFamily: 'SourceSansPro-Regular',
   },
   Sectitle: {
     color: palette.white,
@@ -266,6 +268,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginVertical: vs(4),
     textAlign: 'left',
+    fontFamily: 'SourceSansPro-Regular',
   },
   subSectitle: {
     color: palette.white,
@@ -273,6 +276,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginVertical: vs(8),
     textAlign: 'left',
+    fontFamily: 'SourceSansPro-Regular',
   },
   sublensSectitle: {
     color: palette.white,
@@ -280,6 +284,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginVertical: vs(8),
     textAlign: 'left',
+    fontFamily: 'SourceSansPro-Regular',
   },
   grid: {
     marginTop: vs(8),
@@ -302,12 +307,14 @@ const styles = StyleSheet.create({
     color: palette.white,
     fontWeight: '800',
     fontSize: ms(13),
+    fontFamily: 'SourceSansPro-Regular',
   },
   cellLabel: {
     color: palette.white,
     textAlign: 'center',
     fontSize: ms(12),
     lineHeight: ms(16),
+    fontFamily: 'SourceSansPro-Regular',
   },
   ctaWrap: { width: scale(50) },
   cta: {
@@ -322,5 +329,6 @@ const styles = StyleSheet.create({
     fontSize: ms(14.5),
     fontWeight: '700',
     opacity: 0.9,
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

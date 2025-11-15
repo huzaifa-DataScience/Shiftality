@@ -214,11 +214,13 @@ const styles = StyleSheet.create({
     fontSize: ms(18),
     fontWeight: '800',
     marginBottom: vs(6),
+    fontFamily: 'SourceSansPro-Regular',
   },
   desc: {
     color: palette.white,
     fontSize: ms(14),
     lineHeight: ms(20),
+    fontFamily: 'SourceSansPro-Regular',
   },
 
   fieldLabel: {
@@ -226,6 +228,7 @@ const styles = StyleSheet.create({
     fontSize: ms(16),
     fontWeight: '800',
     marginBottom: vs(8),
+    fontFamily: 'SourceSansPro-Regular',
   },
 
   textareaWrap: {
@@ -241,6 +244,7 @@ const styles = StyleSheet.create({
     lineHeight: ms(21),
     paddingHorizontal: s(8),
     paddingVertical: vs(8),
+    fontFamily: 'SourceSansPro-Regular',
   },
 
   helper: {
@@ -248,5 +252,6 @@ const styles = StyleSheet.create({
     color: palette.white,
     fontSize: ms(12),
     fontWeight: '500',
+    fontFamily: 'SourceSansPro-Regular',
   },
 });
