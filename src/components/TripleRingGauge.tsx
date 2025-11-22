@@ -94,7 +94,7 @@ export default function TripleRingGauge({
               cx={cx}
               cy={cy}
               r={ring.r}
-              stroke="rgba(97, 78, 78, 0.08)"
+              stroke="rgba(238, 217, 217, 0.08)"
               strokeWidth={track}
               fill="none"
             />

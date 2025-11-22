@@ -1,16 +1,22 @@
 import React from 'react';
-import {ThemeProvider, useAppTheme} from './src/theme/ThemeProvider';
+import { ThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
 import RootNavigator from './src/navigation/RootNavigator';
-import {NavigationContainer, DefaultTheme, DarkTheme} from '@react-navigation/native';
-import {StyleSheet, useColorScheme} from 'react-native';
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from '@react-navigation/native';
+import { StyleSheet, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { palette } from './src/theme';
+import { Provider } from 'react-redux';
+import store from './src/store/store';
 
 function NavigationWithTheme() {
   const scheme = useColorScheme();
   return (
     // <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-    <NavigationContainer  >
+    <NavigationContainer>
       <RootNavigator />
     </NavigationContainer>
   );
@@ -18,10 +24,12 @@ function NavigationWithTheme() {
 
 export default function App() {
   return (
-    <SafeAreaProvider style={{backgroundColor: palette.darkBlue}}>
-    <ThemeProvider>
-      <NavigationWithTheme />
-    </ThemeProvider>
+    <SafeAreaProvider style={{ backgroundColor: palette.darkBlue }}>
+      <Provider store={store}>
+        <ThemeProvider>
+          <NavigationWithTheme />
+        </ThemeProvider>
+      </Provider>
     </SafeAreaProvider>
   );
 }
@@ -31,4 +39,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

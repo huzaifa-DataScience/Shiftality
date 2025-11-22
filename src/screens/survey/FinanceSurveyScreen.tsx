@@ -26,6 +26,8 @@ import PrimaryButton from '../../components/PrimaryButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import { useDispatch } from 'react-redux';
+import { saveSurveyAnswer } from '../../store/surveyReducer';
 
 type AnswersForStep = Record<number, LikertValue>;
 
@@ -33,6 +35,7 @@ export default function FinanceSurveyScreen() {
   type RootNav = NativeStackNavigationProp<RootStackParamList>;
 
   const navigation = useNavigation<RootNav>();
+  const dispatch = useDispatch();
 
   const scrollRef = useRef<ScrollView>(null);
   const [step, setStep] = useState(0);
@@ -42,10 +45,20 @@ export default function FinanceSurveyScreen() {
   );
 
   const setAnswer = (qIdx: number, v: LikertValue) => {
+    // UI local state
     setAllAnswers(prev => ({
       ...prev,
       [step]: { ...(prev[step] || {}), [qIdx]: v },
     }));
+
+    // Save globally
+    dispatch(
+      saveSurveyAnswer({
+        sectionIndex: step,
+        questionIndex: qIdx,
+        value: v,
+      }),
+    );
   };
 
   const current = SECTIONS[step];

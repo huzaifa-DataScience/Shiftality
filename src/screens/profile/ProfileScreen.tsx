@@ -15,15 +15,48 @@ import RingGauge from '../../components/TripleRingGauge';
 import TripleRingGauge from '../../components/TripleRingGauge';
 import PrimaryButton from '../../components/PrimaryButton';
 import LinearGradient from 'react-native-linear-gradient';
+import { useSelector } from 'react-redux';
+import {
+  selectSectionPoints,
+  selectTotalSurveyPoints,
+} from '../../store/surveyReducer';
 export default function ProfileScreen() {
+  const total = useSelector(selectTotalSurveyPoints);
+  console.log('total ==> ', total);
+  const finance = useSelector(selectSectionPoints('Finance'));
+  console.log('total finance ==> ', finance);
+  const health = useSelector(selectSectionPoints('Health & Energy'));
+  console.log('total health ==> ', health);
+  const focus = useSelector(selectSectionPoints('Focus & Growth'));
+  console.log('total focus ==> ', focus);
+
+  const relationships = useSelector(
+    selectSectionPoints('Relationships & Belonging'),
+  );
+  console.log('total relationships ==> ', relationships);
+  const identity = useSelector(selectSectionPoints('Identity & Self-worth'));
+  console.log('total identity ==> ', identity);
+  const calm = useSelector(selectSectionPoints('Calm & Resilience'));
+  console.log('total calm ==> ', calm);
+
+  const computePct = (pointsArr: number[]) => {
+    if (!pointsArr || pointsArr.length === 0) return 0;
+
+    const sum = pointsArr.reduce((a, b) => a + b, 0);
+    const totalQuestions = pointsArr.length;
+
+    return Math.round((sum / totalQuestions) * 100);
+  };
+
   const STRENGTHS = [
-    { label: 'Finance', pct: 40 },
-    { label: 'Health & Energy', pct: 15 },
-    { label: 'Focus & Growth', pct: 50 },
-    { label: 'Relationship\n& Belonging', pct: 90 },
-    { label: 'Identify &\nSelf-Worth', pct: 80 },
-    { label: 'Calm &\nResilience', pct: 40 },
+    { label: 'Finance', pct: computePct(finance) },
+    { label: 'Health & Energy', pct: computePct(health) },
+    { label: 'Focus & Growth', pct: computePct(focus) },
+    { label: 'Relationship\n& Belonging', pct: computePct(relationships) },
+    { label: 'Identity &\nSelf-Worth', pct: computePct(identity) },
+    { label: 'Calm &\nResilience', pct: computePct(calm) },
   ];
+
   return (
     <ScrollView style={{ backgroundColor: palette.darkBlue }}>
       <View style={styles.root}>

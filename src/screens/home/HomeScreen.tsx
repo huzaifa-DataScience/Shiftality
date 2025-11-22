@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { palette } from '../../theme';
 import GradientCardHome from '../../components/GradientCardHome';
@@ -18,6 +18,8 @@ import { useNavigation } from '@react-navigation/native';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
+import { useSelector } from 'react-redux';
+import { selectTotalSurveyPoints } from '../../store/surveyReducer';
 
 export default function HomeScreen() {
   const navigation =
