@@ -106,7 +106,7 @@ export default function HomeScreen() {
           />
 
         </GradientCardHome> */}
-        <GradientCardHome style={{ marginVertical: vs(50), width: scale(330) }}>
+        <GradientCardHome style={{ marginVertical: vs(20), width: scale(330) }}>
           <View style={{ alignItems: 'center', marginBottom: s(10) }}>
             <Text style={styles.Sectitle}>
               {'Your 1-Year North Star (Highest\nVibration Goal) *'}
@@ -133,7 +133,7 @@ export default function HomeScreen() {
         </GradientCardHome>
 
         {/* --------- CARD 3: Preferred Check-in Time --------- */}
-        <GradientCardHome style={{ marginBottom: vs(50), width: scale(330) }}>
+        <GradientCardHome style={{ marginBottom: vs(20), width: scale(330) }}>
           <Text style={[styles.cardTitle, { color: palette.white }]}>
             Preferred Check-in Time *
           </Text>
@@ -184,7 +184,7 @@ export default function HomeScreen() {
         </GradientCardHome>
 
         <GradientToggleRow
-          style={{ width: scale(370), marginBottom: vs(40) }}
+          style={{ width: scale(370), marginBottom: vs(20) }}
           label="Allow Notifications"
           value={allowNotifs}
           onValueChange={setAllowNotifs}
@@ -192,7 +192,7 @@ export default function HomeScreen() {
         <PrimaryButton
           backgroundColor={palette.white}
           textColor={palette.darkBlue}
-          style={{ width: '90%', alignSelf: 'center' }}
+          style={{ width: '95%', alignSelf: 'center' }}
           title="Continue to Shiftality Scan"
           onPress={() => {
             navigation.navigate('FinanceSurvey');
