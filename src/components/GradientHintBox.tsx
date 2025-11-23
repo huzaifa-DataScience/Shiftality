@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
   LayoutChangeEvent,
   Switch,
+  TextInput,
+  TextInputProps,
 } from 'react-native';
 import {
   scale as s,
@@ -25,10 +27,9 @@ import Svg, {
 } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
 import { palette } from '../theme';
-import GradientInput from './GradientInput';
 
 type Props = {
-  text: string;
+  text?: string; // now optional (used for static copy OR placeholder)
   title?: string;
   showRecommendedChip?: boolean;
   recommendedText?: string;
@@ -115,6 +116,15 @@ export default function GradientHintBox({
   );
 
   const showHeaderRow = !!title || showRecommendedChip || showEditButton;
+
+  // only show static copy when not in input mode
+  const showCopy = !!text && !showInput;
+
+  // if no explicit placeholder provided, fall back to the text
+  const effectivePlaceholder = inputPlaceholder || text || '';
+
+  // allow overriding TextInput style from inputProps.style
+  const { style: inputStyleOverride, ...restInputProps } = inputProps || {};
 
   return (
     <View
@@ -210,31 +220,41 @@ export default function GradientHintBox({
           </View>
         )}
 
-        <Text style={[styles.copy, { color: palette.white }, textStyle]}>
-          {text}
-        </Text>
+        {showCopy && (
+          <Text style={[styles.copy, { color: palette.white }, textStyle]}>
+            {text}
+          </Text>
+        )}
 
-        {/* +++ OPTIONAL INPUT BLOCK */}
+        {/* +++ OPTIONAL INPUT BLOCK (single box look) */}
         {showInput && (
-          <View style={styles.inputBlock}>
+          <View
+            style={[
+              styles.inputBlock,
+              !showCopy && { marginTop: 0 }, // tighter when there is no copy
+            ]}
+          >
             {!!inputLabel && (
               <Text style={styles.inputLabel}>{inputLabel}</Text>
             )}
-            <GradientInput
-              placeholder={inputPlaceholder}
+
+            <TextInput
               value={inputValue}
               onChangeText={onChangeInputText}
-              {...inputProps}
+              placeholder={effectivePlaceholder}
+              placeholderTextColor="rgba(255,255,255,0.6)"
+              multiline
+              textAlignVertical="top"
+              style={[styles.textArea, inputStyleOverride]}
+              {...restInputProps}
             />
           </View>
         )}
 
-        {/* ---- NEW: secondary line (Baseline) ---- */}
         {!!secondaryText && (
           <Text style={styles.secondary}>{secondaryText}</Text>
         )}
 
-        {/* ---- NEW: footer action row ---- */}
         {!!footerActionLabel && (
           <TouchableOpacity
             activeOpacity={0.85}
@@ -318,9 +338,18 @@ const styles = StyleSheet.create({
   inputLabel: {
     color: palette.white,
     fontWeight: '800',
-    fontSize: ms(14),
+    fontSize: ms(15),
     marginBottom: vs(8),
   },
+  textArea: {
+    minHeight: vs(90),
+    paddingHorizontal: s(12),
+    color: palette.white,
+    fontSize: ms(14),
+    lineHeight: ms(20),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+
   secondary: {
     color: palette.white,
     opacity: 0.9,

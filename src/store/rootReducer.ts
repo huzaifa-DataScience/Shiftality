@@ -1,8 +1,10 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import surveyReducer from './surveyReducer';
+import surveyReducer from './reducers/surveyReducer';
+import homeOnboardingReducer from './reducers/homeOnboardingReducer';
 
 const rootReducer = combineReducers({
   survey: surveyReducer,
+  homeOnboarding: homeOnboardingReducer,
 });
 
 export default rootReducer;

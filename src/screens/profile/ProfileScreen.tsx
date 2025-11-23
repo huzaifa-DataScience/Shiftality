@@ -19,8 +19,11 @@ import { useSelector } from 'react-redux';
 import {
   selectSectionPoints,
   selectTotalSurveyPoints,
-} from '../../store/surveyReducer';
+} from '../../store/reducers/surveyReducer';
+import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
+import { useNavigation } from '@react-navigation/native';
 export default function ProfileScreen() {
+  const navigation = useNavigation();
   const total = useSelector(selectTotalSurveyPoints);
   console.log('total ==> ', total);
   const finance = useSelector(selectSectionPoints('Finance'));
@@ -39,14 +42,45 @@ export default function ProfileScreen() {
   const calm = useSelector(selectSectionPoints('Calm & Resilience'));
   console.log('total calm ==> ', calm);
 
+  const onboarding = useSelector(selectHomeOnboarding);
+  console.log('homeOnboarding state =>', onboarding);
+
+  // If you want to log individual fields:
+  console.log('firstName =>', onboarding.firstName);
+  console.log('timezone =>', onboarding.timezone);
+  console.log('journeyStartDate =>', onboarding.journeyStartDate);
+  console.log('northStar =>', onboarding.northStar);
+  console.log('shadowPath =>', onboarding.shadowPath);
+  console.log('checkInTime =>', onboarding.checkInTime);
+  console.log('dndStart =>', onboarding.dndStart);
+  console.log('dndEnd =>', onboarding.dndEnd);
+  console.log('allowNotifications =>', onboarding.allowNotifications);
+
   const computePct = (pointsArr: number[]) => {
+    console.log('pointsArr', pointsArr);
     if (!pointsArr || pointsArr.length === 0) return 0;
 
-    const sum = pointsArr.reduce((a, b) => a + b, 0);
-    const totalQuestions = pointsArr.length;
+    // 1) Average score for this domain (in range -2 → +2)
+    const domainScore =
+      pointsArr.reduce((sum, v) => sum + v, 0) / pointsArr.length;
 
-    return Math.round((sum / totalQuestions) * 100);
+    // 2) Apply web formula
+    const percentage = Math.max(
+      0,
+      Math.min(100, ((domainScore + 2) / 4) * 100),
+    );
+
+    return Math.round(percentage);
   };
+
+  const northStarText =
+    onboarding.northStar ||
+    'Paint the picture of where you will be in one year—your highest potential reality…';
+  const shadowPathText =
+    onboarding.shadowPath ||
+    "Describe the patterns, habits, or reality you're leaving behind—what your life looks like in one year if nothing shifts…";
+
+  const displayName = onboarding.firstName?.trim() || 'Your';
 
   const STRENGTHS = [
     { label: 'Finance', pct: computePct(finance) },
@@ -56,6 +90,29 @@ export default function ProfileScreen() {
     { label: 'Identity &\nSelf-Worth', pct: computePct(identity) },
     { label: 'Calm &\nResilience', pct: computePct(calm) },
   ];
+
+  const sortedDomains = [...STRENGTHS]
+    .filter(d => d.pct > 0) // ignore completely empty domains
+    .sort((a, b) => b.pct - a.pct);
+
+  let shiftPatternText =
+    "As you complete more scans, we'll surface patterns about which domains drive your momentum and which ones pull you off track.";
+
+  let bestLeverText =
+    'Pick one tiny daily action in Health & Energy you\ncan complete in under two minutes.';
+  if (sortedDomains.length >= 2) {
+    const topA = sortedDomains[0].label;
+    const topB = sortedDomains[1].label;
+    const watch = sortedDomains[2]?.label;
+
+    shiftPatternText =
+      `You're strongest in ${topA} and ${topB}—you build momentum ` +
+      `when you show up consistently.` +
+      (watch ? ` Watch for ${watch} stories that pull you off track.` : '') +
+      ` A small daily action in ${topA} is your quickest lever.`;
+
+    bestLeverText = `Pick one tiny daily action in ${topA} you\ncan complete in under two minutes.`;
+  }
 
   return (
     <ScrollView style={{ backgroundColor: palette.darkBlue }}>
@@ -69,7 +126,7 @@ export default function ProfileScreen() {
         >
           <View style={{ marginBottom: s(10) }}>
             <Text style={styles.firstSectitle}>
-              {"Huzaifa's Shiftality Profile"}
+              {`${displayName}'s Shiftality Profile`}
             </Text>
             <Text style={styles.subSectitle}>
               {
@@ -80,16 +137,12 @@ export default function ProfileScreen() {
 
           <GradientHintBox
             title="Your 1-Year North Star"
-            text={
-              'Lorem Ipsum is simply dummy text of the printing and typesetting industry.'
-            }
+            text={northStarText}
           />
           <View style={{ height: scale(20) }} />
           <GradientHintBox
             title="Your 1-Year Shadow Star"
-            text={
-              'Lorem Ipsum is simply dummy text of the printing and typesetting industry.'
-            }
+            text={shadowPathText}
           />
         </GradientCardHome>
 
@@ -152,12 +205,7 @@ export default function ProfileScreen() {
             </Text>
           </View>
 
-          <GradientHintBox
-            title="Your Shift Pattern"
-            text={
-              "You're strongest in Health & Energy and\nIdentity & Selt-Worth-you build momentum\nwhen you show up consistently. Watch for\nFinance stories that pull you off track. A\nSmall daily action in Health & Energy is your\nquickest lever."
-            }
-          />
+          <GradientHintBox title="Your Shift Pattern" text={shiftPatternText} />
         </GradientCardHome>
 
         <GradientCardHome
@@ -171,21 +219,19 @@ export default function ProfileScreen() {
           </View>
 
           <GradientHintBox
-            title="Scarcity lens"
-            text={'You might see opportunities as rare or out of\nreach.'}
+            title="Perfection loop"
+            text={
+              "When things aren't perfect, you may delay or avoid starting."
+            }
           />
           <View style={{ height: scale(20) }} />
           <GradientHintBox
             title="Scarcity lens"
-            text={'You might see opportunities as rare or out of\nreach.'}
+            text={'You might see opportunities as rare or out of reach.'}
           />
           <View style={{ marginTop: scale(20) }}>
             <Text style={styles.Sectitle}>{'Your best lever right now:'}</Text>
-            <Text style={styles.sublensSectitle}>
-              {
-                'Pick one tiny daily action in Health & Energy you\ncan complete in under two minutes.'
-              }
-            </Text>
+            <Text style={styles.sublensSectitle}>{bestLeverText}</Text>
           </View>
         </GradientCardHome>
 
@@ -214,7 +260,7 @@ export default function ProfileScreen() {
                 fontFamily: 'SourceSansPro-Regular',
               }}
               title={'Start Your Reality Shift'}
-              onPress={() => console.log('Start')}
+              onPress={() => navigation.navigate('Search')}
             />
             <View style={{ height: scale(10) }} />
 

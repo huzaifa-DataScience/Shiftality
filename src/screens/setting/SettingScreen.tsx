@@ -19,19 +19,26 @@ import LinearGradient from 'react-native-linear-gradient';
 import FastImage from 'react-native-fast-image';
 import ReminderPills from '../../components/ReminderPills';
 import AppImage from '../../components/AppImage';
+import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
+import { useSelector } from 'react-redux';
 
 const themeOptions = ['System', 'Light', 'Dark'];
 const fontSizeOptions = ['Small', 'Normal', 'Large'];
 
 export default function SettingScreen() {
-  const [firstName, setFirstName] = useState('');
+  const onboarding = useSelector(selectHomeOnboarding);
+  console.log('onboarding ==> ', onboarding);
+
   const [reflectionEnabled, setReflectionEnabled] = useState(true);
 
+  const [firstName, setFirstName] = useState(onboarding.firstName ?? '');
+
   const [northStar, setNorthStar] = useState(
-    'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
+    onboarding.northStar || 'Describe your highest vibe...',
   );
+
   const [shadowPath, setShadowPath] = useState(
-    'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
+    onboarding.shadowPath || 'Describe the patterns you want to transform...',
   );
 
   const [themeVal, setThemeVal] = useState<string>('System');
@@ -53,6 +60,11 @@ export default function SettingScreen() {
           </Text>
           <View style={{ height: scale(10) }} />
           <GradientHintBox
+            inputProps={{
+              multiline: true,
+              textAlignVertical: 'top',
+              style: { minHeight: scale(50) },
+            }}
             title="Profile Information"
             text="Update your personal information."
             showInput

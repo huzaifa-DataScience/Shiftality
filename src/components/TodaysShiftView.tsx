@@ -24,8 +24,13 @@ import Svg, {
   Stop,
   LinearGradient as SvgGrad,
 } from 'react-native-svg';
+import { Checkin } from '../lib/dataClient';
 
-export default function TodaysShiftView() {
+type Props = {
+  onCheckinUpdate: (checkin: Checkin) => void;
+};
+
+export default function TodaysShiftView({ onCheckinUpdate }: Props) {
   const [showDetails, setShowDetails] = useState(false);
 
   // Example beliefs data
@@ -72,7 +77,26 @@ export default function TodaysShiftView() {
   };
 
   const handleLock = () => {
-    console.log('Final Responses:', responses);
+    const empoweringYes = countYes(empoweringBeliefs);
+    const shadowYes = countYes(shadowBeliefs);
+
+    let dailyScore = empoweringYes - shadowYes;
+    if (dailyScore > 10) dailyScore = 10;
+    if (dailyScore < -10) dailyScore = -10;
+
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+    const checkin: Checkin = {
+      id: `${today}-${Date.now()}`,
+      date: today,
+      pos_yes: empoweringYes,
+      neg_yes: shadowYes,
+      daily_score: dailyScore,
+      source: 'user',
+      created_at: new Date().toISOString(),
+    };
+
+    onCheckinUpdate(checkin);
     setShowDetails(false);
   };
   const [w, setW] = useState(0);

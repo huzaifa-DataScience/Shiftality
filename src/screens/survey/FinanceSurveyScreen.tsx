@@ -27,7 +27,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useDispatch } from 'react-redux';
-import { saveSurveyAnswer } from '../../store/surveyReducer';
+import { saveSurveyAnswer } from '../../store/reducers/surveyReducer';
 
 type AnswersForStep = Record<number, LikertValue>;
 

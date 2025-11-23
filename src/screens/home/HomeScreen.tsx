@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+// HomeScreen.tsx
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { palette } from '../../theme';
 import GradientCardHome from '../../components/GradientCardHome';
@@ -15,40 +16,68 @@ import GradientHintBox from '../../components/GradientHintBox';
 import GradientToggleRow from '../../components/GradientToggleRow';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useNavigation } from '@react-navigation/native';
-import { AuthStackParamList } from '../../navigation/AuthStack';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { useSelector } from 'react-redux';
-import { selectTotalSurveyPoints } from '../../store/surveyReducer';
+import { useSelector, useDispatch } from 'react-redux';
+
+import {
+  selectHomeOnboarding,
+  setFirstName,
+  setTimezone,
+  setJourneyStartDate,
+  setNorthStar,
+  setShadowPath,
+  setCheckInTime,
+  setDndStart,
+  setDndEnd,
+  setAllowNotifications,
+} from '../../store/reducers/homeOnboardingReducer';
 
 export default function HomeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [name, setName] = useState('');
-  const [allowNotifs, setAllowNotifs] = useState(true);
-  const [tz, setTz] = useState<string | undefined>();
-  const [date, setDate] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+  const dispatch = useDispatch();
 
-  // --- add these 3 states near your other useStates ---
-  const [checkInDate, setCheckInDate] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
-  const [dndStart, setDndStart] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
-  const [dndEnd, setDndEnd] = useState(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+  const {
+    firstName,
+    timezone,
+    journeyStartDate, // ISO strings
+    northStar,
+    shadowPath,
+    checkInTime,
+    dndStart,
+    dndEnd,
+    allowNotifications,
+  } = useSelector(selectHomeOnboarding);
+
+  const northStarPlaceholder =
+    "Paint the picture of where you'll be in one year—your highest potential reality, the version of yourself you're shifting toward …";
+
+  const shadowPathPlaceholder =
+    "Describe the patterns, habits, or reality you're leaving behind—what your life looks like in one year if nothing shifts…";
+
+  // ---------- FORM VALIDATION ----------
+  const trimmedName = firstName.trim();
+  const isNameValid = trimmedName.length >= 2 && trimmedName.length <= 20;
+  const isTimezoneValid = !!timezone;
+  const isNorthStarValid = northStar.trim().length > 0;
+  const isShadowPathValid = shadowPath.trim().length > 0;
+
+  // dates/times are ISO strings – just make sure they exist
+  const isJourneyDateValid = !!journeyStartDate;
+  const isCheckInValid = !!checkInTime;
+  const isDndStartValid = !!dndStart;
+  const isDndEndValid = !!dndEnd;
+
+  const canContinue =
+    isNameValid &&
+    isTimezoneValid &&
+    isJourneyDateValid &&
+    isNorthStarValid &&
+    isShadowPathValid &&
+    isCheckInValid &&
+    isDndStartValid &&
+    isDndEndValid;
 
   return (
     <ScrollView style={{ backgroundColor: palette.darkBlue }}>
@@ -66,46 +95,31 @@ export default function HomeScreen() {
           <GradientInput
             minHeight={vs(45)}
             placeholder="Enter Your Name"
-            value={name}
-            onChangeText={setName}
+            value={firstName}
+            onChangeText={t => dispatch(setFirstName(t))}
           />
           <Text style={styles.helper}>2–20 Characters</Text>
 
           {/* Time Zone */}
           <Text style={[styles.label, { marginTop: vs(18) }]}>Time Zone</Text>
-          <GradientTimezoneSelect value={tz} onChange={setTz} />
+          <GradientTimezoneSelect
+            value={timezone}
+            onChange={tz => dispatch(setTimezone(tz))}
+          />
 
           {/* Journey Start Date */}
           <Text style={[styles.label, { marginTop: vs(18) }]}>
             Journey Start Date *
           </Text>
           <GradientDatePicker
-            value={date}
-            onChange={setDate}
+            value={new Date(journeyStartDate)} // string -> Date
+            onChange={d => dispatch(setJourneyStartDate(d.toISOString()))} // Date -> string
             minimumDate={new Date()}
           />
           <Text style={styles.helper}>Cannot be in the past</Text>
         </GradientCardHome>
 
-        {/* <GradientCardHome style={{ marginVertical: vs(50), width: scale(330) }}>
-          <View style={{ alignItems: 'center' ,marginBottom:scale(10)}}>
-            <Text style={styles.Sectitle}>{"Your 1-Year North Star (Highest\nVibration Goal) *"}</Text>
-          </View>
-          <GradientInput
-            height={scale(100)}
-            placeholder={"Paint the picture of where you'll be in one\nyear-your highest potential reality, the version\nof yourself you're shifting toward ..."}
-            disabled
-          />
-          <View style={{ alignItems: 'center',marginVertical:scale(15) }}>
-            <Text style={styles.Sectitle}>{"Your 1-Year North Star (Highest\nVibration Goal) *"}</Text>
-          </View>
-          <GradientInput
-            height={scale(100)}
-            placeholder={"Paint the picture of where you'll be in one\nyear-your highest potential reality, the version\nof yourself you're shifting toward ..."}
-            disabled
-          />
-
-        </GradientCardHome> */}
+        {/* CARD 2: North Star + Shadow Path */}
         <GradientCardHome style={{ marginVertical: vs(20), width: scale(330) }}>
           <View style={{ alignItems: 'center', marginBottom: s(10) }}>
             <Text style={styles.Sectitle}>
@@ -114,9 +128,15 @@ export default function HomeScreen() {
           </View>
 
           <GradientHintBox
-            text={
-              "Paint the picture of where you'll be in one year—your highest potential reality, the version of yourself you're shifting toward …"
-            }
+            text={northStarPlaceholder}
+            showInput
+            inputValue={northStar}
+            onChangeInputText={t => dispatch(setNorthStar(t))}
+            inputProps={{
+              multiline: true,
+              textAlignVertical: 'top',
+              style: { minHeight: scale(50) },
+            }}
           />
 
           <View style={{ alignItems: 'center', marginVertical: s(15) }}>
@@ -126,13 +146,19 @@ export default function HomeScreen() {
           </View>
 
           <GradientHintBox
-            text={
-              "Describe the patterns, habits, or reality you're leaving behind—what your life looks like in one year if nothing shifts…"
-            }
+            text={shadowPathPlaceholder}
+            showInput
+            inputValue={shadowPath}
+            onChangeInputText={t => dispatch(setShadowPath(t))}
+            inputProps={{
+              multiline: true,
+              textAlignVertical: 'top',
+              style: { minHeight: scale(50) },
+            }}
           />
         </GradientCardHome>
 
-        {/* --------- CARD 3: Preferred Check-in Time --------- */}
+        {/* CARD 3: Preferred Check-in Time */}
         <GradientCardHome style={{ marginBottom: vs(20), width: scale(330) }}>
           <Text style={[styles.cardTitle, { color: palette.white }]}>
             Preferred Check-in Time *
@@ -146,9 +172,9 @@ export default function HomeScreen() {
 
           {/* Preferred Check-in */}
           <GradientDatePicker
-            value={checkInDate}
-            onChange={setCheckInDate}
-            minimumDate={new Date()}
+            mode="time"
+            value={new Date(checkInTime)}
+            onChange={d => dispatch(setCheckInTime(d.toISOString()))}
           />
 
           {/* DND row */}
@@ -158,9 +184,9 @@ export default function HomeScreen() {
                 Do Not Disturb Start
               </Text>
               <GradientDatePicker
-                value={dndStart}
-                onChange={setDndStart}
-                minimumDate={new Date()}
+                mode="time"
+                value={new Date(dndStart)}
+                onChange={d => dispatch(setDndStart(d.toISOString()))}
               />
             </View>
 
@@ -169,9 +195,9 @@ export default function HomeScreen() {
                 Do Not Disturb End
               </Text>
               <GradientDatePicker
-                value={dndEnd}
-                onChange={setDndEnd}
-                minimumDate={new Date()}
+                mode="time"
+                value={new Date(dndEnd)}
+                onChange={d => dispatch(setDndEnd(d.toISOString()))}
               />
             </View>
           </View>
@@ -186,15 +212,20 @@ export default function HomeScreen() {
         <GradientToggleRow
           style={{ width: scale(370), marginBottom: vs(20) }}
           label="Allow Notifications"
-          value={allowNotifs}
-          onValueChange={setAllowNotifs}
+          value={allowNotifications}
+          onValueChange={v => dispatch(setAllowNotifications(v))}
         />
+
         <PrimaryButton
-          backgroundColor={palette.white}
-          textColor={palette.darkBlue}
+          disabled={!canContinue}
+          backgroundColor={
+            canContinue ? palette.white : 'rgba(255,255,255,0.3)'
+          }
+          textColor={canContinue ? palette.darkBlue : 'rgba(14,21,32,0.6)'}
           style={{ width: '95%', alignSelf: 'center' }}
           title="Continue to Shiftality Scan"
           onPress={() => {
+            if (!canContinue) return; // double safety
             navigation.navigate('FinanceSurvey');
           }}
         />

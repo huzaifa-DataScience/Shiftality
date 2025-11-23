@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+// src/components/graph/ShiftMapChart.tsx
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,18 +23,76 @@ import {
 } from 'react-native-size-matters';
 import GradientCardHome from '../GradientCardHome';
 import { palette } from '../../theme';
+import { DensePoint } from '../../lib/dataClient';
 
-export default function ShiftMapChart() {
-  const data = [
-    { value: 5, label: 'Jan' },
-    { value: 20, label: 'Feb' },
-    { value: 10, label: 'Mar' },
-    { value: 15, label: 'Apr' },
-    { value: 25, label: 'May' },
-    { value: 12, label: 'June' },
-    { value: 30, label: 'July' },
-  ];
+type Props = {
+  denseSeries: DensePoint[];
+};
 
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+// Y-axis like web: -36.5 .. +36.5
+const Y_MAX = 36.5;
+const Y_MIN = -36.5;
+const Y_AXIS_LABELS = ['+36', '+24', '+12', '0', '-12', '-24', '-36'];
+
+function monthLabelFromDate(dateStr: string) {
+  const d = new Date(dateStr);
+  const m = d.getMonth();
+  return MONTHS[m] ?? '';
+}
+
+// Build one point per month using the dense 365-day series
+function buildMonthlySeries(denseSeries: DensePoint[]) {
+  if (!denseSeries.length) return [];
+
+  const first = new Date(denseSeries[0].date);
+  const last = new Date(denseSeries[denseSeries.length - 1].date);
+
+  const result: { value: number; label: string }[] = [];
+
+  // Start at first month of journey
+  let cursor = new Date(first.getFullYear(), first.getMonth(), 1);
+
+  while (cursor <= last && result.length < 12) {
+    const year = cursor.getFullYear();
+    const month = cursor.getMonth();
+
+    // all points within this month
+    const monthPoints = denseSeries.filter(p => {
+      const d = new Date(p.date);
+      return d.getFullYear() === year && d.getMonth() === month;
+    });
+
+    if (monthPoints.length > 0) {
+      const lastPointOfMonth = monthPoints[monthPoints.length - 1];
+      result.push({
+        value: lastPointOfMonth.cumulative,
+        label: MONTHS[month],
+      });
+    }
+
+    // move to first day of next month
+    cursor = new Date(year, month + 1, 1);
+  }
+
+  return result;
+}
+
+export default function ShiftMapChart({ denseSeries }: Props) {
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(110));
 
@@ -43,12 +102,66 @@ export default function ShiftMapChart() {
     setH(Math.max(vs(80), Math.round(height) || vs(80)));
   }, []);
 
+  // ✅ Month-level data (max 12 points)
+  const data = useMemo(() => {
+    if (!denseSeries || denseSeries.length === 0) return [];
+
+    type MonthAgg = {
+      label: string;
+      value: number;
+      hasCheckin: boolean;
+    };
+
+    const byMonth = new Map<string, MonthAgg>();
+
+    denseSeries.forEach(point => {
+      // date = "YYYY-MM-DD"
+      const [yearStr, monthStr] = point.date.split('-');
+      const year = Number(yearStr);
+      const monthIdx = Number(monthStr) - 1; // 0–11
+      const key = `${year}-${monthIdx}`;
+
+      const existing = byMonth.get(key);
+
+      const agg: MonthAgg = {
+        label: MONTHS[monthIdx],
+        // always take the latest cumulative for that month
+        value: point.cumulative,
+        hasCheckin: existing?.hasCheckin || false || point.hasCheckin,
+      };
+
+      byMonth.set(key, agg);
+    });
+
+    // sort by year-month key
+    const sortedKeys = Array.from(byMonth.keys()).sort();
+
+    // GiftedCharts supports per-point `hideDataPoint`
+    return sortedKeys.map(k => {
+      const m = byMonth.get(k)!;
+      return {
+        value: m.value,
+        label: m.label,
+        hideDataPoint: !m.hasCheckin, // ✅ only show dot for months that had a check-in
+      };
+    });
+  }, [denseSeries]);
+
+  const currentPosition =
+    denseSeries && denseSeries.length
+      ? denseSeries[denseSeries.length - 1].cumulative
+      : 0;
+
+  // Use nice fixed spacing now that we have ~12 points
+  const spacing = Platform.OS === 'ios' ? 30 : 25;
+  const initialSpacing = 25;
+  const endSpacing = 25;
+
   return (
     <GradientCardHome>
       <Text style={styles.title}>Shift Map</Text>
 
       <View style={styles.outlineWrap} onLayout={onLayout}>
-        {/* Gradient outline */}
         {w > 0 && (
           <Svg
             pointerEvents="none"
@@ -80,7 +193,6 @@ export default function ShiftMapChart() {
 
         <View style={styles.innerBox}>
           <View style={{ position: 'relative', height: 220 }}>
-            {/* Line Chart */}
             <LineChart
               data={data}
               thickness={3}
@@ -94,20 +206,21 @@ export default function ShiftMapChart() {
               xAxisLabelTextStyle={styles.xAxisLabel}
               yAxisSide="left"
               color="#00BFFF"
-              noOfSections={6}
-              maxValue={36.5}
-              minValue={0}
+              noOfSections={Y_AXIS_LABELS.length - 1}
+              maxValue={Y_MAX}
+              minValue={Y_MIN}
+              yAxisLabelTexts={Y_AXIS_LABELS}
               backgroundColor="transparent"
               showFractionalValues={false}
               yAxisThickness={0}
               xAxisThickness={0}
-              initialSpacing={25}
-              spacing={Platform.OS === 'ios' ? 40 : 30}
-              endSpacing={25}
+              initialSpacing={initialSpacing}
+              spacing={spacing}
+              endSpacing={endSpacing}
               showVerticalLines={false}
             />
 
-            {/* Custom dotted verticals */}
+            {/* vertical dotted lines just for the 12-ish month points */}
             <Svg
               height="100%"
               width="100%"
@@ -116,9 +229,9 @@ export default function ShiftMapChart() {
               {data.map((_, index) => (
                 <Line
                   key={index}
-                  x1={25 + index * 40}
+                  x1={initialSpacing + index * spacing}
                   y1="0"
-                  x2={25 + index * 40}
+                  x2={initialSpacing + index * spacing}
                   y2="100%"
                   stroke="rgba(255,255,255,0.1)"
                   strokeWidth="1"
@@ -129,9 +242,10 @@ export default function ShiftMapChart() {
           </View>
         </View>
 
-        {/* Footer text instead of legends */}
         <View style={styles.footerBox}>
-          <Text style={styles.footerText}>Current Position: +6.0</Text>
+          <Text style={styles.footerText}>
+            Current Position: {currentPosition}
+          </Text>
         </View>
       </View>
     </GradientCardHome>
@@ -170,7 +284,6 @@ const styles = StyleSheet.create({
   footerBox: {
     marginTop: vs(10),
     marginLeft: scale(20),
-    fontFamily: 'SourceSansPro-Regular',
   },
   footerText: {
     color: palette.white,

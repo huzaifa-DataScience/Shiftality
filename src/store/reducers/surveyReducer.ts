@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { SECTIONS } from '../screens/survey/sections';
-import { RootState } from './rootReducer';
+import { SECTIONS } from '../../screens/survey/sections';
+import { RootState } from '../rootReducer';
 
 export type LikertValue =
   | 's_agree'
