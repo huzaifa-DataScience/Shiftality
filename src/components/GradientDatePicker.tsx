@@ -102,6 +102,7 @@ const GradientDatePicker: React.FC<Props> = ({
                 onChange={onChangeNative}
                 minimumDate={effectiveMinDate}
                 style={{ backgroundColor: palette.white }}
+                themeVariant="light"
               />
             </Pressable>
           </Pressable>
