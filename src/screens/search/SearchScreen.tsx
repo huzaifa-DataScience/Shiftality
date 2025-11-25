@@ -30,7 +30,7 @@ export default function SearchScreen() {
   const [selected, setSelected] = useState<'map' | 'grid'>('grid');
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [denseSeries, setDenseSeries] = useState<DensePoint[]>([]);
-
+  console.log('checkins', checkins);
   useEffect(() => {
     const load = async () => {
       const stored = await getCheckins();

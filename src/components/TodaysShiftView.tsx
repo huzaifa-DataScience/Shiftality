@@ -1,5 +1,5 @@
 // src/screens/TodaysShiftView.tsx
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -7,24 +7,50 @@ import {
   Text,
   LayoutChangeEvent,
   Image,
+  TouchableOpacity,
 } from 'react-native';
 import {
   scale as s,
   scale,
   verticalScale as vs,
 } from 'react-native-size-matters';
-import GradientBoxWithButton from '../components/GradientBoxWithButton';
-import GradientHintBoxWithLikert from '../components/GradientHintBoxWithLikert';
 import LinearGradient from 'react-native-linear-gradient';
-import { TouchableOpacity } from 'react-native';
-import { palette } from '../theme';
 import Svg, {
   Defs,
   Rect,
   Stop,
   LinearGradient as SvgGrad,
 } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+
+import GradientBoxWithButton from '../components/GradientBoxWithButton';
+import GradientHintBoxWithLikert from '../components/GradientHintBoxWithLikert';
+import { palette } from '../theme';
 import { Checkin } from '../lib/dataClient';
+
+// ⚡ same keys as ProfileScreen
+const EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
+const SHADOW_STORAGE_KEY = 'profile_shadow_beliefs_v1';
+
+// ⚡ same defaults as ProfileScreen (full sentences)
+const DEFAULT_EMPOWERING_BELIEFS: string[] = [
+  'Today, I believed Opportunities show up when I show up.',
+  'Today, I believed Small choices can shift my energy.',
+  'Today, I believed A low moment doesn’t define the day.',
+  'Today, I believed Reaching out first is safe for me.',
+  'Today, I believed I keep promises to future me.',
+  'Today, I believed I am enough as I grow.',
+  'Today, I believed Challenges are feedback, not failure.',
+  'Today, I believed I bounce back when things go wrong.',
+];
+
+const DEFAULT_SHADOW_BELIEFS: string[] = [
+  'Today, I believed Money is scarce and hard for me to get.',
+  'Today, I believed I’ll be misunderstood or rejected.',
+  'Today, I believed Change isn’t really available to me.',
+  'Today, I believed Stress is who I am.',
+];
 
 type Props = {
   onCheckinUpdate: (checkin: Checkin) => void;
@@ -33,29 +59,61 @@ type Props = {
 export default function TodaysShiftView({ onCheckinUpdate }: Props) {
   const [showDetails, setShowDetails] = useState(false);
 
-  // Example beliefs data
-  const empoweringBeliefs = [
-    'Opportunities show up when I show up.',
-    'Small choices can shift my energy.',
-    'A low moment doesn’t define the day.',
-    'Reaching out first is safe for me.',
-    'I keep promises to future me.',
-    'I am enough as I grow.',
-    'Challenges are feedback, not failure.',
-    'I bounce back when things go wrong.',
-  ];
-
-  const shadowBeliefs = [
-    'Money is scarce and hard for me to get.',
-    'I’ll be misunderstood or rejected.',
-    'Change isn’t really available to me.',
-    'Stress is who I am.',
-  ];
+  // beliefs loaded from storage
+  const [empoweringBeliefs, setEmpoweringBeliefs] = useState<string[]>(
+    DEFAULT_EMPOWERING_BELIEFS,
+  );
+  const [shadowBeliefs, setShadowBeliefs] = useState<string[]>(
+    DEFAULT_SHADOW_BELIEFS,
+  );
+  const [hydrated, setHydrated] = useState(false);
 
   // State to track selections (yes/no/null)
   const [responses, setResponses] = useState<
     Record<string, 'yes' | 'no' | null>
   >({});
+
+  // ───────────────── LOAD FROM STORAGE (reusable) ─────────────────
+  const loadBeliefsFromStorage = useCallback(async () => {
+    try {
+      const storedEmp = await AsyncStorage.getItem(EMPOWERING_STORAGE_KEY);
+      const storedShadow = await AsyncStorage.getItem(SHADOW_STORAGE_KEY);
+
+      if (storedEmp) {
+        const parsed = JSON.parse(storedEmp);
+        if (Array.isArray(parsed)) {
+          setEmpoweringBeliefs(parsed);
+        }
+      } else {
+        setEmpoweringBeliefs(DEFAULT_EMPOWERING_BELIEFS);
+      }
+
+      if (storedShadow) {
+        const parsed = JSON.parse(storedShadow);
+        if (Array.isArray(parsed)) {
+          setShadowBeliefs(parsed);
+        }
+      } else {
+        setShadowBeliefs(DEFAULT_SHADOW_BELIEFS);
+      }
+    } catch (e) {
+      console.log('Error loading shift beliefs from storage', e);
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
+
+  // Initial mount
+  useEffect(() => {
+    loadBeliefsFromStorage();
+  }, [loadBeliefsFromStorage]);
+
+  // Reload whenever the screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      loadBeliefsFromStorage();
+    }, [loadBeliefsFromStorage]),
+  );
 
   const countYes = (list: string[]) =>
     list.reduce((n, key) => n + (responses[key] === 'yes' ? 1 : 0), 0);
@@ -63,13 +121,16 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
   // mark all in a section to 'yes' or 'no'
   const markAll = (list: string[], value: 'yes' | 'no') => {
     const patch: Record<string, 'yes' | 'no'> = {};
-    list.forEach(k => (patch[k] = value));
+    list.forEach(k => {
+      patch[k] = value;
+    });
     setResponses(prev => ({ ...prev, ...patch }));
   };
 
   const hasAnySelection = Object.values(responses).some(
     v => v !== null && v !== undefined,
   );
+
   const handleClear = () => setResponses({});
 
   const handleSelect = (text: string, value: 'yes' | 'no' | null) => {
@@ -80,7 +141,7 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
     const empoweringYes = countYes(empoweringBeliefs);
     const shadowYes = countYes(shadowBeliefs);
 
-    let dailyScore = empoweringYes - shadowYes;
+    let dailyScore = empoweringYes - shadowYes; // YES on shadow = -1
     if (dailyScore > 10) dailyScore = 10;
     if (dailyScore < -10) dailyScore = -10;
 
@@ -99,6 +160,7 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
     onCheckinUpdate(checkin);
     setShowDetails(false);
   };
+
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(90));
 
@@ -118,6 +180,11 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
       />
     );
   }
+
+  // ✅ use correct counts for UI as well
+  const empoweringYesCount = countYes(empoweringBeliefs);
+  const shadowYesCount = countYes(shadowBeliefs);
+  const rawScore = empoweringYesCount - shadowYesCount;
 
   return (
     <ScrollView
@@ -154,6 +221,7 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
             />
           </Svg>
         )}
+
         {/* Header */}
         <Text style={styles.title}>Today's Shift</Text>
         <Text style={styles.desc}>
@@ -165,7 +233,7 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
         <Text style={styles.sectionTitle}>Empowering Beliefs (YES = +1)</Text>
         <View style={styles.sectionToolbar}>
           <Text style={styles.sectionCounter}>
-            {countYes(empoweringBeliefs)}/{empoweringBeliefs.length}
+            {empoweringYesCount}/{empoweringBeliefs.length}
           </Text>
           <View style={styles.sectionActions}>
             <TouchableOpacity onPress={() => markAll(empoweringBeliefs, 'yes')}>
@@ -176,10 +244,11 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
             </TouchableOpacity>
           </View>
         </View>
+
         {empoweringBeliefs.map((belief, idx) => (
           <GradientHintBoxWithLikert
-            key={idx}
-            text={`Today, I believed ${belief}`}
+            key={`${belief}-${idx}`}
+            text={belief}
             selected={responses[belief] ?? null}
             onSelect={val => handleSelect(belief, val)}
           />
@@ -191,7 +260,7 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
         </Text>
         <View style={styles.sectionToolbar}>
           <Text style={styles.sectionCounter}>
-            {countYes(shadowBeliefs)}/{shadowBeliefs.length}
+            {shadowYesCount}/{shadowBeliefs.length}
           </Text>
           <View style={styles.sectionActions}>
             <TouchableOpacity onPress={() => markAll(shadowBeliefs, 'yes')}>
@@ -202,23 +271,22 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
             </TouchableOpacity>
           </View>
         </View>
+
         {shadowBeliefs.map((belief, idx) => (
           <GradientHintBoxWithLikert
-            key={idx}
-            text={`Today, I believed ${belief}`}
+            key={`${belief}-${idx}`}
+            text={belief}
             selected={responses[belief] ?? null}
             onSelect={val => handleSelect(belief, val)}
           />
         ))}
 
-        {/* Score Display */}
+        {/* ✅ Correct Score Display */}
         <Text style={styles.scoreText}>
-          Today's score: (+
-          {Object.values(responses).filter(v => v === 'yes').length}) + (-
-          {Object.values(responses).filter(v => v === 'no').length}) ={' '}
-          {Object.values(responses).filter(v => v === 'yes').length -
-            Object.values(responses).filter(v => v === 'no').length}
+          Today's score: (+{empoweringYesCount}) + (-{shadowYesCount}) ={' '}
+          {rawScore}
         </Text>
+
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={hasAnySelection ? handleClear : undefined}
@@ -350,7 +418,7 @@ const styles = StyleSheet.create({
     columnGap: s(14),
   },
   actionText: {
-    color: '#f9fbfbff', // link-like cyan
+    color: '#f9fbfbff',
     fontSize: s(12.5),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',

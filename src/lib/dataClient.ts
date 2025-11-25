@@ -1,13 +1,15 @@
 // src/lib/dataClient.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export type CheckinSource = 'user' | 'demo';
+
 export type Checkin = {
   id: string;
   date: string; // "2025-11-23"
   pos_yes: number;
   neg_yes: number;
   daily_score: number; // -10 .. +10
-  source: 'user';
+  source: CheckinSource;
   created_at: string;
 };
 
@@ -22,21 +24,15 @@ export type DensePoint = {
 const CHECKINS_KEY = 'shift_checkins_v1';
 
 function addDaysStr(dateStr: string, days: number): string {
-  // Handle both "YYYY-MM-DD" and full ISO strings like "2025-11-24T15:54:00.000Z"
   const baseStr = dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00.000Z`;
-
   const d = new Date(baseStr);
 
-  // Safety: if somehow still invalid, just return the original dateStr
   if (isNaN(d.getTime())) {
     console.warn('addDaysStr: invalid dateStr', dateStr);
     return dateStr;
   }
 
-  // Use UTC to avoid timezone jumps over midnight
   d.setUTCDate(d.getUTCDate() + days);
-
-  // Return "YYYY-MM-DD"
   return d.toISOString().slice(0, 10);
 }
 
@@ -91,4 +87,16 @@ export function buildDenseSeries(
   }
 
   return series;
+}
+
+// 🔹 wipe ALL checkins
+export async function clearAllCheckins(): Promise<void> {
+  await AsyncStorage.removeItem(CHECKINS_KEY);
+}
+
+// 🔹 wipe ONLY demo-generated checkins
+export async function clearDemoCheckins(): Promise<void> {
+  const existing = await getCheckins();
+  const filtered = existing.filter(c => c.source !== 'demo');
+  await AsyncStorage.setItem(CHECKINS_KEY, JSON.stringify(filtered));
 }
