@@ -6,12 +6,17 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 
 import { palette } from '../../theme';
 import GradientCardHome from '../../components/GradientCardHome';
@@ -31,6 +36,12 @@ import {
   Checkin,
 } from '../../lib/dataClient';
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
+import { REMINDER_STORAGE_KEY } from '../../lib/reminderStore';
+import {
+  requestReminderPermission,
+  scheduleDemoSequence,
+  scheduleReminderNotification,
+} from '../../lib/localNotifications';
 
 // ⚡ same keys as ProfileScreen / TodaysShiftView
 const EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
@@ -55,6 +66,15 @@ const DEFAULT_SHADOW_BELIEFS: string[] = [
   'Today, I believed Stress is who I am.',
 ];
 
+type StoredReminder = {
+  id: string;
+  pillIndex: number;
+  title: string;
+  description: string;
+  time: string; // ISO string
+  enabled: boolean;
+};
+
 // small helper to clamp 1–30
 function clampDays(raw: string): number {
   const n = Number(raw) || 0;
@@ -73,6 +93,10 @@ function addDaysStr(dateStr: string, days: number): string {
 
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+function makeTimeOnly(base: Date): Date {
+  // fixed date 2000-01-01, but keep hours/minutes from base
+  return new Date(2000, 0, 1, base.getHours(), base.getMinutes(), 0, 0);
 }
 
 export default function DemoScreen() {
@@ -96,6 +120,38 @@ export default function DemoScreen() {
 
   // all stored checkins
   const [checkins, setCheckins] = useState<Checkin[]>([]);
+
+  // reminders
+  const [reminders, setReminders] = useState<StoredReminder[]>([]);
+
+  // modal state
+  const [reminderModalVisible, setReminderModalVisible] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [reminderTitle, setReminderTitle] = useState('');
+  const [reminderDesc, setReminderDesc] = useState('');
+  const [reminderTime, setReminderTime] = useState<Date>(() =>
+    makeTimeOnly(new Date()),
+  );
+
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // ───────────────── INITIAL REMINDER LOAD ─────────────────
+  useEffect(() => {
+    AsyncStorage.getItem(REMINDER_STORAGE_KEY).then(raw => {
+      if (!raw) return;
+      try {
+        const list: StoredReminder[] = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          setReminders(list);
+          if (list[0]?.pillIndex !== undefined) {
+            setWhich(list[0].pillIndex);
+          }
+        }
+      } catch (e) {
+        console.log('DemoScreen: error parsing reminders', e);
+      }
+    });
+  }, []);
 
   // ───────────────── LOAD BELIEFS + CHECKINS ─────────────────
   useEffect(() => {
@@ -161,6 +217,99 @@ export default function DemoScreen() {
 
   const last10Dates = checkins.slice(-10).map(c => c.date);
 
+  // ───────────────── REMINDER HELPERS ─────────────────
+  const formatTime = (d: Date) =>
+    d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const findReminderByIndex = (pillIndex: number) =>
+    reminders.find(r => r.pillIndex === pillIndex);
+
+  const saveRemindersToStorage = async (next: StoredReminder[]) => {
+    setReminders(next);
+    await AsyncStorage.setItem(REMINDER_STORAGE_KEY, JSON.stringify(next));
+  };
+
+  const openReminderEditor = (pillIndex: number) => {
+    setEditingIndex(pillIndex);
+
+    const existing = findReminderByIndex(pillIndex);
+    if (existing) {
+      setReminderTitle(existing.title);
+      setReminderDesc(existing.description);
+      setReminderTime(new Date(existing.time));
+    } else {
+      setReminderTitle(`Reminder ${pillIndex + 1}`);
+      setReminderDesc('');
+      setReminderTime(new Date());
+    }
+
+    setReminderModalVisible(true);
+  };
+
+  const onTimeChange = (event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === 'android') {
+      if (event.type === 'set' && date) {
+        setReminderTime(makeTimeOnly(date));
+      }
+      setShowTimePicker(false);
+    } else {
+      // iOS spinner – keep open, but always normalise to our dummy date
+      if (date) {
+        setReminderTime(makeTimeOnly(date));
+      }
+    }
+  };
+
+  const computeNextFireAt = (time: Date) => {
+    const now = new Date();
+    const fire = new Date(now);
+    fire.setHours(time.getHours(), time.getMinutes(), 0, 0);
+    if (fire <= now) {
+      fire.setDate(fire.getDate() + 1);
+    }
+    return fire;
+  };
+
+  const onSaveReminder = async () => {
+    if (editingIndex === null) {
+      setReminderModalVisible(false);
+      return;
+    }
+
+    const pillIndex = editingIndex;
+    const title = reminderTitle.trim() || `Reminder ${pillIndex + 1}`;
+
+    const newItem: StoredReminder = {
+      id: `reminder_${pillIndex}`,
+      pillIndex,
+      title,
+      description: reminderDesc.trim(),
+      time: reminderTime.toISOString(),
+      enabled: true,
+    };
+
+    const others = reminders.filter(r => r.pillIndex !== pillIndex);
+    const next = [...others, newItem];
+
+    try {
+      await saveRemindersToStorage(next);
+
+      // schedule local notification starting at next occurrence of chosen time
+      await requestReminderPermission();
+      const fireAt = computeNextFireAt(reminderTime);
+      await scheduleReminderNotification({
+        fireAt,
+        pillIndex,
+        label: title,
+        isDemo: false,
+      });
+    } catch (e) {
+      console.log('Error saving reminder / scheduling notification', e);
+    } finally {
+      setReminderModalVisible(false);
+    }
+  };
+
   // ───────────────── ACTIONS ─────────────────
   const onGenerate = async () => {
     const n = effectiveDays;
@@ -199,6 +348,7 @@ export default function DemoScreen() {
     setCheckins(updated);
 
     // go to Search so user sees updated charts / stats
+    // @ts-ignore
     navigation.navigate('Main', { screen: 'Search' });
   };
 
@@ -213,6 +363,7 @@ export default function DemoScreen() {
     setCheckins(updated);
 
     // navigate to Search so it can reload + show clean data
+    // @ts-ignore
     navigation.navigate('Main', { screen: 'Search' });
   };
 
@@ -222,6 +373,7 @@ export default function DemoScreen() {
     const updated = await getCheckins();
     setCheckins(updated);
 
+    // @ts-ignore
     navigation.navigate('Main', { screen: 'Search' });
   };
 
@@ -372,8 +524,22 @@ system properly."
           />
           <TouchableOpacity
             activeOpacity={0.9}
-            onPress={() => {
-              console.log('Test Notification');
+            onPress={async () => {
+              try {
+                await requestReminderPermission();
+                // fire a single immediate test notification so user sees it works
+                await scheduleReminderNotification({
+                  fireAt: new Date(Date.now() + 2000),
+                  pillIndex: which ?? 0,
+                  label: 'This is a test notification permission check (Demo)',
+                  isDemo: true,
+                });
+                console.log(
+                  'Permission requested + test notification scheduled',
+                );
+              } catch (e) {
+                console.log('Error testing notification permission', e);
+              }
             }}
             style={{ marginTop: vs(10) }}
           >
@@ -389,7 +555,17 @@ system properly."
             </LinearGradient>
           </TouchableOpacity>
           <View style={{ height: scale(15) }} />
-          <ReminderPills value={which} onChange={setWhich} />
+          <ReminderPills
+            value={which}
+            onChange={index => {
+              if (index === null) {
+                setWhich(null);
+                return;
+              }
+              setWhich(index);
+              openReminderEditor(index);
+            }}
+          />
           <View style={{ height: scale(20) }} />
           <PrimaryButton
             textColor={palette.white}
@@ -405,8 +581,14 @@ system properly."
               opacity: 0.9,
             }}
             title="Test Full Sequence (5s intervals)"
-            onPress={() => {
-              console.log('start Test');
+            onPress={async () => {
+              try {
+                await requestReminderPermission();
+                await scheduleDemoSequence(which);
+                console.log('Demo sequence scheduled');
+              } catch (e) {
+                console.log('Error starting demo reminder sequence', e);
+              }
             }}
           />
           <View style={{ height: scale(20) }} />
@@ -436,6 +618,80 @@ them from real reminders.'
           last10Dates={last10Dates}
         />
       </ScrollView>
+
+      {/* ───────── Reminder Editor Modal ───────── */}
+      <Modal
+        visible={reminderModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReminderModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              {editingIndex !== null
+                ? `Set Reminder ${editingIndex + 1}`
+                : 'Set Reminder'}
+            </Text>
+
+            <Text style={styles.label}>Title</Text>
+            <GradientInput
+              value={reminderTitle}
+              onChangeText={setReminderTitle}
+              placeholder="Reminder title"
+            />
+
+            <View style={{ height: vs(10) }} />
+
+            <Text style={styles.label}>Description</Text>
+            <GradientInput
+              value={reminderDesc}
+              onChangeText={setReminderDesc}
+              placeholder="What should we remind you about?"
+              multiline
+            />
+
+            <View style={{ height: vs(16) }} />
+            <Text style={styles.label}>Time (every day)</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setShowTimePicker(true)}
+              style={styles.timePickerButton}
+            >
+              <Text style={styles.timePickerText}>
+                {formatTime(reminderTime)}
+              </Text>
+            </TouchableOpacity>
+
+            {showTimePicker && (
+              <DateTimePicker
+                value={reminderTime}
+                mode="time"
+                themeVariant="dark"
+                is24Hour={false}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onTimeChange}
+              />
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
+                onPress={() => setReminderModalVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: '#00BFFF' }]}
+                onPress={onSaveReminder}
+              >
+                <Text style={styles.modalButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -517,5 +773,55 @@ const styles = StyleSheet.create({
     width: s(30),
     height: s(30),
     marginRight: s(10),
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    width: scale(320),
+    borderRadius: s(18),
+    paddingVertical: vs(16),
+    paddingHorizontal: s(16),
+    backgroundColor: '#101725',
+  },
+  modalTitle: {
+    color: palette.white,
+    fontSize: ms(16),
+    fontWeight: '800',
+    marginBottom: vs(12),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  timePickerButton: {
+    borderRadius: s(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: vs(10),
+    paddingHorizontal: s(12),
+    marginTop: vs(4),
+  },
+  timePickerText: {
+    color: palette.white,
+    fontSize: ms(14),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: vs(18),
+  },
+  modalButton: {
+    paddingVertical: vs(8),
+    paddingHorizontal: s(16),
+    borderRadius: s(20),
+    marginLeft: s(10),
+  },
+  modalButtonText: {
+    color: palette.white,
+    fontSize: ms(14),
+    fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

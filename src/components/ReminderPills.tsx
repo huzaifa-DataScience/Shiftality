@@ -1,3 +1,4 @@
+// src/components/ReminderPills.tsx
 import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, LayoutChangeEvent } from 'react-native';
 import { scale as s, verticalScale as vs } from 'react-native-size-matters';
