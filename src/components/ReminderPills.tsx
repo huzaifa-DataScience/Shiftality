@@ -7,10 +7,12 @@ import LikertPill from './survey/LikertPill';
 type Props = {
   /** Labels for each reminder button */
   labels?: string[];
-  /** If you want to control selection from parent — index of active pill or null */
-  value?: number | null;
-  /** Called with index (0-based) when a pill is tapped; tapping the same pill again clears (null) */
-  onChange?: (index: number | null) => void;
+
+  /** Pills that already have reminders configured – should show active */
+  activeIndices?: number[];
+
+  /** Called when user taps a pill */
+  onPressPill?: (index: number) => void;
 };
 
 export default function ReminderPills({
@@ -21,26 +23,19 @@ export default function ReminderPills({
     'Reminder 4',
     'Reminder 5',
   ],
-  value,
-  onChange,
+  activeIndices = [],
+  onPressPill,
 }: Props) {
   const [measuredW, setMeasuredW] = useState(0);
-  const [internal, setInternal] = useState<number | null>(0); // default select first
-  const controlled = value !== undefined;
-  const active = controlled ? value! : internal;
-
-  const onPick = (i: number) => {
-    const next = active === i ? null : i;
-    if (!controlled) setInternal(next);
-    onChange?.(next);
-  };
 
   const widths = useMemo(() => {
-    if (measuredW <= 0) return { half: s(140), full: s(300) }; // fallback
+    if (measuredW <= 0) return { half: s(140), full: s(300) };
     const gap = s(12);
-    const half = Math.floor((measuredW - gap) / 2); // 2 per row with gap
+    const half = Math.floor((measuredW - gap) / 2);
     return { half, full: measuredW };
   }, [measuredW]);
+
+  const isSelected = (i: number) => activeIndices.includes(i);
 
   return (
     <View
@@ -53,16 +48,16 @@ export default function ReminderPills({
       <View style={styles.row}>
         <LikertPill
           label={labels[0]}
-          selected={active === 0}
+          selected={isSelected(0)}
           width={widths.half}
-          onPress={() => onPick(0)}
+          onPress={() => onPressPill?.(0)}
         />
         <View style={{ width: s(12) }} />
         <LikertPill
           label={labels[1]}
-          selected={active === 1}
+          selected={isSelected(1)}
           width={widths.half}
-          onPress={() => onPick(1)}
+          onPress={() => onPressPill?.(1)}
         />
       </View>
 
@@ -70,26 +65,26 @@ export default function ReminderPills({
       <View style={[styles.row, { marginTop: vs(10) }]}>
         <LikertPill
           label={labels[2]}
-          selected={active === 2}
+          selected={isSelected(2)}
           width={widths.half}
-          onPress={() => onPick(2)}
+          onPress={() => onPressPill?.(2)}
         />
         <View style={{ width: s(12) }} />
         <LikertPill
           label={labels[3]}
-          selected={active === 3}
+          selected={isSelected(3)}
           width={widths.half}
-          onPress={() => onPick(3)}
+          onPress={() => onPressPill?.(3)}
         />
       </View>
 
-      {/* Row 3 (single full-width) */}
+      {/* Row 3 */}
       <View style={{ marginTop: vs(10) }}>
         <LikertPill
           label={labels[4]}
-          selected={active === 4}
+          selected={isSelected(4)}
           width={widths.full}
-          onPress={() => onPick(4)}
+          onPress={() => onPressPill?.(4)}
         />
       </View>
     </View>

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Modal,
   Platform,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -94,8 +95,9 @@ function addDaysStr(dateStr: string, days: number): string {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
+
+// keep only time component (fixes iOS timepicker issue)
 function makeTimeOnly(base: Date): Date {
-  // fixed date 2000-01-01, but keep hours/minutes from base
   return new Date(2000, 0, 1, base.getHours(), base.getMinutes(), 0, 0);
 }
 
@@ -132,8 +134,11 @@ export default function DemoScreen() {
   const [reminderTime, setReminderTime] = useState<Date>(() =>
     makeTimeOnly(new Date()),
   );
-
   const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // validation errors
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [descError, setDescError] = useState<string | null>(null);
 
   // ───────────────── INITIAL REMINDER LOAD ─────────────────
   useEffect(() => {
@@ -143,8 +148,10 @@ export default function DemoScreen() {
         const list: StoredReminder[] = JSON.parse(raw);
         if (Array.isArray(list)) {
           setReminders(list);
-          if (list[0]?.pillIndex !== undefined) {
-            setWhich(list[0].pillIndex);
+          // select first enabled reminder pill (for highlight)
+          const first = list.find(r => r.enabled);
+          if (first) {
+            setWhich(first.pillIndex);
           }
         }
       } catch (e) {
@@ -217,6 +224,12 @@ export default function DemoScreen() {
 
   const last10Dates = checkins.slice(-10).map(c => c.date);
 
+  // pre-selected pills (have reminders saved)
+  const presetPillIndices = useMemo(
+    () => reminders.filter(r => r.enabled).map(r => r.pillIndex),
+    [reminders],
+  );
+
   // ───────────────── REMINDER HELPERS ─────────────────
   const formatTime = (d: Date) =>
     d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -231,16 +244,18 @@ export default function DemoScreen() {
 
   const openReminderEditor = (pillIndex: number) => {
     setEditingIndex(pillIndex);
+    setTitleError(null);
+    setDescError(null);
 
     const existing = findReminderByIndex(pillIndex);
     if (existing) {
       setReminderTitle(existing.title);
       setReminderDesc(existing.description);
-      setReminderTime(new Date(existing.time));
+      setReminderTime(makeTimeOnly(new Date(existing.time)));
     } else {
       setReminderTitle(`Reminder ${pillIndex + 1}`);
       setReminderDesc('');
-      setReminderTime(new Date());
+      setReminderTime(makeTimeOnly(new Date()));
     }
 
     setReminderModalVisible(true);
@@ -273,17 +288,32 @@ export default function DemoScreen() {
   const onSaveReminder = async () => {
     if (editingIndex === null) {
       setReminderModalVisible(false);
+      setShowTimePicker(false);
       return;
     }
 
     const pillIndex = editingIndex;
-    const title = reminderTitle.trim() || `Reminder ${pillIndex + 1}`;
+    const trimmedTitle = reminderTitle.trim();
+    const trimmedDesc = reminderDesc.trim();
+
+    let hasError = false;
+    if (!trimmedTitle) {
+      setTitleError('Title is required');
+      hasError = true;
+    }
+    if (!trimmedDesc) {
+      setDescError('Description is required');
+      hasError = true;
+    }
+    if (hasError) {
+      return;
+    }
 
     const newItem: StoredReminder = {
       id: `reminder_${pillIndex}`,
       pillIndex,
-      title,
-      description: reminderDesc.trim(),
+      title: trimmedTitle,
+      description: trimmedDesc,
       time: reminderTime.toISOString(),
       enabled: true,
     };
@@ -300,13 +330,14 @@ export default function DemoScreen() {
       await scheduleReminderNotification({
         fireAt,
         pillIndex,
-        label: title,
+        label: trimmedTitle,
         isDemo: false,
       });
     } catch (e) {
       console.log('Error saving reminder / scheduling notification', e);
     } finally {
       setReminderModalVisible(false);
+      setShowTimePicker(false);
     }
   };
 
@@ -347,7 +378,6 @@ export default function DemoScreen() {
     const updated = await getCheckins();
     setCheckins(updated);
 
-    // go to Search so user sees updated charts / stats
     // @ts-ignore
     navigation.navigate('Main', { screen: 'Search' });
   };
@@ -357,18 +387,15 @@ export default function DemoScreen() {
   };
 
   const onReset = async () => {
-    // 🔹 remove ONLY demo-generated checkins
     await clearDemoCheckins();
     const updated = await getCheckins();
     setCheckins(updated);
 
-    // navigate to Search so it can reload + show clean data
     // @ts-ignore
     navigation.navigate('Main', { screen: 'Search' });
   };
 
   const onFreshStart = async () => {
-    // 🔹 full wipe: remove all checkins (user + demo)
     await clearAllCheckins();
     const updated = await getCheckins();
     setCheckins(updated);
@@ -379,6 +406,39 @@ export default function DemoScreen() {
 
   const timezone = onboarding?.timezone || 'UTC';
   const journeyStart = onboarding?.journeyStartDate?.slice(0, 10) || '—';
+
+  const onDeleteReminder = () => {
+    if (editingIndex === null) return;
+
+    Alert.alert(
+      'Delete Reminder',
+      'Are you sure you want to delete this reminder?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const next = reminders.filter(r => r.pillIndex !== editingIndex);
+
+            try {
+              await saveRemindersToStorage(next);
+            } catch (e) {
+              console.log('Error deleting reminder', e);
+            }
+
+            // Clear pill highlight
+            if (which === editingIndex) setWhich(null);
+
+            setReminderModalVisible(false);
+            setShowTimePicker(false);
+          },
+        },
+      ],
+    );
+  };
+  const activePill =
+    reminders.length > 0 ? reminders.map(r => r.pillIndex) : [];
 
   return (
     <View style={styles.root}>
@@ -527,7 +587,6 @@ system properly."
             onPress={async () => {
               try {
                 await requestReminderPermission();
-                // fire a single immediate test notification so user sees it works
                 await scheduleReminderNotification({
                   fireAt: new Date(Date.now() + 2000),
                   pillIndex: which ?? 0,
@@ -556,15 +615,8 @@ system properly."
           </TouchableOpacity>
           <View style={{ height: scale(15) }} />
           <ReminderPills
-            value={which}
-            onChange={index => {
-              if (index === null) {
-                setWhich(null);
-                return;
-              }
-              setWhich(index);
-              openReminderEditor(index);
-            }}
+            activeIndices={reminders.map(r => r.pillIndex)}
+            onPressPill={index => openReminderEditor(index)}
           />
           <View style={{ height: scale(20) }} />
           <PrimaryButton
@@ -624,34 +676,70 @@ them from real reminders.'
         visible={reminderModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setReminderModalVisible(false)}
+        onRequestClose={() => {
+          setReminderModalVisible(false);
+          setShowTimePicker(false);
+        }}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {editingIndex !== null
-                ? `Set Reminder ${editingIndex + 1}`
-                : 'Set Reminder'}
-            </Text>
+        {/* CLICK OUTSIDE TO CLOSE */}
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalBackdrop}
+          onPress={() => {
+            setReminderModalVisible(false);
+            setShowTimePicker(false);
+          }}
+        >
+          {/* Prevent tap-through so modal does not close when user taps card */}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.modalCard}
+            onPress={() => {}}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editingIndex !== null
+                  ? `Set Reminder ${editingIndex + 1}`
+                  : 'Set Reminder'}
+              </Text>
 
+              {editingIndex !== null && findReminderByIndex(editingIndex) ? (
+                <TouchableOpacity onPress={onDeleteReminder}>
+                  <Text style={styles.deleteText}>Delete</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* --- Title Field --- */}
             <Text style={styles.label}>Title</Text>
             <GradientInput
               value={reminderTitle}
-              onChangeText={setReminderTitle}
+              onChangeText={text => {
+                setReminderTitle(text);
+                if (titleError) setTitleError(null);
+              }}
               placeholder="Reminder title"
             />
+            {titleError ? (
+              <Text style={styles.errorText}>{titleError}</Text>
+            ) : null}
 
-            <View style={{ height: vs(10) }} />
-
+            {/* --- Description Field --- */}
             <Text style={styles.label}>Description</Text>
             <GradientInput
               value={reminderDesc}
-              onChangeText={setReminderDesc}
+              onChangeText={text => {
+                setReminderDesc(text);
+                if (descError) setDescError(null);
+              }}
               placeholder="What should we remind you about?"
               multiline
             />
+            {descError ? (
+              <Text style={styles.errorText}>{descError}</Text>
+            ) : null}
 
-            <View style={{ height: vs(16) }} />
+            {/* --- Time Picker --- */}
             <Text style={styles.label}>Time (every day)</Text>
             <TouchableOpacity
               activeOpacity={0.8}
@@ -674,6 +762,7 @@ them from real reminders.'
               />
             )}
 
+            {/* --- Buttons --- */}
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
@@ -689,8 +778,8 @@ them from real reminders.'
                 <Text style={styles.modalButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -823,5 +912,25 @@ const styles = StyleSheet.create({
     fontSize: ms(14),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: ms(12),
+    marginTop: vs(2),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: vs(12),
+  },
+
+  deleteText: {
+    color: '#FF6B6B',
+    fontSize: ms(13),
+    fontWeight: '700',
+    paddingVertical: 4,
+    paddingHorizontal: 6,
   },
 });
