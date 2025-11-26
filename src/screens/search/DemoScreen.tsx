@@ -1,3 +1,4 @@
+// src/screens/DemoScreen.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
@@ -25,10 +26,9 @@ import AppImage from '../../components/AppImage';
 import {
   getCheckins,
   upsertCheckins,
-  Checkin,
-  clearCheckins,
   clearDemoCheckins,
   clearAllCheckins,
+  Checkin,
 } from '../../lib/dataClient';
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
 
@@ -166,6 +166,7 @@ export default function DemoScreen() {
     const n = effectiveDays;
     if (n <= 0) return;
 
+    // how many YES per day based on mode
     const posPerDay =
       mode === 'All' || mode === 'Empowering' ? empoweringBeliefs.length : 0;
     const negPerDay =
@@ -186,7 +187,7 @@ export default function DemoScreen() {
         pos_yes: posPerDay,
         neg_yes: negPerDay,
         daily_score: dailyScore,
-        source: 'demo', // 👈 IMPORTANT
+        source: 'demo', // 👈 mark as demo data
         created_at: nowIso,
       });
 
@@ -197,11 +198,11 @@ export default function DemoScreen() {
     const updated = await getCheckins();
     setCheckins(updated);
 
+    // go to Search so user sees updated charts / stats
     navigation.navigate('Main', { screen: 'Search' });
   };
 
   const onTriggerDaily = () => {
-    // hook your "triggerDailyShift" logic here if needed
     console.log('Trigger Daily Shift (demo)');
   };
 
@@ -210,6 +211,9 @@ export default function DemoScreen() {
     await clearDemoCheckins();
     const updated = await getCheckins();
     setCheckins(updated);
+
+    // navigate to Search so it can reload + show clean data
+    navigation.navigate('Main', { screen: 'Search' });
   };
 
   const onFreshStart = async () => {
@@ -217,6 +221,8 @@ export default function DemoScreen() {
     await clearAllCheckins();
     const updated = await getCheckins();
     setCheckins(updated);
+
+    navigation.navigate('Main', { screen: 'Search' });
   };
 
   const timezone = onboarding?.timezone || 'UTC';

@@ -1,5 +1,5 @@
 // src/screens/SearchScreen.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { palette } from '../../theme';
 import { ms, s, scale, vs } from 'react-native-size-matters';
@@ -14,7 +14,7 @@ import ShiftGridChart from '../../components/graph/ShiftGridChart';
 import ShiftMapChart from '../../components/graph/ShiftMapChart';
 import GradientHintBoxWithLikert from '../../components/GradientHintBoxWithLikert';
 import TodaysShiftView from '../../components/TodaysShiftView';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
 import { useSelector } from 'react-redux';
 import {
@@ -30,24 +30,26 @@ export default function SearchScreen() {
   const [selected, setSelected] = useState<'map' | 'grid'>('grid');
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [denseSeries, setDenseSeries] = useState<DensePoint[]>([]);
+  console.log('denseSeries ==> ', denseSeries);
   console.log('checkins', checkins);
-  useEffect(() => {
-    const load = async () => {
-      const stored = await getCheckins();
-      setCheckins(stored);
+  useFocusEffect(
+    useCallback(() => {
+      const load = async () => {
+        const stored = await getCheckins();
+        setCheckins(stored);
 
-      if (onboarding?.journeyStartDate) {
-        const series = buildDenseSeries(onboarding.journeyStartDate, stored);
-        setDenseSeries(series);
-      } else {
-        // optional: log to see what's going on
-        console.warn('No journeyStartDate yet, skipping denseSeries');
-        setDenseSeries([]);
-      }
-    };
+        if (onboarding?.journeyStartDate) {
+          const series = buildDenseSeries(onboarding.journeyStartDate, stored);
+          setDenseSeries(series);
+        } else {
+          console.warn('No journeyStartDate yet, skipping denseSeries');
+          setDenseSeries([]);
+        }
+      };
 
-    load();
-  }, [onboarding?.journeyStartDate]);
+      load();
+    }, [onboarding?.journeyStartDate]),
+  );
 
   const handleCheckinUpdate = async (checkin: Checkin) => {
     await upsertCheckins([checkin]);
@@ -131,10 +133,11 @@ export default function SearchScreen() {
     };
   }, [denseSeries]);
 
-  const checkinCount = useMemo(
-    () => checkins.filter(c => c.source === 'user').length,
-    [checkins],
-  );
+  // const checkinCount = useMemo(
+  //   () => checkins.filter(c => c.source === 'user').length,
+  //   [checkins],
+  // );
+  const checkinCount = checkins.length;
 
   const positiveTotal = useMemo(
     () => checkins.reduce((sum, c) => sum + (c.pos_yes || 0), 0),

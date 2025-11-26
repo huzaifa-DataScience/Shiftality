@@ -47,7 +47,7 @@ const MONTHS = [
 // Y-axis like web: -36.5 .. +36.5
 const Y_MAX = 36.5;
 const Y_MIN = -36.5;
-const Y_AXIS_LABELS = ['+36', '+24', '+12', '0', '-12', '-24', '-36'];
+const Y_AXIS_LABELS = ['-36', '-24', '-12', '0', '+12', '+24', '+36'];
 
 function monthLabelFromDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -110,52 +110,77 @@ export default function ShiftMapChart({ denseSeries }: Props) {
       label: string;
       value: number;
       hasCheckin: boolean;
+      lastDate: string; // for sorting
     };
 
     const byMonth = new Map<string, MonthAgg>();
 
     denseSeries.forEach(point => {
-      // date = "YYYY-MM-DD"
-      const [yearStr, monthStr] = point.date.split('-');
-      const year = Number(yearStr);
-      const monthIdx = Number(monthStr) - 1; // 0–11
+      const d = new Date(point.date);
+      if (Number.isNaN(d.getTime())) return;
+
+      const year = d.getFullYear();
+      const monthIdx = d.getMonth(); // 0–11
       const key = `${year}-${monthIdx}`;
+      const label = MONTHS[monthIdx];
 
       const existing = byMonth.get(key);
 
-      const agg: MonthAgg = {
-        label: MONTHS[monthIdx],
-        // always take the latest cumulative for that month
-        value: point.cumulative,
-        hasCheckin: existing?.hasCheckin || false || point.hasCheckin,
-      };
-
-      byMonth.set(key, agg);
+      if (!existing) {
+        byMonth.set(key, {
+          label,
+          value: point.cumulative,
+          hasCheckin: !!point.hasCheckin,
+          lastDate: point.date,
+        });
+      } else {
+        // always use the *latest* cumulative in that month
+        existing.value = point.cumulative;
+        // month has a dot if ANY day had a checkin
+        existing.hasCheckin = existing.hasCheckin || !!point.hasCheckin;
+        existing.lastDate = point.date;
+      }
     });
 
-    // sort by year-month key
-    const sortedKeys = Array.from(byMonth.keys()).sort();
+    // sort by lastDate (chronological)
+    const sortedMonths = Array.from(byMonth.values()).sort((a, b) =>
+      a.lastDate < b.lastDate ? -1 : a.lastDate > b.lastDate ? 1 : 0,
+    );
 
-    // GiftedCharts supports per-point `hideDataPoint`
-    return sortedKeys.map(k => {
-      const m = byMonth.get(k)!;
-      return {
-        value: m.value,
-        label: m.label,
-        hideDataPoint: !m.hasCheckin, // ✅ only show dot for months that had a check-in
-      };
-    });
+    // only keep the last 12 months
+    const lastTwelve = sortedMonths.slice(-12);
+
+    return lastTwelve.map(m => ({
+      // clamp into [-36.5, +36.5] so the line never escapes
+      value: Math.max(Y_MIN, Math.min(Y_MAX, m.value)),
+      label: m.label,
+      hideDataPoint: !m.hasCheckin,
+    }));
   }, [denseSeries]);
 
-  const currentPosition =
+  const rawPosition =
     denseSeries && denseSeries.length
       ? denseSeries[denseSeries.length - 1].cumulative
       : 0;
 
+  const currentPosition = Math.max(Y_MIN, Math.min(Y_MAX, rawPosition));
+
   // Use nice fixed spacing now that we have ~12 points
-  const spacing = Platform.OS === 'ios' ? 30 : 25;
+  // const spacing = Platform.OS === 'ios' ? 30 : 25;
+  // const initialSpacing = 25;
+  // const endSpacing = 25;
+
+  const pointCount = data.length;
+
+  const spacing = useMemo(() => {
+    if (pointCount <= 1) return 0;
+    if (pointCount <= 6) return 40;
+    if (pointCount <= 12) return 30;
+    return 20; // fallback if somehow more than 12
+  }, [pointCount]);
+
   const initialSpacing = 25;
-  const endSpacing = 25;
+  const endSpacing = useMemo(() => (pointCount <= 12 ? 25 : 10), [pointCount]);
 
   return (
     <GradientCardHome>
@@ -195,6 +220,7 @@ export default function ShiftMapChart({ denseSeries }: Props) {
           <View style={{ position: 'relative', height: 220 }}>
             <LineChart
               data={data}
+              curved
               thickness={3}
               hideDataPoints={false}
               dataPointsColor="#00BFFF"
