@@ -16,11 +16,10 @@ import GradientHintBoxVibe from '../../components/GradientHintBoxVibe';
 import PrimaryButton from '../../components/PrimaryButton';
 import GradientSelect from '../../components/GradientSelect';
 import LinearGradient from 'react-native-linear-gradient';
-import FastImage from 'react-native-fast-image';
-import ReminderPills from '../../components/ReminderPills';
-import AppImage from '../../components/AppImage';
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
 import { useSelector } from 'react-redux';
+import BeliefsEditor from '../../components/BeliefsEditor';
+import ReminderTestSection from '../../components/ReminderTestSection';
 
 const themeOptions = ['System', 'Light', 'Dark'];
 const fontSizeOptions = ['Small', 'Normal', 'Large'];
@@ -45,7 +44,6 @@ export default function SettingScreen() {
   const [fontVal, setFontVal] = useState<string>('Normal');
   const [colorBlind, setColorBlind] = useState<boolean>(true);
   const [reminder, setReminder] = useState<boolean>(true);
-  const [which, setWhich] = useState<number | null>(0);
 
   return (
     <View style={styles.root}>
@@ -110,120 +108,20 @@ export default function SettingScreen() {
             }}
           />
         </GradientCardHome>
+
         <View style={{ height: scale(20) }} />
+
+        {/* Daily Belief Set intro card */}
         <GradientCardHome style={{ width: scale(330) }}>
           <Text style={styles.title}>Daily Belief Set</Text>
           <Text style={styles.subTitle}>
             {'Manage your empowering and shadow\nbeliefs for daily tracking'}
           </Text>
-          <View style={{ height: scale(20) }} />
-          <Text style={styles.title}>Empowering Beliefs (YES = +1)</Text>
-          <GradientHintBox
-            text={
-              'Today, I believed I deserve to be well-paid for the value I create'
-            }
-            showRecommendedChip
-            showEditButton
-            editIcon={require('../../assets/edit.png')}
-            onPressEdit={() => {}}
-          />
-          <View style={{ height: scale(10) }} />
-          <GradientHintBox
-            text={
-              'Today, I believed I deserve to be well-paid for the value I create'
-            }
-            showRecommendedChip
-            showEditButton
-            editIcon={require('../../assets/edit.png')}
-            onPressEdit={() => {}}
-          />
-          <View style={{ height: scale(10) }} />
-          <GradientHintBox
-            text={
-              'Today, I believed I deserve to be well-paid for the value I create'
-            }
-            showRecommendedChip
-            showEditButton
-            editIcon={require('../../assets/edit.png')}
-            onPressEdit={() => {}}
-          />
-          <View style={{ height: scale(10) }} />
-          <GradientHintBox
-            text={
-              'Today, I believed I deserve to be well-paid for the value I create'
-            }
-            showRecommendedChip
-            showEditButton
-            editIcon={require('../../assets/edit.png')}
-            onPressEdit={() => {}}
-          />
-          <View style={{ height: scale(10) }} />
-          <GradientHintBox
-            text={
-              'Today, I believed I deserve to be well-paid for the value I create'
-            }
-            showRecommendedChip
-            showEditButton
-            editIcon={require('../../assets/edit.png')}
-            onPressEdit={() => {}}
-          />
-          <View style={{ height: scale(10) }} />
-          <GradientHintBox
-            text={
-              'Today, I believed I deserve to be well-paid for the value I create'
-            }
-            showRecommendedChip
-            showEditButton
-            editIcon={require('../../assets/edit.png')}
-            onPressEdit={() => {}}
-          />
-          <View style={{ height: scale(10) }} />
-          <Text style={styles.title}>Shadow Beliefs (YES = -1)</Text>
-
-          <GradientHintBox
-            text={
-              'Today, I believed I deserve to be well-paid for the value I create'
-            }
-            showRecommendedChip
-            showEditButton
-            editIcon={require('../../assets/edit.png')}
-            onPressEdit={() => {}}
-          />
-          <View style={{ height: scale(10) }} />
-          <GradientHintBox
-            text={
-              'Today, I believed I deserve to be well-paid for the value I create'
-            }
-            showRecommendedChip
-            showEditButton
-            editIcon={require('../../assets/edit.png')}
-            onPressEdit={() => {}}
-          />
-          <View style={{ height: scale(10) }} />
-          <GradientHintBox
-            text={
-              'Today, I believed I deserve to be well-paid for the value I create'
-            }
-            showRecommendedChip
-            showEditButton
-            editIcon={require('../../assets/edit.png')}
-            onPressEdit={() => {}}
-          />
-          <View style={{ height: scale(15) }} />
-
-          <PrimaryButton
-            textColor={palette.white}
-            style={{
-              width: '100%',
-              height: 'auto',
-              fontSize: ms(14.5),
-              fontWeight: '700',
-              fontFamily: 'SourceSansPro-Regular',
-            }}
-            title={'Add Custom Shadow Beliefs '}
-            onPress={() => console.log('Start')}
-          />
         </GradientCardHome>
+
+        {/* Shared beliefs editor (same as ProfileScreen) */}
+        <BeliefsEditor cardStyle={{ width: scale(330) }} />
+
         <View style={{ height: scale(20) }} />
 
         <GradientHintBox
@@ -297,6 +195,7 @@ export default function SettingScreen() {
             Use blue/orange instead of green/red colors
           </Text>
         </GradientCardHome>
+
         <View style={{ height: scale(20) }} />
 
         <GradientCardHome style={{ width: scale(330) }}>
@@ -348,64 +247,13 @@ export default function SettingScreen() {
             Get notified if you haven't completed your daily check-in
           </Text>
         </GradientCardHome>
+
         <View style={{ height: scale(20) }} />
-        <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={styles.title}>Reminders</Text>
-          <Text style={styles.subTitle}>
-            Test reminder notifications and system functionality
-          </Text>
-          <View style={{ height: scale(20) }} />
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Text style={styles.title}>Test Notification Permission</Text>
-            <AppImage
-              source={require('../../assets/notification.png')}
-              style={styles.rightIcon}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={styles.subTitle}>
-            Check if browser notifications are working properly
-          </Text>
-          <View style={{ height: scale(20) }} />
-          <Text style={styles.title}>Test Individual Reminders</Text>
-          <Text style={styles.subTitle}>
-            Test each of the 5 reminder messages individually
-          </Text>
-          <View style={{ height: vs(14) }} />
 
-          <ReminderPills value={which} onChange={setWhich} />
+        {/* Shared Reminder Test component (same as DemoScreen) */}
+        <ReminderTestSection cardStyle={{ width: scale(330) }} />
 
-          <View style={{ height: scale(20) }} />
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Text style={styles.title}>Test Notification Permission</Text>
-            <AppImage
-              source={require('../../assets/notificationOutline.png')}
-              style={styles.rightIcon}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={styles.subTitle}>
-            Triggers all 5 reminders with 5-second intervals (instead of
-            30minutes)
-          </Text>
-          <View style={{ height: scale(20) }} />
-
-          <GradientHintBox
-            title="Note:"
-            text='Make sure to allow notifications when
-prompted by your browser. Demo reminders will show "(Demo)" in the title to distinguishthem from real reminders.'
-          />
-        </GradientCardHome>
+        <View style={{ height: scale(40) }} />
       </ScrollView>
     </View>
   );
@@ -460,7 +308,6 @@ const styles = StyleSheet.create({
     height: vs(38),
     justifyContent: 'center',
     alignItems: 'center',
-
     borderRadius: s(30),
   },
   ctaText: {

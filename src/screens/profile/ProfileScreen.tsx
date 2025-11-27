@@ -1,5 +1,5 @@
 // src/screens/ProfileScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,10 @@ import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSelector } from 'react-redux';
 import { ms, s, scale, vs } from 'react-native-size-matters';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { palette } from '../../theme';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientHintBox from '../../components/GradientHintBox';
-import RingGauge from '../../components/TripleRingGauge';
 import TripleRingGauge from '../../components/TripleRingGauge';
 import PrimaryButton from '../../components/PrimaryButton';
 import {
@@ -24,27 +22,7 @@ import {
   selectTotalSurveyPoints,
 } from '../../store/reducers/surveyReducer';
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
-
-const EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
-const SHADOW_STORAGE_KEY = 'profile_shadow_beliefs_v1';
-
-const DEFAULT_BELIEFS: string[] = [
-  'Today, I believed Opportunities show up when I show up.',
-  'Today, I believed Small choices can shift my energy.',
-  'Today, I believed A low moment doesn’t define the day.',
-  'Today, I believed Reaching out first is safe for me.',
-  'Today, I believed I keep promises to future me.',
-  'Today, I believed I am enough as I grow.',
-  'Today, I believed Challenges are feedback, not failure.',
-  'Today, I believed I bounce back when things go wrong.',
-];
-
-const DEFAULT_SHADOW_BELIEFS: string[] = [
-  'Today, I believed Money is scarce and hard for me to get.',
-  'Today, I believed I’ll be misunderstood or rejected.',
-  'Today, I believed Change isn’t really available to me.',
-  'Today, I believed Stress is who I am.',
-];
+import BeliefsEditor from '../../components/BeliefsEditor';
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
@@ -69,85 +47,7 @@ export default function ProfileScreen() {
     onboarding.shadowPath ||
     "Describe the patterns, habits, or reality you're leaving behind—what your life looks like in one year if nothing shifts…";
 
-  const [beliefs, setBeliefs] = useState<string[]>(DEFAULT_BELIEFS);
-  const [shadowBeliefs, setShadowBeliefs] = useState<string[]>(
-    DEFAULT_SHADOW_BELIEFS,
-  );
-
-  // which index is currently being edited (or null)
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [draftText, setDraftText] = useState('');
-  const [isAddingNewBelief, setIsAddingNewBelief] = useState(false);
-  const [isAddingNewShadowBelief, setIsAddingNewShadowBelief] = useState(false);
-
-  const [shadowEditingIndex, setShadowEditingIndex] = useState<number | null>(
-    null,
-  );
-  const [shadowDraftText, setShadowDraftText] = useState('');
-  const [isHydrated, setIsHydrated] = useState(false);
-
   const displayName = onboarding.firstName?.trim() || 'Your';
-
-  // ------- LOAD FROM LOCAL STORAGE ONCE -------
-  useEffect(() => {
-    (async () => {
-      try {
-        const storedEmpowering = await AsyncStorage.getItem(
-          EMPOWERING_STORAGE_KEY,
-        );
-        const storedShadow = await AsyncStorage.getItem(SHADOW_STORAGE_KEY);
-
-        if (storedEmpowering) {
-          const parsed = JSON.parse(storedEmpowering);
-          if (Array.isArray(parsed)) {
-            setBeliefs(parsed);
-          }
-        }
-
-        if (storedShadow) {
-          const parsed = JSON.parse(storedShadow);
-          if (Array.isArray(parsed)) {
-            setShadowBeliefs(parsed);
-          }
-        }
-      } catch (e) {
-        console.log('Error loading beliefs from storage', e);
-      } finally {
-        setIsHydrated(true);
-      }
-    })();
-  }, []);
-
-  // ------- SAVE TO LOCAL STORAGE WHEN CHANGED -------
-  useEffect(() => {
-    if (!isHydrated) return; // avoid overwriting stored values before initial load
-
-    (async () => {
-      try {
-        await AsyncStorage.setItem(
-          EMPOWERING_STORAGE_KEY,
-          JSON.stringify(beliefs),
-        );
-      } catch (e) {
-        console.log('Error saving empowering beliefs', e);
-      }
-    })();
-  }, [beliefs, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated) return;
-
-    (async () => {
-      try {
-        await AsyncStorage.setItem(
-          SHADOW_STORAGE_KEY,
-          JSON.stringify(shadowBeliefs),
-        );
-      } catch (e) {
-        console.log('Error saving shadow beliefs', e);
-      }
-    })();
-  }, [shadowBeliefs, isHydrated]);
 
   // ------- HELPERS / COMPUTATIONS -------
   const computePct = (pointsArr: number[]) => {
@@ -197,112 +97,6 @@ export default function ProfileScreen() {
 
     bestLeverText = `Pick one tiny daily action in ${topA} you\ncan complete in under two minutes.`;
   }
-
-  // ------- EMPOWERING BELIEFS HANDLERS -------
-  const handleAddBelief = () => {
-    const next = [...beliefs, ''];
-    setBeliefs(next);
-
-    const newIndex = next.length - 1;
-    setEditingIndex(newIndex);
-    setDraftText('');
-    setIsAddingNewBelief(true);
-  };
-
-  const handleEditBelief = (index: number) => {
-    setEditingIndex(index);
-    setDraftText(beliefs[index] ?? '');
-    setIsAddingNewBelief(false);
-  };
-
-  const handleSaveBelief = () => {
-    if (editingIndex === null) return;
-
-    const trimmed = draftText.trim();
-    if (!trimmed) {
-      if (isAddingNewBelief) {
-        const next = [...beliefs];
-        next.splice(editingIndex, 1);
-        setBeliefs(next);
-      }
-    } else {
-      const updated = [...beliefs];
-      updated[editingIndex] = trimmed;
-      setBeliefs(updated);
-    }
-
-    setEditingIndex(null);
-    setDraftText('');
-    setIsAddingNewBelief(false);
-  };
-
-  const handleBlurBelief = (index: number) => {
-    if (editingIndex !== index) return;
-
-    if (!draftText.trim()) {
-      if (isAddingNewBelief) {
-        const next = [...beliefs];
-        next.splice(index, 1);
-        setBeliefs(next);
-      }
-      setEditingIndex(null);
-      setDraftText('');
-      setIsAddingNewBelief(false);
-    }
-  };
-
-  // ------- SHADOW BELIEFS HANDLERS -------
-  const handleEditShadowBelief = (index: number) => {
-    setShadowEditingIndex(index);
-    setShadowDraftText(shadowBeliefs[index] ?? '');
-    setIsAddingNewShadowBelief(false);
-  };
-
-  const handleSaveShadowBelief = () => {
-    if (shadowEditingIndex === null) return;
-
-    const trimmed = shadowDraftText.trim();
-    if (!trimmed) {
-      if (isAddingNewShadowBelief) {
-        const next = [...shadowBeliefs];
-        next.splice(shadowEditingIndex, 1);
-        setShadowBeliefs(next);
-      }
-    } else {
-      const updated = [...shadowBeliefs];
-      updated[shadowEditingIndex] = trimmed;
-      setShadowBeliefs(updated);
-    }
-
-    setShadowEditingIndex(null);
-    setShadowDraftText('');
-    setIsAddingNewShadowBelief(false);
-  };
-
-  const handleAddShadowBelief = () => {
-    const next = [...shadowBeliefs, ''];
-    setShadowBeliefs(next);
-
-    const newIndex = next.length - 1;
-    setShadowEditingIndex(newIndex);
-    setShadowDraftText('');
-    setIsAddingNewShadowBelief(true);
-  };
-
-  const handleBlurShadowBelief = (index: number) => {
-    if (shadowEditingIndex !== index) return;
-
-    if (!shadowDraftText.trim()) {
-      if (isAddingNewShadowBelief) {
-        const next = [...shadowBeliefs];
-        next.splice(index, 1);
-        setShadowBeliefs(next);
-      }
-      setShadowEditingIndex(null);
-      setShadowDraftText('');
-      setIsAddingNewShadowBelief(false);
-    }
-  };
 
   // ------- RENDER -------
   return (
@@ -458,7 +252,7 @@ export default function ProfileScreen() {
                 fontFamily: 'SourceSansPro-Regular',
               }}
               title={'Start Your Reality Shift'}
-              onPress={() => navigation.navigate('Search')}
+              onPress={() => navigation.navigate('Search' as never)}
             />
 
             <View style={{ height: scale(10) }} />
@@ -466,7 +260,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               activeOpacity={0.9}
               style={styles.ctaWrap}
-              onPress={() => console.log('Back')}
+              onPress={() => console.log('Edit Belief Set')}
             >
               <LinearGradient
                 colors={['#143f65ff', '#1C2A3A']}
@@ -480,143 +274,8 @@ export default function ProfileScreen() {
           </View>
         </GradientCardHome>
 
-        {/* Empowering beliefs */}
-        <GradientCardHome
-          style={{
-            width: scale(330),
-            marginVertical: scale(20),
-          }}
-        >
-          <Text style={styles.Sectitle}>{'Empowering Beliefs (YES = +1)'}</Text>
-          <View style={{ height: scale(10) }} />
-
-          {beliefs.map((belief, idx) => {
-            const isEditing = editingIndex === idx;
-
-            return (
-              <React.Fragment key={idx}>
-                <GradientHintBox
-                  text={!isEditing ? belief : undefined}
-                  showRecommendedChip
-                  showEditButton={!isEditing}
-                  editIcon={require('../../assets/edit.png')}
-                  onPressEdit={() => handleEditBelief(idx)}
-                  showInput={isEditing}
-                  inputValue={draftText}
-                  onChangeInputText={setDraftText}
-                  inputPlaceholder="Type your empowering belief..."
-                  inputProps={{
-                    maxLength: 200,
-                    onBlur: () => handleBlurBelief(idx),
-                  }}
-                  footerActionLabel={isEditing ? 'Save' : undefined}
-                  onPressFooterAction={isEditing ? handleSaveBelief : undefined}
-                />
-
-                <View style={{ height: scale(10) }} />
-              </React.Fragment>
-            );
-          })}
-
-          <TouchableOpacity
-            activeOpacity={0.9}
-            style={{ alignSelf: 'flex-start', marginTop: vs(4), width: '100%' }}
-            onPress={handleAddBelief}
-          >
-            <LinearGradient
-              colors={['#143f65ff', '#1C2A3A']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={{
-                height: vs(32),
-                borderRadius: s(20),
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  color: palette.txtBlue,
-                  fontSize: ms(16),
-                  fontWeight: '700',
-                  fontFamily: 'SourceSansPro-Regular',
-                }}
-              >
-                + Add Empowering Belief
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </GradientCardHome>
-
-        {/* Shadow beliefs */}
-        <GradientCardHome
-          style={{
-            width: scale(330),
-            marginVertical: scale(20),
-          }}
-        >
-          <Text style={styles.Sectitle}>{'Shadow Beliefs (YES = -1)'}</Text>
-          <View style={{ height: scale(10) }} />
-
-          {shadowBeliefs.map((belief, idx) => {
-            const isEditing = shadowEditingIndex === idx;
-
-            return (
-              <React.Fragment key={idx}>
-                <GradientHintBox
-                  text={!isEditing ? belief : undefined}
-                  showRecommendedChip
-                  showEditButton={!isEditing}
-                  editIcon={require('../../assets/edit.png')}
-                  onPressEdit={() => handleEditShadowBelief(idx)}
-                  showInput={isEditing}
-                  inputValue={shadowDraftText}
-                  onChangeInputText={setShadowDraftText}
-                  inputPlaceholder="Type your shadow belief..."
-                  inputProps={{
-                    maxLength: 200,
-                    onBlur: () => handleBlurShadowBelief(idx),
-                  }}
-                  footerActionLabel={isEditing ? 'Save' : undefined}
-                  onPressFooterAction={
-                    isEditing ? handleSaveShadowBelief : undefined
-                  }
-                />
-
-                <View style={{ height: scale(10) }} />
-              </React.Fragment>
-            );
-          })}
-
-          <TouchableOpacity
-            activeOpacity={0.9}
-            style={{ alignSelf: 'flex-start', marginTop: vs(4), width: '100%' }}
-            onPress={handleAddShadowBelief}
-          >
-            <LinearGradient
-              colors={['#143f65ff', '#1C2A3A']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={{
-                height: vs(32),
-                borderRadius: s(20),
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text
-                style={{
-                  color: palette.txtBlue,
-                  fontSize: ms(16),
-                  fontWeight: '700',
-                  fontFamily: 'SourceSansPro-Regular',
-                }}
-              >
-                + Add Shadow Belief
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </GradientCardHome>
+        {/* Empowering & Shadow beliefs (reusable block) */}
+        <BeliefsEditor />
       </View>
     </ScrollView>
   );
