@@ -21,6 +21,10 @@ export interface HomeOnboardingState {
   dndEnd: string; // ISO string
 
   allowNotifications: boolean;
+
+  // 🔥 NEW: belief profile summary
+  archetype?: string; // e.g. "Calm Builder"
+  baselineIndex?: number; // 0–100 overall index
 }
 
 const initialState: HomeOnboardingState = {
@@ -36,6 +40,9 @@ const initialState: HomeOnboardingState = {
   dndEnd: makeMidnightISO(),
 
   allowNotifications: true,
+
+  archetype: undefined,
+  baselineIndex: undefined,
 };
 
 const homeOnboardingSlice = createSlice({
@@ -76,6 +83,14 @@ const homeOnboardingSlice = createSlice({
     setAllowNotifications(state, action: PayloadAction<boolean>) {
       state.allowNotifications = action.payload;
     },
+
+    // 🔥 NEW reducers for belief profile
+    setArchetype(state, action: PayloadAction<string | undefined>) {
+      state.archetype = action.payload;
+    },
+    setBaselineIndex(state, action: PayloadAction<number | undefined>) {
+      state.baselineIndex = action.payload;
+    },
   },
 });
 
@@ -90,6 +105,8 @@ export const {
   setDndStart,
   setDndEnd,
   setAllowNotifications,
+  setArchetype,
+  setBaselineIndex,
 } = homeOnboardingSlice.actions;
 
 export default homeOnboardingSlice.reducer;

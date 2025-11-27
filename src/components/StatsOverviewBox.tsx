@@ -7,6 +7,7 @@ import {
   LayoutChangeEvent,
   ViewStyle,
   ImageSourcePropType,
+  TouchableOpacity,
 } from 'react-native';
 import Svg, {
   Defs,
@@ -21,7 +22,7 @@ import {
 } from 'react-native-size-matters';
 import { palette } from '../theme';
 
-type StatItem = {
+export type StatItem = {
   icon: ImageSourcePropType;
   value: string | number;
   label: string;
@@ -30,9 +31,10 @@ type StatItem = {
 type Props = {
   data: StatItem[];
   style?: ViewStyle;
+  onItemPress?: (item: StatItem, index: number) => void;
 };
 
-const StatsOverviewBox = ({ data, style }: Props) => {
+const StatsOverviewBox = ({ data, style, onItemPress }: Props) => {
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(80));
 
@@ -77,7 +79,12 @@ const StatsOverviewBox = ({ data, style }: Props) => {
       {/* Inner content */}
       <View style={styles.inner}>
         {data.map((item, index) => (
-          <View key={index} style={styles.item}>
+          <TouchableOpacity
+            key={index}
+            style={styles.item}
+            activeOpacity={0.8}
+            onPress={() => onItemPress?.(item, index)}
+          >
             <Image
               source={item.icon}
               style={styles.icon}
@@ -85,7 +92,7 @@ const StatsOverviewBox = ({ data, style }: Props) => {
             />
             <Text style={styles.value}>{item.value}</Text>
             <Text style={styles.label}>{item.label}</Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
     </View>

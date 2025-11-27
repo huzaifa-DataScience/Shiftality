@@ -125,6 +125,11 @@ export default function DemoScreen() {
     load();
   }, []);
 
+  const archetype = onboarding?.archetype || 'Balanced Explorer';
+  const baselineIndexStr =
+    onboarding?.baselineIndex != null
+      ? `${Math.round(onboarding.baselineIndex)}/100`
+      : '—';
   // ───────────────── DERIVED VALUES ─────────────────
   const effectiveDays = useMemo(() => clampDays(days), [days]);
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -353,8 +358,8 @@ export default function DemoScreen() {
           totalCheckins={totalCheckins}
           latestCheckin={latestCheckinDate}
           nextAnchor={anchorDate}
-          archetype="Balanced Explorer"
-          baselineIndex="53/100"
+          archetype={archetype}
+          baselineIndex={baselineIndexStr}
           empowering={positiveTotal}
           shadow={shadowTotal}
           last10Dates={last10Dates}

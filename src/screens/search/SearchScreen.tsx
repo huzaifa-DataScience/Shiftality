@@ -1,19 +1,31 @@
 // src/screens/SearchScreen.tsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import { palette } from '../../theme';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientHintBox from '../../components/GradientHintBox';
-import GradientBoxWithButton from '../../components/GradientBoxWithButton';
 import OutlinePillWithIcon from '../../components/OutlinePillWithIcon';
-import StatsOverviewBox from '../../components/StatsOverviewBox';
+import StatsOverviewBox, { StatItem } from '../../components/StatsOverviewBox';
 import TripleRingGauge from '../../components/TripleRingGauge';
 import LikertPill from '../../components/survey/LikertPill';
 import ShiftGridChart from '../../components/graph/ShiftGridChart';
 import ShiftMapChart from '../../components/graph/ShiftMapChart';
-import GradientHintBoxWithLikert from '../../components/GradientHintBoxWithLikert';
 import TodaysShiftView from '../../components/TodaysShiftView';
+import GradientInput from '../../components/GradientInput';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
 import { useSelector } from 'react-redux';
@@ -24,14 +36,39 @@ import {
   Checkin,
   DensePoint,
 } from '../../lib/dataClient';
+
+const JOURNAL_STORAGE_KEY = 'shift_journal_entries_v1';
+
+type JournalEntry = {
+  id: string;
+  title: string;
+  description: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+  createdAt: string; // ISO
+};
+
 export default function SearchScreen() {
   const navigation = useNavigation();
   const onboarding = useSelector(selectHomeOnboarding);
   const [selected, setSelected] = useState<'map' | 'grid'>('grid');
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [denseSeries, setDenseSeries] = useState<DensePoint[]>([]);
-  console.log('denseSeries ==> ', denseSeries);
-  console.log('checkins', checkins);
+
+  // ───────── Journal state ─────────
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [journalModalVisible, setJournalModalVisible] = useState(false);
+  const [isAddingJournal, setIsAddingJournal] = useState(false);
+
+  const [journalTitle, setJournalTitle] = useState('');
+  const [journalDesc, setJournalDesc] = useState('');
+  const [journalDate, setJournalDate] = useState<Date>(new Date());
+  const [journalTime, setJournalTime] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [journalError, setJournalError] = useState<string | null>(null);
+
+  // ───────── Load checkins + dense series ─────────
   useFocusEffect(
     useCallback(() => {
       const load = async () => {
@@ -51,6 +88,31 @@ export default function SearchScreen() {
     }, [onboarding?.journeyStartDate]),
   );
 
+  // ───────── Load journals from storage ─────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(JOURNAL_STORAGE_KEY);
+        if (!raw) return;
+        const parsed: JournalEntry[] = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setJournalEntries(parsed);
+        }
+      } catch (e) {
+        console.log('Error loading journals', e);
+      }
+    })();
+  }, []);
+
+  const saveJournals = async (next: JournalEntry[]) => {
+    setJournalEntries(next);
+    try {
+      await AsyncStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(next));
+    } catch (e) {
+      console.log('Error saving journals', e);
+    }
+  };
+
   const handleCheckinUpdate = async (checkin: Checkin) => {
     await upsertCheckins([checkin]);
     const updated = await getCheckins();
@@ -61,6 +123,7 @@ export default function SearchScreen() {
       setDenseSeries(series);
     }
   };
+
   const { shiftPct, avgScore, statusLabel } = useMemo(() => {
     if (!denseSeries || denseSeries.length === 0) {
       return {
@@ -71,15 +134,11 @@ export default function SearchScreen() {
     }
 
     const windowSize = 30;
-
-    // 1) Figure out "today" as YYYY-MM-DD
     const todayStr = new Date().toISOString().slice(0, 10);
 
-    // 2) Find index for today in denseSeries
     let endIndex = denseSeries.findIndex(d => d.date === todayStr);
 
     if (endIndex === -1) {
-      // No exact match — fall back to the last date <= today
       let lastBeforeOrEqual = -1;
       denseSeries.forEach((d, idx) => {
         if (d.date <= todayStr) {
@@ -90,12 +149,10 @@ export default function SearchScreen() {
       if (lastBeforeOrEqual !== -1) {
         endIndex = lastBeforeOrEqual;
       } else {
-        // If journeyStartDate is in the future, just use the last index we have
         endIndex = denseSeries.length - 1;
       }
     }
 
-    // Now slice a trailing window ending at endIndex
     const startIndex = Math.max(0, endIndex - windowSize + 1);
     const lastWindow = denseSeries.slice(startIndex, endIndex + 1);
 
@@ -107,11 +164,9 @@ export default function SearchScreen() {
       };
     }
 
-    // 3) Average the *daily* scores (not cumulative)
     const total = lastWindow.reduce((sum, day) => sum + day.score, 0);
-    const avg = total / lastWindow.length; // -10 .. +10
+    const avg = total / lastWindow.length;
 
-    // 4) Map -10..+10 → 0..100
     let pct = ((avg + 10) / 20) * 100;
     pct = Math.max(0, Math.min(100, pct));
 
@@ -133,10 +188,6 @@ export default function SearchScreen() {
     };
   }, [denseSeries]);
 
-  // const checkinCount = useMemo(
-  //   () => checkins.filter(c => c.source === 'user').length,
-  //   [checkins],
-  // );
   const checkinCount = checkins.length;
 
   const positiveTotal = useMemo(
@@ -167,6 +218,128 @@ export default function SearchScreen() {
     }
     return streak;
   }, [denseSeries]);
+
+  // ───────── Journal helpers ─────────
+  const formatDate = (d: Date) =>
+    d.toLocaleDateString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+
+  const formatTime = (d: Date) =>
+    d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const onChangeDate = (_: DateTimePickerEvent, date?: Date) => {
+    if (!date) {
+      setShowDatePicker(false);
+      return;
+    }
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    setJournalDate(date);
+  };
+
+  const onChangeTime = (_: DateTimePickerEvent, date?: Date) => {
+    if (!date) {
+      setShowTimePicker(false);
+      return;
+    }
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
+    }
+    setJournalTime(date);
+  };
+
+  const openJournalSheet = () => {
+    setJournalError(null);
+    setJournalTitle('');
+    setJournalDesc('');
+    setJournalDate(new Date());
+    setJournalTime(new Date());
+    setIsAddingJournal(false); // start in list view
+    setJournalModalVisible(true);
+  };
+
+  const closeJournalSheet = () => {
+    setJournalModalVisible(false);
+    setShowDatePicker(false);
+    setShowTimePicker(false);
+    setIsAddingJournal(false);
+  };
+
+  const handleStartAddJournal = () => {
+    setJournalError(null);
+    setJournalTitle('');
+    setJournalDesc('');
+    setJournalDate(new Date());
+    setJournalTime(new Date());
+    setIsAddingJournal(true);
+  };
+
+  const handleSaveJournal = async () => {
+    const title = journalTitle.trim();
+    const desc = journalDesc.trim();
+
+    if (!title || !desc) {
+      setJournalError('Title and description are required.');
+      return;
+    }
+
+    const dateStr = journalDate.toISOString().slice(0, 10); // YYYY-MM-DD
+    const timeStr = journalTime.toTimeString().slice(0, 5); // HH:mm
+
+    const entry: JournalEntry = {
+      id: `journal_${Date.now()}`,
+      title,
+      description: desc,
+      date: dateStr,
+      time: timeStr,
+      createdAt: new Date().toISOString(),
+    };
+
+    const next = [...journalEntries, entry];
+    await saveJournals(next);
+
+    // after save, go back to list view (keep modal open)
+    setIsAddingJournal(false);
+    setJournalTitle('');
+    setJournalDesc('');
+  };
+
+  const statsData: StatItem[] = [
+    {
+      icon: require('../../assets/checkin.png'),
+      value: checkinCount,
+      label: 'Check-in',
+    },
+    {
+      icon: require('../../assets/positive.png'),
+      value: positiveTotal,
+      label: 'Positive',
+    },
+    {
+      icon: require('../../assets/clean.png'),
+      value: cleanStreak,
+      label: 'Clean',
+    },
+    {
+      icon: require('../../assets/journal.png'),
+      value: journalEntries.length,
+      label: 'Journal',
+    },
+  ];
+
+  // sort journals latest-first for display
+  const sortedJournals = [...journalEntries].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
+
+  const handleDeleteJournal = async (id: string) => {
+    const next = journalEntries.filter(entry => entry.id !== id);
+    await saveJournals(next);
+  };
 
   return (
     <View style={styles.root}>
@@ -206,6 +379,7 @@ export default function SearchScreen() {
           <View style={{ height: scale(10) }} />
           <TodaysShiftView onCheckinUpdate={handleCheckinUpdate} />
         </GradientCardHome>
+
         <View style={{ height: scale(20) }} />
 
         <GradientHintBox
@@ -220,26 +394,19 @@ export default function SearchScreen() {
           style={{ width: scale(330) }}
         />
         <View style={{ height: scale(20) }} />
+
         <StatsOverviewBox
-          data={[
-            {
-              icon: require('../../assets/checkin.png'),
-              value: checkinCount,
-              label: 'Check-in',
-            },
-            {
-              icon: require('../../assets/positive.png'),
-              value: positiveTotal,
-              label: 'Positive',
-            },
-            {
-              icon: require('../../assets/clean.png'),
-              value: cleanStreak,
-              label: 'Clean',
-            },
-          ]}
+          data={statsData}
+          style={{ width: scale(330) }}
+          onItemPress={item => {
+            if (item.label === 'Journal') {
+              openJournalSheet();
+            }
+          }}
         />
+
         <View style={{ height: scale(20) }} />
+
         <GradientCardHome>
           <Text style={styles.title}>Shift Likelihood</Text>
           <Text style={styles.subTitle}>
@@ -257,37 +424,225 @@ export default function SearchScreen() {
 
         <View style={{ height: scale(20) }} />
 
-        <>
-          {/* Toggle Buttons */}
-          <GradientCardHome>
-            <View style={styles.toggleRow}>
-              <LikertPill
-                label="Shift Map"
-                width={s(120)}
-                borderRadius={s(12)}
-                selected={selected === 'map'}
-                onPress={() => setSelected('map')}
-              />
-              <LikertPill
-                label="Shift Grid"
-                width={s(120)}
-                borderRadius={s(12)}
-                selected={selected === 'grid'}
-                onPress={() => setSelected('grid')}
-              />
-            </View>
-          </GradientCardHome>
-
-          {/* Graph Display */}
-          <View style={styles.chartWrapper}>
-            {selected === 'map' ? (
-              <ShiftMapChart denseSeries={denseSeries} />
-            ) : (
-              <ShiftGridChart denseSeries={denseSeries} />
-            )}
+        {/* Toggle Buttons */}
+        <GradientCardHome>
+          <View style={styles.toggleRow}>
+            <LikertPill
+              label="Shift Map"
+              width={s(120)}
+              borderRadius={s(12)}
+              selected={selected === 'map'}
+              onPress={() => setSelected('map')}
+            />
+            <LikertPill
+              label="Shift Grid"
+              width={s(120)}
+              borderRadius={s(12)}
+              selected={selected === 'grid'}
+              onPress={() => setSelected('grid')}
+            />
           </View>
-        </>
+        </GradientCardHome>
+
+        {/* Graph Display */}
+        <View style={styles.chartWrapper}>
+          {selected === 'map' ? (
+            <ShiftMapChart denseSeries={denseSeries} />
+          ) : (
+            <ShiftGridChart denseSeries={denseSeries} />
+          )}
+        </View>
       </ScrollView>
+
+      {/* ───────── Journal Bottom Sheet ───────── */}
+      <Modal
+        visible={journalModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeJournalSheet}
+      >
+        {/* backdrop */}
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalBackdrop}
+          onPress={closeJournalSheet}
+        >
+          {/* bottom sheet card */}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.modalCard}
+            onPress={() => {}}
+          >
+            <Text style={styles.modalTitle}>
+              {isAddingJournal ? 'Add Journal Entry' : 'Journal'}
+            </Text>
+
+            {!isAddingJournal && (
+              <>
+                {/* List of journals */}
+                {sortedJournals.length === 0 ? (
+                  <Text style={styles.emptyText}>
+                    No journal entries yet. Start by adding your first one.
+                  </Text>
+                ) : (
+                  <ScrollView
+                    style={styles.journalList}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {sortedJournals.map(entry => (
+                      <View key={entry.id} style={styles.journalItem}>
+                        <View style={styles.journalHeaderRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.journalItemTitle}>
+                              {entry.title}
+                            </Text>
+                            <Text style={styles.journalItemMeta}>
+                              {entry.date} · {entry.time}
+                            </Text>
+                          </View>
+
+                          <TouchableOpacity
+                            style={styles.deleteBadge}
+                            activeOpacity={0.8}
+                            onPress={() => handleDeleteJournal(entry.id)}
+                          >
+                            <Text style={styles.deleteBadgeText}>Delete</Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.journalItemDesc} numberOfLines={3}>
+                          {entry.description}
+                        </Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+
+                {/* Add new journal button */}
+                <TouchableOpacity
+                  style={styles.addJournalBtn}
+                  activeOpacity={0.9}
+                  onPress={handleStartAddJournal}
+                >
+                  <Text style={styles.addJournalBtnText}>
+                    + Add New Journal
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Close button row */}
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
+                    onPress={closeJournalSheet}
+                  >
+                    <Text style={styles.modalButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            {isAddingJournal && (
+              <>
+                {/* Title */}
+                <Text style={styles.modalLabel}>Title</Text>
+                <GradientInput
+                  value={journalTitle}
+                  onChangeText={t => {
+                    setJournalTitle(t);
+                    if (journalError) setJournalError(null);
+                  }}
+                  placeholder="Give your journal a title"
+                />
+
+                {/* Description */}
+                <Text style={styles.modalLabel}>Description</Text>
+                <GradientInput
+                  value={journalDesc}
+                  onChangeText={t => {
+                    setJournalDesc(t);
+                    if (journalError) setJournalError(null);
+                  }}
+                  placeholder="What happened today? How do you feel?"
+                  multiline
+                  inputStyle={{ minHeight: vs(80) }}
+                />
+
+                {/* Date & Time */}
+                <View style={styles.rowBetween}>
+                  <View style={{ flex: 1, marginRight: s(6) }}>
+                    <Text style={styles.modalLabel}>Date</Text>
+                    <TouchableOpacity
+                      style={styles.pickerButton}
+                      onPress={() => setShowDatePicker(true)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.pickerButtonText}>
+                        {formatDate(journalDate)}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={{ flex: 1, marginLeft: s(6) }}>
+                    <Text style={styles.modalLabel}>Time</Text>
+                    <TouchableOpacity
+                      style={styles.pickerButton}
+                      onPress={() => setShowTimePicker(true)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.pickerButtonText}>
+                        {formatTime(journalTime)}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={journalDate}
+                    mode="date"
+                    themeVariant="dark"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onChangeDate}
+                  />
+                )}
+
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={journalTime}
+                    mode="time"
+                    is24Hour={false}
+                    themeVariant="dark"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onChangeTime}
+                  />
+                )}
+
+                {journalError ? (
+                  <Text style={styles.errorText}>{journalError}</Text>
+                ) : null}
+
+                {/* Buttons */}
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
+                    onPress={() => {
+                      setIsAddingJournal(false);
+                      setJournalError(null);
+                    }}
+                  >
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: '#00BFFF' }]}
+                    onPress={handleSaveJournal}
+                  >
+                    <Text style={styles.modalButtonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -334,5 +689,157 @@ const styles = StyleSheet.create({
     marginTop: vs(10),
     width: s(330),
     alignSelf: 'center',
+  },
+  // modal / bottom sheet
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: '#101725',
+    paddingHorizontal: s(16),
+    paddingTop: vs(14),
+    paddingBottom: vs(24),
+    borderTopLeftRadius: s(20),
+    borderTopRightRadius: s(20),
+    maxHeight: vs(520),
+  },
+  modalTitle: {
+    color: palette.white,
+    fontSize: ms(18),
+    fontWeight: '800',
+    marginBottom: vs(10),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  modalLabel: {
+    color: palette.white,
+    fontSize: ms(14),
+    fontWeight: '700',
+    marginTop: vs(10),
+    marginBottom: vs(4),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    marginTop: vs(8),
+  },
+  pickerButton: {
+    borderRadius: s(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    paddingVertical: vs(10),
+    paddingHorizontal: s(10),
+  },
+  pickerButtonText: {
+    color: palette.white,
+    fontSize: ms(14),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: ms(12),
+    marginTop: vs(6),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: vs(16),
+  },
+  modalButton: {
+    paddingVertical: vs(8),
+    paddingHorizontal: s(16),
+    borderRadius: s(20),
+    marginLeft: s(8),
+  },
+  modalButtonText: {
+    color: palette.white,
+    fontSize: ms(14),
+    fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  emptyText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: ms(14),
+    marginTop: vs(8),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  journalList: {
+    maxHeight: vs(260),
+    marginTop: vs(4),
+    paddingBottom: vs(8),
+  },
+
+  journalItem: {
+    backgroundColor: '#141D2C',
+    borderRadius: s(14),
+    paddingVertical: vs(10),
+    paddingHorizontal: s(12),
+    marginBottom: vs(10),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+
+  journalItemTitle: {
+    color: palette.white,
+    fontSize: ms(15),
+    fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+
+  journalItemMeta: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: ms(12),
+    marginTop: vs(4),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+
+  journalItemDesc: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: ms(13),
+    marginTop: vs(6),
+    lineHeight: ms(18),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+
+  addJournalBtn: {
+    marginTop: vs(14),
+    paddingVertical: vs(10),
+    borderRadius: s(20),
+    borderWidth: 1,
+    borderColor: '#00BFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addJournalBtnText: {
+    color: '#00BFFF',
+    fontSize: ms(14.5),
+    fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  journalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  deleteBadge: {
+    paddingHorizontal: s(10),
+    paddingVertical: vs(4),
+    borderRadius: s(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255,100,100,0.9)',
+    alignSelf: 'flex-start',
+    marginLeft: s(8),
+  },
+  deleteBadgeText: {
+    color: '#FF6B6B',
+    fontSize: ms(11.5),
+    fontWeight: '700',
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

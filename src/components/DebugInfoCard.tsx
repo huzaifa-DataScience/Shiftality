@@ -141,12 +141,7 @@ export default function DebugInfoCard({
       <View style={styles.blockGap} />
       <Text style={styles.h2}>Belief Profile</Text>
       <LabeledRow label="Archetype:" value={archetype} />
-      <View style={styles.row}>
-        <Text style={styles.label} />
-        <Text style={[styles.value, { marginTop: vs(2) }]}>
-          {baselineIndex}
-        </Text>
-      </View>
+      <LabeledRow label="BaseLine:" value={baselineIndex} />
       <LabeledRow label="Empowering:" value={empowering} />
       <LabeledRow label="Shadow:" value={shadow} />
 
