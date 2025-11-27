@@ -30,6 +30,7 @@ import {
   requestReminderPermission,
   scheduleDemoSequence,
   scheduleReminderNotification,
+  cancelAllReminderNotifications,
 } from '../lib/localNotifications';
 import GradientInput from './GradientInput';
 
@@ -41,6 +42,9 @@ type StoredReminder = {
   time: string; // ISO
   enabled: boolean;
 };
+
+// NEW: global toggle key
+const REMINDER_GLOBAL_ENABLED_KEY = 'shift_reminders_global_enabled_v1';
 
 // keep only time component (fixes iOS timepicker issue)
 function makeTimeOnly(base: Date): Date {
@@ -71,6 +75,9 @@ them from real reminders.`,
   const [reminders, setReminders] = useState<StoredReminder[]>([]);
   const [selectedPillIndex, setSelectedPillIndex] = useState<number | null>(0);
 
+  // NEW: global on/off state
+  const [globalEnabled, setGlobalEnabled] = useState<boolean>(true);
+
   // modal state
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -85,23 +92,42 @@ them from real reminders.`,
   const [titleError, setTitleError] = useState<string | null>(null);
   const [descError, setDescError] = useState<string | null>(null);
 
-  // ───────────────── LOAD REMINDERS ONCE ─────────────────
+  // ───────────────── LOAD REMINDERS + GLOBAL FLAG ─────────────────
   useEffect(() => {
-    AsyncStorage.getItem(REMINDER_STORAGE_KEY).then(raw => {
-      if (!raw) return;
+    const load = async () => {
       try {
-        const list: StoredReminder[] = JSON.parse(raw);
-        if (Array.isArray(list)) {
-          setReminders(list);
-          const firstEnabled = list.find(r => r.enabled);
-          if (firstEnabled) {
-            setSelectedPillIndex(firstEnabled.pillIndex);
+        const rawRem = await AsyncStorage.getItem(REMINDER_STORAGE_KEY);
+        if (rawRem) {
+          const list: StoredReminder[] = JSON.parse(rawRem);
+          if (Array.isArray(list)) {
+            setReminders(list);
+            const firstEnabled = list.find(r => r.enabled);
+            if (firstEnabled) {
+              setSelectedPillIndex(firstEnabled.pillIndex);
+            }
           }
         }
       } catch (e) {
         console.log('ReminderTestSection: error parsing reminders', e);
       }
-    });
+
+      try {
+        const rawFlag = await AsyncStorage.getItem(REMINDER_GLOBAL_ENABLED_KEY);
+        if (rawFlag != null) {
+          setGlobalEnabled(JSON.parse(rawFlag));
+        } else {
+          // default ON
+          setGlobalEnabled(true);
+        }
+      } catch (e) {
+        console.log(
+          'ReminderTestSection: error loading global enabled flag',
+          e,
+        );
+      }
+    };
+
+    load();
   }, []);
 
   // ───────────────── HELPERS ─────────────────
@@ -114,6 +140,14 @@ them from real reminders.`,
   const saveRemindersToStorage = async (next: StoredReminder[]) => {
     setReminders(next);
     await AsyncStorage.setItem(REMINDER_STORAGE_KEY, JSON.stringify(next));
+  };
+
+  const saveGlobalEnabled = async (value: boolean) => {
+    setGlobalEnabled(value);
+    await AsyncStorage.setItem(
+      REMINDER_GLOBAL_ENABLED_KEY,
+      JSON.stringify(value),
+    );
   };
 
   const openReminderEditor = (pillIndex: number) => {
@@ -159,6 +193,7 @@ them from real reminders.`,
     return fire;
   };
 
+  // ───────────────── SAVE SINGLE REMINDER ─────────────────
   const onSaveReminder = async () => {
     if (editingIndex === null) {
       setReminderModalVisible(false);
@@ -196,14 +231,22 @@ them from real reminders.`,
     try {
       await saveRemindersToStorage(next);
 
-      await requestReminderPermission();
-      const fireAt = computeNextFireAt(reminderTime);
-      await scheduleReminderNotification({
-        fireAt,
-        pillIndex,
-        label: trimmedTitle,
-        isDemo: false,
-      });
+      // 🔥 Only schedule if global is enabled
+      if (globalEnabled) {
+        await requestReminderPermission();
+        const fireAt = computeNextFireAt(reminderTime);
+        await scheduleReminderNotification({
+          fireAt,
+          pillIndex,
+          label: trimmedTitle,
+          isDemo: false,
+        });
+      } else {
+        Alert.alert(
+          'Reminders are disabled',
+          'Your reminder is saved, but it will not fire until you enable reminders again.',
+        );
+      }
     } catch (e) {
       console.log('ReminderTestSection: error saving/scheduling', e);
     } finally {
@@ -212,6 +255,7 @@ them from real reminders.`,
     }
   };
 
+  // ───────────────── DELETE SINGLE REMINDER ─────────────────
   const onDeleteReminder = () => {
     if (editingIndex === null) return;
 
@@ -244,6 +288,76 @@ them from real reminders.`,
     );
   };
 
+  // ───────────────── GLOBAL ENABLE / DISABLE ─────────────────
+  const disableAllReminders = async () => {
+    try {
+      await saveGlobalEnabled(false);
+      setSelectedPillIndex(null);
+
+      // cancel all OS-level scheduled notifications
+      try {
+        await cancelAllReminderNotifications();
+      } catch (e) {
+        console.log(
+          'ReminderTestSection: error cancelling all notifications',
+          e,
+        );
+      }
+
+      Alert.alert(
+        'Reminders disabled',
+        'All reminders are now disabled. They remain saved and can be re-enabled later.',
+      );
+    } catch (e) {
+      console.log('ReminderTestSection: error disabling all reminders', e);
+    }
+  };
+
+  const enableAllReminders = async () => {
+    try {
+      await saveGlobalEnabled(true);
+
+      // schedule all enabled reminders
+      if (reminders.length > 0) {
+        await requestReminderPermission();
+
+        for (const r of reminders) {
+          if (!r.enabled) continue;
+
+          const fireAt = computeNextFireAt(makeTimeOnly(new Date(r.time)));
+          try {
+            await scheduleReminderNotification({
+              fireAt,
+              pillIndex: r.pillIndex,
+              label: r.title,
+              isDemo: false,
+            });
+          } catch (e) {
+            console.log(
+              'ReminderTestSection: error scheduling reminder on enable',
+              e,
+            );
+          }
+        }
+      }
+
+      Alert.alert(
+        'Reminders enabled',
+        'Saved reminders are active again and will fire at their configured times.',
+      );
+    } catch (e) {
+      console.log('ReminderTestSection: error enabling reminders', e);
+    }
+  };
+
+  const toggleGlobalEnabled = () => {
+    if (globalEnabled) {
+      disableAllReminders();
+    } else {
+      enableAllReminders();
+    }
+  };
+
   // ───────────────── RENDER ─────────────────
   return (
     <>
@@ -259,18 +373,25 @@ them from real reminders.`,
           }}
         >
           <Text style={[styles.title, { marginBottom: scale(0) }]}>
-            Disabled
+            {globalEnabled ? 'Enabled' : 'Disabled'}
           </Text>
-          <AppImage
-            source={notificationOutline}
-            style={styles.outilineNotification}
-            resizeMode="contain"
-          />
+
+          {/* 🔥 Tap icon to toggle global on/off */}
+          <TouchableOpacity onPress={toggleGlobalEnabled} activeOpacity={0.8}>
+            <AppImage
+              source={notificationOutline}
+              style={[
+                styles.outilineNotification,
+                !globalEnabled && { opacity: 0.4 },
+              ]}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
         </View>
         <View style={{ height: scale(15) }} />
-        <GradientHintBox text="Enable notifications to test the reminder system properly." />
+        <GradientHintBox text="Toggle reminders globally using the bell icon. When disabled, reminders are stored but will not fire." />
 
-        {/* Test Notification Permission */}
+        {/* Test Notification Permission (you might still want this even if disabled) */}
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={async () => {
@@ -307,7 +428,8 @@ them from real reminders.`,
 
         {/* Pills */}
         <ReminderPills
-          activeIndices={reminders.map(r => r.pillIndex)}
+          // show which slots have configured reminders (regardless of global toggle)
+          activeIndices={reminders.filter(r => r.enabled).map(r => r.pillIndex)}
           onPressPill={index => openReminderEditor(index)}
         />
 
@@ -329,6 +451,14 @@ them from real reminders.`,
           }}
           title="Test Full Sequence (5s intervals)"
           onPress={async () => {
+            if (!globalEnabled) {
+              Alert.alert(
+                'Reminders are disabled',
+                'Enable reminders first to test the full sequence.',
+              );
+              return;
+            }
+
             try {
               await requestReminderPermission();
               await scheduleDemoSequence(selectedPillIndex);

@@ -94,9 +94,11 @@ export async function scheduleDemoSequence(pillIndex: number | null) {
 }
 
 /**
- * Clears ALL scheduled notifications + stored reminders (useful for reset).
+ * Clears ALL scheduled notifications + displayed notifications.
+ * Used when globally DISABLING reminders (but we do NOT touch
+ * your reminder config in AsyncStorage here).
  */
-export async function clearAllLocalReminders() {
+export async function cancelAllReminderNotifications() {
   await notifee.cancelAllNotifications();
-  await notifee.cancelAllDisplayedNotifications();
+  await notifee.cancelDisplayedNotifications();
 }
