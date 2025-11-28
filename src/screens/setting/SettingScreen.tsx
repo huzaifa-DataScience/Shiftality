@@ -1,5 +1,5 @@
 // src/screens/SearchScreen.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,16 +16,26 @@ import GradientHintBoxVibe from '../../components/GradientHintBoxVibe';
 import PrimaryButton from '../../components/PrimaryButton';
 import GradientSelect from '../../components/GradientSelect';
 import LinearGradient from 'react-native-linear-gradient';
-import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
-import { useSelector } from 'react-redux';
+import {
+  selectHomeOnboarding,
+  setArchetype,
+  setBaselineIndex,
+} from '../../store/reducers/homeOnboardingReducer';
+import { useDispatch, useSelector } from 'react-redux';
 import BeliefsEditor from '../../components/BeliefsEditor';
 import ReminderTestSection from '../../components/ReminderTestSection';
+import { selectBeliefProfile } from '../../store/reducers/surveyReducer';
+import { useNavigation } from '@react-navigation/native';
 
 const themeOptions = ['System', 'Light', 'Dark'];
 const fontSizeOptions = ['Small', 'Normal', 'Large'];
 
 export default function SettingScreen() {
+  const dispatch = useDispatch();
+  const navigation = useNavigation();
   const onboarding = useSelector(selectHomeOnboarding);
+  const beliefProfile = useSelector(selectBeliefProfile);
+
   console.log('onboarding ==> ', onboarding);
 
   const [reflectionEnabled, setReflectionEnabled] = useState(true);
@@ -44,6 +54,23 @@ export default function SettingScreen() {
   const [fontVal, setFontVal] = useState<string>('Normal');
   const [colorBlind, setColorBlind] = useState<boolean>(true);
   const [reminder, setReminder] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Only update if we have a meaningful index
+    if (beliefProfile.overallIndex > 0) {
+      dispatch(setBaselineIndex(beliefProfile.overallIndex));
+      dispatch(setArchetype(beliefProfile.archetype));
+    }
+  }, [beliefProfile.overallIndex, beliefProfile.archetype, dispatch]);
+
+  console.log('baselineIndex', onboarding?.baselineIndex);
+  console.log('archetype', onboarding?.archetype);
+
+  const archetype = onboarding?.archetype || 'Balanced Explorer';
+  const baselineIndexStr =
+    onboarding?.baselineIndex != null
+      ? `${Math.round(onboarding.baselineIndex)}/100`
+      : '—';
 
   return (
     <View style={styles.root}>
@@ -100,11 +127,11 @@ export default function SettingScreen() {
             text={
               'Based on your 30-item Shiftality Scan.\nYour archetype: Balanced Explorer'
             }
-            secondaryText={`Baseline Shift Index 53 / 100`}
+            secondaryText={baselineIndexStr}
             footerActionLabel="Retake Shiftality Scan"
             footerIcon={require('../../assets/clear_choices.png')}
             onPressFooterAction={() => {
-              // open retake flow
+              navigation.navigate('Main', { screen: 'Search' });
             }}
           />
         </GradientCardHome>

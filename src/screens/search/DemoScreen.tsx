@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,7 +30,12 @@ import {
   clearAllCheckins,
   Checkin,
 } from '../../lib/dataClient';
-import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
+import {
+  selectHomeOnboarding,
+  setArchetype,
+  setBaselineIndex,
+} from '../../store/reducers/homeOnboardingReducer';
+import { selectBeliefProfile } from '../../store/reducers/surveyReducer';
 
 // ⚡ same keys as ProfileScreen / TodaysShiftView
 const EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
@@ -77,7 +82,9 @@ function addDaysStr(dateStr: string, days: number): string {
 
 export default function DemoScreen() {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
   const onboarding = useSelector(selectHomeOnboarding);
+  const beliefProfile = useSelector(selectBeliefProfile);
 
   const clear_choices = require('../../assets/clear_choices.png');
 
@@ -124,12 +131,23 @@ export default function DemoScreen() {
 
     load();
   }, []);
+  useEffect(() => {
+    // Only update if we have a meaningful index
+    if (beliefProfile.overallIndex > 0) {
+      dispatch(setBaselineIndex(beliefProfile.overallIndex));
+      dispatch(setArchetype(beliefProfile.archetype));
+    }
+  }, [beliefProfile.overallIndex, beliefProfile.archetype, dispatch]);
+
+  console.log('baselineIndex', onboarding?.baselineIndex);
+  console.log('archetype', onboarding?.archetype);
 
   const archetype = onboarding?.archetype || 'Balanced Explorer';
   const baselineIndexStr =
     onboarding?.baselineIndex != null
       ? `${Math.round(onboarding.baselineIndex)}/100`
       : '—';
+
   // ───────────────── DERIVED VALUES ─────────────────
   const effectiveDays = useMemo(() => clampDays(days), [days]);
   const todayStr = new Date().toISOString().slice(0, 10);
