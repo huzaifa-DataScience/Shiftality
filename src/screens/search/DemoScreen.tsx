@@ -205,8 +205,36 @@ export default function DemoScreen() {
     navigation.navigate('Main', { screen: 'Search' });
   };
 
-  const onTriggerDaily = () => {
-    console.log('Trigger Daily Shift (demo)');
+  const onTriggerDaily = async () => {
+    // One-day version of onGenerate, using the next anchorDate
+    const posPerDay =
+      mode === 'All' || mode === 'Empowering' ? empoweringBeliefs.length : 0;
+    const negPerDay =
+      mode === 'All' || mode === 'Shadow' ? shadowBeliefs.length : 0;
+
+    let dailyScore = posPerDay - negPerDay;
+    if (dailyScore > 10) dailyScore = 10;
+    if (dailyScore < -10) dailyScore = -10;
+
+    const nowIso = new Date().toISOString();
+
+    const checkin: Checkin = {
+      id: `${anchorDate}-${Date.now()}-trigger`,
+      date: anchorDate,
+      pos_yes: posPerDay,
+      neg_yes: negPerDay,
+      daily_score: dailyScore,
+      source: 'demo',
+      created_at: nowIso,
+    };
+
+    await upsertCheckins([checkin]);
+    const updated = await getCheckins();
+    setCheckins(updated);
+
+    // Optionally bounce user back into main flow
+    // @ts-ignore
+    navigation.navigate('Main', { screen: 'Search' });
   };
 
   const onReset = async () => {
