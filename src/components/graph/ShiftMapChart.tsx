@@ -1,12 +1,5 @@
-// src/components/graph/ShiftMapChart.tsx
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  LayoutChangeEvent,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
 import Svg, {
   Defs,
   Line,
@@ -27,6 +20,12 @@ import { DensePoint } from '../../lib/dataClient';
 
 type Props = {
   denseSeries: DensePoint[];
+  /**
+   * Called when user taps a data point in the map.
+   * We pass an ISO date string "YYYY-MM-DD" representing that point.
+   * Parent (SearchScreen) can then open the journal modal for that date.
+   */
+  onPointPress?: (isoDate: string) => void;
 };
 
 const MONTHS = [
@@ -49,50 +48,7 @@ const Y_MAX = 36.5;
 const Y_MIN = -36.5;
 const Y_AXIS_LABELS = ['-36', '-24', '-12', '0', '+12', '+24', '+36'];
 
-function monthLabelFromDate(dateStr: string) {
-  const d = new Date(dateStr);
-  const m = d.getMonth();
-  return MONTHS[m] ?? '';
-}
-
-// Build one point per month using the dense 365-day series
-function buildMonthlySeries(denseSeries: DensePoint[]) {
-  if (!denseSeries.length) return [];
-
-  const first = new Date(denseSeries[0].date);
-  const last = new Date(denseSeries[denseSeries.length - 1].date);
-
-  const result: { value: number; label: string }[] = [];
-
-  // Start at first month of journey
-  let cursor = new Date(first.getFullYear(), first.getMonth(), 1);
-
-  while (cursor <= last && result.length < 12) {
-    const year = cursor.getFullYear();
-    const month = cursor.getMonth();
-
-    // all points within this month
-    const monthPoints = denseSeries.filter(p => {
-      const d = new Date(p.date);
-      return d.getFullYear() === year && d.getMonth() === month;
-    });
-
-    if (monthPoints.length > 0) {
-      const lastPointOfMonth = monthPoints[monthPoints.length - 1];
-      result.push({
-        value: lastPointOfMonth.cumulative,
-        label: MONTHS[month],
-      });
-    }
-
-    // move to first day of next month
-    cursor = new Date(year, month + 1, 1);
-  }
-
-  return result;
-}
-
-export default function ShiftMapChart({ denseSeries }: Props) {
+export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(110));
 
@@ -102,15 +58,16 @@ export default function ShiftMapChart({ denseSeries }: Props) {
     setH(Math.max(vs(80), Math.round(height) || vs(80)));
   }, []);
 
-  // ✅ Month-level data (max 12 points)
+  // ✅ Month-level data with a representative date for clicks
   const data = useMemo(() => {
     if (!denseSeries || denseSeries.length === 0) return [];
 
     type MonthAgg = {
-      label: string;
-      value: number;
+      label: string; // "Jan", "Feb", …
+      value: number; // cumulative (clamped)
       hasCheckin: boolean;
-      lastDate: string; // for sorting
+      dateForClick: string; // "YYYY-MM-DD" from denseSeries
+      lastDate: string; // for chronological sort
     };
 
     const byMonth = new Map<string, MonthAgg>();
@@ -131,6 +88,7 @@ export default function ShiftMapChart({ denseSeries }: Props) {
           label,
           value: point.cumulative,
           hasCheckin: !!point.hasCheckin,
+          dateForClick: point.date, // first date we see in this month
           lastDate: point.date,
         });
       } else {
@@ -138,7 +96,13 @@ export default function ShiftMapChart({ denseSeries }: Props) {
         existing.value = point.cumulative;
         // month has a dot if ANY day had a checkin
         existing.hasCheckin = existing.hasCheckin || !!point.hasCheckin;
+        // track last date for sorting
         existing.lastDate = point.date;
+
+        // if this specific day has a checkin, prefer it for clicks
+        if (point.hasCheckin) {
+          existing.dateForClick = point.date;
+        }
       }
     });
 
@@ -150,13 +114,22 @@ export default function ShiftMapChart({ denseSeries }: Props) {
     // only keep the last 12 months
     const lastTwelve = sortedMonths.slice(-12);
 
-    return lastTwelve.map(m => ({
-      // clamp into [-36.5, +36.5] so the line never escapes
-      value: Math.max(Y_MIN, Math.min(Y_MAX, m.value)),
-      label: m.label,
-      hideDataPoint: !m.hasCheckin,
-    }));
-  }, [denseSeries]);
+    return lastTwelve.map(m => {
+      const clamped = Math.max(Y_MIN, Math.min(Y_MAX, m.value));
+
+      return {
+        value: clamped,
+        label: m.label,
+        hideDataPoint: !m.hasCheckin,
+        // 👇 this fires when user taps the data point
+        onPress: () => {
+          if (m.hasCheckin && onPointPress) {
+            onPointPress(m.dateForClick); // e.g. "2025-12-29"
+          }
+        },
+      };
+    });
+  }, [denseSeries, onPointPress]);
 
   const rawPosition =
     denseSeries && denseSeries.length
@@ -165,18 +138,13 @@ export default function ShiftMapChart({ denseSeries }: Props) {
 
   const currentPosition = Math.max(Y_MIN, Math.min(Y_MAX, rawPosition));
 
-  // Use nice fixed spacing now that we have ~12 points
-  // const spacing = Platform.OS === 'ios' ? 30 : 25;
-  // const initialSpacing = 25;
-  // const endSpacing = 25;
-
   const pointCount = data.length;
 
   const spacing = useMemo(() => {
     if (pointCount <= 1) return 0;
     if (pointCount <= 6) return 40;
     if (pointCount <= 12) return 30;
-    return 20; // fallback if somehow more than 12
+    return 20;
   }, [pointCount]);
 
   const initialSpacing = 25;
@@ -246,11 +214,12 @@ export default function ShiftMapChart({ denseSeries }: Props) {
               showVerticalLines={false}
             />
 
-            {/* vertical dotted lines just for the 12-ish month points */}
+            {/* vertical dotted lines for each month point – DO NOT block touches */}
             <Svg
               height="100%"
               width="100%"
               style={{ position: 'absolute', top: 0, left: 0 }}
+              pointerEvents="none"
             >
               {data.map((_, index) => (
                 <Line

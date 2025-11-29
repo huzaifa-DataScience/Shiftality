@@ -8,6 +8,9 @@ import {
   Modal,
   TouchableOpacity,
   Platform,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Pressable,
 } from 'react-native';
 import { palette } from '../../theme';
 import { ms, s, scale, vs } from 'react-native-size-matters';
@@ -67,6 +70,11 @@ export default function SearchScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [journalError, setJournalError] = useState<string | null>(null);
+
+  // 👇 NEW: which date we’re filtering by when opened from map
+  const [journalFilterDate, setJournalFilterDate] = useState<string | null>(
+    null,
+  );
 
   // ───────── Load checkins + dense series ─────────
   useFocusEffect(
@@ -230,6 +238,12 @@ export default function SearchScreen() {
   const formatTime = (d: Date) =>
     d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+  const formatIsoDatePretty = (isoDate: string) => {
+    const d = new Date(`${isoDate}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return isoDate;
+    return formatDate(d);
+  };
+
   const onChangeDate = (_: DateTimePickerEvent, date?: Date) => {
     if (!date) {
       setShowDatePicker(false);
@@ -252,13 +266,15 @@ export default function SearchScreen() {
     setJournalTime(date);
   };
 
+  // Open from stats card → show ALL journals (no filter), list mode
   const openJournalSheet = () => {
     setJournalError(null);
     setJournalTitle('');
     setJournalDesc('');
     setJournalDate(new Date());
     setJournalTime(new Date());
-    setIsAddingJournal(false); // start in list view
+    setIsAddingJournal(false);
+    setJournalFilterDate(null); // 👈 clear filter
     setJournalModalVisible(true);
   };
 
@@ -267,14 +283,25 @@ export default function SearchScreen() {
     setShowDatePicker(false);
     setShowTimePicker(false);
     setIsAddingJournal(false);
+    setJournalFilterDate(null); // reset on close
   };
 
   const handleStartAddJournal = () => {
     setJournalError(null);
     setJournalTitle('');
     setJournalDesc('');
-    setJournalDate(new Date());
-    setJournalTime(new Date());
+
+    // If we came from a specific date, prefill that
+    if (journalFilterDate) {
+      const d = new Date(`${journalFilterDate}T12:00:00`);
+      setJournalDate(d);
+      setJournalTime(d);
+    } else {
+      const now = new Date();
+      setJournalDate(now);
+      setJournalTime(now);
+    }
+
     setIsAddingJournal(true);
   };
 
@@ -331,14 +358,30 @@ export default function SearchScreen() {
     },
   ];
 
-  // sort journals latest-first for display
-  const sortedJournals = [...journalEntries].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
+  // sort journals latest-first, then apply optional date filter
+  const visibleJournals = useMemo(() => {
+    const base = [...journalEntries].sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+
+    if (!journalFilterDate) return base;
+    return base.filter(entry => entry.date === journalFilterDate);
+  }, [journalEntries, journalFilterDate]);
 
   const handleDeleteJournal = async (id: string) => {
     const next = journalEntries.filter(entry => entry.id !== id);
     await saveJournals(next);
+  };
+
+  // ───────── Map point → open journal modal in list mode, filtered by date ─────────
+  const handleMapPointPress = (isoDate: string) => {
+    // isoDate like "2025-12-29" from denseSeries
+    setJournalError(null);
+    setJournalTitle('');
+    setJournalDesc('');
+    setIsAddingJournal(false); // 👈 list mode, not add mode
+    setJournalFilterDate(isoDate); // 👈 filter by this date
+    setJournalModalVisible(true);
   };
 
   return (
@@ -447,7 +490,10 @@ export default function SearchScreen() {
         {/* Graph Display */}
         <View style={styles.chartWrapper}>
           {selected === 'map' ? (
-            <ShiftMapChart denseSeries={denseSeries} />
+            <ShiftMapChart
+              denseSeries={denseSeries}
+              onPointPress={handleMapPointPress}
+            />
           ) : (
             <ShiftGridChart denseSeries={denseSeries} />
           )}
@@ -461,187 +507,215 @@ export default function SearchScreen() {
         animationType="fade"
         onRequestClose={closeJournalSheet}
       >
-        {/* backdrop */}
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.modalBackdrop}
-          onPress={closeJournalSheet}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
         >
-          {/* bottom sheet card */}
-          <TouchableOpacity
-            activeOpacity={1}
-            style={styles.modalCard}
-            onPress={() => {}}
-          >
-            <Text style={styles.modalTitle}>
-              {isAddingJournal ? 'Add Journal Entry' : 'Journal'}
-            </Text>
+          <View style={styles.modalBackdropContainer}>
+            {/* Backdrop: tap to close */}
+            <Pressable
+              style={styles.modalBackdrop}
+              onPress={closeJournalSheet}
+            />
 
-            {!isAddingJournal && (
-              <>
-                {/* List of journals */}
-                {sortedJournals.length === 0 ? (
-                  <Text style={styles.emptyText}>
-                    No journal entries yet. Start by adding your first one.
+            {/* Bottom sheet card */}
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>
+                {isAddingJournal ? 'Add Journal Entry' : 'Journal'}
+              </Text>
+
+              {/* If filtered by date, show a small helper text */}
+              {!isAddingJournal && journalFilterDate && (
+                <View style={{ marginBottom: vs(6) }}>
+                  <Text style={styles.filterInfo}>
+                    Showing entries for {formatIsoDatePretty(journalFilterDate)}
                   </Text>
-                ) : (
-                  <ScrollView
-                    style={styles.journalList}
-                    showsVerticalScrollIndicator={false}
-                  >
-                    {sortedJournals.map(entry => (
-                      <View key={entry.id} style={styles.journalItem}>
-                        <View style={styles.journalHeaderRow}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.journalItemTitle}>
-                              {entry.title}
-                            </Text>
-                            <Text style={styles.journalItemMeta}>
-                              {entry.date} · {entry.time}
-                            </Text>
+                </View>
+              )}
+
+              {!isAddingJournal && (
+                <>
+                  {/* List of journals */}
+                  {visibleJournals.length === 0 ? (
+                    <Text style={styles.emptyText}>
+                      {journalFilterDate
+                        ? 'No journal entries for this date yet.'
+                        : 'No journal entries yet. Start by adding your first one.'}
+                    </Text>
+                  ) : (
+                    <ScrollView
+                      style={styles.journalList}
+                      contentContainerStyle={styles.journalListContent}
+                      showsVerticalScrollIndicator
+                      keyboardShouldPersistTaps="handled"
+                    >
+                      {visibleJournals.map(entry => (
+                        <View key={entry.id} style={styles.journalItem}>
+                          <View style={styles.journalHeaderRow}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.journalItemTitle}>
+                                {entry.title}
+                              </Text>
+                              <Text style={styles.journalItemMeta}>
+                                {entry.date} · {entry.time}
+                              </Text>
+                            </View>
+
+                            <TouchableOpacity
+                              style={styles.deleteBadge}
+                              activeOpacity={0.8}
+                              onPress={() => handleDeleteJournal(entry.id)}
+                            >
+                              <Text style={styles.deleteBadgeText}>Delete</Text>
+                            </TouchableOpacity>
                           </View>
 
-                          <TouchableOpacity
-                            style={styles.deleteBadge}
-                            activeOpacity={0.8}
-                            onPress={() => handleDeleteJournal(entry.id)}
+                          <Text
+                            style={styles.journalItemDesc}
+                            numberOfLines={3}
                           >
-                            <Text style={styles.deleteBadgeText}>Delete</Text>
-                          </TouchableOpacity>
+                            {entry.description}
+                          </Text>
                         </View>
+                      ))}
+                    </ScrollView>
+                  )}
 
-                        <Text style={styles.journalItemDesc} numberOfLines={3}>
-                          {entry.description}
-                        </Text>
-                      </View>
-                    ))}
-                  </ScrollView>
-                )}
-
-                {/* Add new journal button */}
-                <TouchableOpacity
-                  style={styles.addJournalBtn}
-                  activeOpacity={0.9}
-                  onPress={handleStartAddJournal}
-                >
-                  <Text style={styles.addJournalBtnText}>
-                    + Add New Journal
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Close button row */}
-                <View style={styles.modalButtons}>
+                  {/* Add new journal button */}
                   <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
-                    onPress={closeJournalSheet}
+                    style={styles.addJournalBtn}
+                    activeOpacity={0.9}
+                    onPress={handleStartAddJournal}
                   >
-                    <Text style={styles.modalButtonText}>Close</Text>
+                    <Text style={styles.addJournalBtnText}>
+                      + Add New Journal
+                    </Text>
                   </TouchableOpacity>
-                </View>
-              </>
-            )}
 
-            {isAddingJournal && (
-              <>
-                {/* Title */}
-                <Text style={styles.modalLabel}>Title</Text>
-                <GradientInput
-                  value={journalTitle}
-                  onChangeText={t => {
-                    setJournalTitle(t);
-                    if (journalError) setJournalError(null);
-                  }}
-                  placeholder="Give your journal a title"
-                />
-
-                {/* Description */}
-                <Text style={styles.modalLabel}>Description</Text>
-                <GradientInput
-                  value={journalDesc}
-                  onChangeText={t => {
-                    setJournalDesc(t);
-                    if (journalError) setJournalError(null);
-                  }}
-                  placeholder="What happened today? How do you feel?"
-                  multiline
-                  inputStyle={{ minHeight: vs(80) }}
-                />
-
-                {/* Date & Time */}
-                <View style={styles.rowBetween}>
-                  <View style={{ flex: 1, marginRight: s(6) }}>
-                    <Text style={styles.modalLabel}>Date</Text>
+                  {/* Close button row */}
+                  <View style={styles.modalButtons}>
                     <TouchableOpacity
-                      style={styles.pickerButton}
-                      onPress={() => setShowDatePicker(true)}
-                      activeOpacity={0.8}
+                      style={[
+                        styles.modalButton,
+                        { backgroundColor: '#2b3950' },
+                      ]}
+                      onPress={closeJournalSheet}
                     >
-                      <Text style={styles.pickerButtonText}>
-                        {formatDate(journalDate)}
-                      </Text>
+                      <Text style={styles.modalButtonText}>Close</Text>
                     </TouchableOpacity>
                   </View>
-                  <View style={{ flex: 1, marginLeft: s(6) }}>
-                    <Text style={styles.modalLabel}>Time</Text>
-                    <TouchableOpacity
-                      style={styles.pickerButton}
-                      onPress={() => setShowTimePicker(true)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.pickerButtonText}>
-                        {formatTime(journalTime)}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                </>
+              )}
 
-                {showDatePicker && (
-                  <DateTimePicker
-                    value={journalDate}
-                    mode="date"
-                    themeVariant="dark"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={onChangeDate}
-                  />
-                )}
-
-                {showTimePicker && (
-                  <DateTimePicker
-                    value={journalTime}
-                    mode="time"
-                    is24Hour={false}
-                    themeVariant="dark"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={onChangeTime}
-                  />
-                )}
-
-                {journalError ? (
-                  <Text style={styles.errorText}>{journalError}</Text>
-                ) : null}
-
-                {/* Buttons */}
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
-                    onPress={() => {
-                      setIsAddingJournal(false);
-                      setJournalError(null);
+              {isAddingJournal && (
+                <>
+                  {/* Title */}
+                  <Text style={styles.modalLabel}>Title</Text>
+                  <GradientInput
+                    value={journalTitle}
+                    onChangeText={t => {
+                      setJournalTitle(t);
+                      if (journalError) setJournalError(null);
                     }}
-                  >
-                    <Text style={styles.modalButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#00BFFF' }]}
-                    onPress={handleSaveJournal}
-                  >
-                    <Text style={styles.modalButtonText}>Save</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </TouchableOpacity>
-        </TouchableOpacity>
+                    placeholder="Give your journal a title"
+                  />
+
+                  {/* Description */}
+                  <Text style={styles.modalLabel}>Description</Text>
+                  <GradientInput
+                    value={journalDesc}
+                    onChangeText={t => {
+                      setJournalDesc(t);
+                      if (journalError) setJournalError(null);
+                    }}
+                    placeholder="What happened today? How do you feel?"
+                    multiline
+                    inputStyle={{ minHeight: vs(80) }}
+                  />
+
+                  {/* Date & Time */}
+                  <View style={styles.rowBetween}>
+                    <View style={{ flex: 1, marginRight: s(6) }}>
+                      <Text style={styles.modalLabel}>Date</Text>
+                      <TouchableOpacity
+                        style={styles.pickerButton}
+                        onPress={() => setShowDatePicker(true)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.pickerButtonText}>
+                          {formatDate(journalDate)}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={{ flex: 1, marginLeft: s(6) }}>
+                      <Text style={styles.modalLabel}>Time</Text>
+                      <TouchableOpacity
+                        style={styles.pickerButton}
+                        onPress={() => setShowTimePicker(true)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.pickerButtonText}>
+                          {formatTime(journalTime)}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={journalDate}
+                      mode="date"
+                      themeVariant="dark"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={onChangeDate}
+                    />
+                  )}
+
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={journalTime}
+                      mode="time"
+                      is24Hour={false}
+                      themeVariant="dark"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={onChangeTime}
+                    />
+                  )}
+
+                  {journalError ? (
+                    <Text style={styles.errorText}>{journalError}</Text>
+                  ) : null}
+
+                  {/* Buttons */}
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity
+                      style={[
+                        styles.modalButton,
+                        { backgroundColor: '#2b3950' },
+                      ]}
+                      onPress={() => {
+                        setIsAddingJournal(false);
+                        setJournalError(null);
+                      }}
+                    >
+                      <Text style={styles.modalButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.modalButton,
+                        { backgroundColor: '#00BFFF' },
+                      ]}
+                      onPress={handleSaveJournal}
+                    >
+                      <Text style={styles.modalButtonText}>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -691,20 +765,20 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   // modal / bottom sheet
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: '#101725',
-    paddingHorizontal: s(16),
-    paddingTop: vs(14),
-    paddingBottom: vs(24),
-    borderTopLeftRadius: s(20),
-    borderTopRightRadius: s(20),
-    maxHeight: vs(520),
-  },
+  // modalBackdrop: {
+  //   flex: 1,
+  //   backgroundColor: 'rgba(0,0,0,0.55)',
+  //   justifyContent: 'flex-end',
+  // },
+  // modalCard: {
+  //   backgroundColor: '#101725',
+  //   paddingHorizontal: s(16),
+  //   paddingTop: vs(14),
+  //   paddingBottom: vs(24),
+  //   borderTopLeftRadius: s(20),
+  //   borderTopRightRadius: s(20),
+  //   maxHeight: vs(520),
+  // },
   modalTitle: {
     color: palette.white,
     fontSize: ms(18),
@@ -718,6 +792,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: vs(10),
     marginBottom: vs(4),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  filterInfo: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: ms(12),
     fontFamily: 'SourceSansPro-Regular',
   },
   rowBetween: {
@@ -765,12 +844,33 @@ const styles = StyleSheet.create({
     marginTop: vs(8),
     fontFamily: 'SourceSansPro-Regular',
   },
-  journalList: {
-    maxHeight: vs(260),
-    marginTop: vs(4),
-    paddingBottom: vs(8),
+  modalBackdropContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
 
+  modalBackdrop: {
+    flex: 1,
+  },
+
+  modalCard: {
+    backgroundColor: '#101725',
+    paddingHorizontal: s(16),
+    paddingTop: vs(14),
+    paddingBottom: vs(24),
+    borderTopLeftRadius: s(20),
+    borderTopRightRadius: s(20),
+    maxHeight: vs(520),
+  },
+
+  journalList: {
+    height: vs(220), // fixed viewport inside sheet
+    marginTop: vs(4),
+  },
+  journalListContent: {
+    paddingBottom: vs(8),
+  },
   journalItem: {
     backgroundColor: '#141D2C',
     borderRadius: s(14),
@@ -785,21 +885,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-
   journalItemTitle: {
     color: palette.white,
     fontSize: ms(15),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
   },
-
   journalItemMeta: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: ms(12),
     marginTop: vs(4),
     fontFamily: 'SourceSansPro-Regular',
   },
-
   journalItemDesc: {
     color: 'rgba(255,255,255,0.92)',
     fontSize: ms(13),
@@ -807,7 +904,6 @@ const styles = StyleSheet.create({
     lineHeight: ms(18),
     fontFamily: 'SourceSansPro-Regular',
   },
-
   addJournalBtn: {
     marginTop: vs(14),
     paddingVertical: vs(10),

@@ -283,12 +283,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
         {beliefs.map((belief, idx) => {
           const isEditing = editingIndex === idx;
+          const isRecommended = DEFAULT_BELIEFS.includes(belief);
 
           return (
             <React.Fragment key={idx}>
               <GradientHintBox
                 text={!isEditing ? belief : undefined}
-                showRecommendedChip
+                showRecommendedChip={isRecommended && !isEditing} // 👈 changed
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditBelief(idx)}
@@ -340,12 +341,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
         {shadowBeliefs.map((belief, idx) => {
           const isEditing = shadowEditingIndex === idx;
+          const isRecommended = DEFAULT_SHADOW_BELIEFS.includes(belief); // 👈 only defaults
 
           return (
             <React.Fragment key={idx}>
               <GradientHintBox
                 text={!isEditing ? belief : undefined}
-                showRecommendedChip
+                showRecommendedChip={isRecommended && !isEditing} // 👈 changed
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditShadowBelief(idx)}

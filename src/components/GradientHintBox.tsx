@@ -175,14 +175,16 @@ export default function GradientHintBox({
               )}
 
               {showRecommendedChip && (
-                <LinearGradient
-                  colors={['#01093aff', '#96aedcff']}
-                  start={{ x: 0.5, y: 0 }}
-                  end={{ x: 0.5, y: 1 }}
-                  style={styles.recoChip}
-                >
+                // <LinearGradient
+                //   colors={['#01093aff', '#0f1010ff']}
+                //   start={{ x: 0.5, y: 0 }}
+                //   end={{ x: 0.5, y: 1 }}
+                //   style={styles.recoChip}
+                // >
+                <View style={styles.recoChip}>
                   <Text style={styles.recoText}>{recommendedText}</Text>
-                </LinearGradient>
+                </View>
+                // {/* </LinearGradient> */}
               )}
             </View>
 
@@ -306,7 +308,7 @@ const styles = StyleSheet.create({
   },
   recoText: {
     color: palette.white,
-    fontSize: ms(12.5),
+    fontSize: ms(16),
     fontWeight: '700',
     textAlign: 'center',
     fontFamily: 'SourceSansPro-Regular',
