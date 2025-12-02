@@ -102,6 +102,20 @@ export default function DemoScreen() {
   // all stored checkins
   const [checkins, setCheckins] = useState<Checkin[]>([]);
 
+  const handleDaysChange = (value: string) => {
+    // strip non-digits
+    const numeric = value.replace(/[^0-9]/g, '');
+
+    // allow empty for typing
+    if (!numeric) {
+      setDays('');
+      return;
+    }
+
+    // clamp to 1–30 and reflect it back into the input
+    const clamped = clampDays(numeric);
+    setDays(String(clamped));
+  };
   // ───────────────── LOAD BELIEFS + CHECKINS ─────────────────
   useEffect(() => {
     const load = async () => {
@@ -308,7 +322,7 @@ export default function DemoScreen() {
             <GradientInput
               keyboardType="number-pad"
               value={days}
-              onChangeText={setDays}
+              onChangeText={handleDaysChange}
               placeholder="7"
             />
 

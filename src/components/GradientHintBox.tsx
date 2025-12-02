@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   recoChip: {
     alignSelf: 'flex-start',
     height: CHIP_H,
-    width: scale(100),
+    // width: scale(100),
     borderRadius: CHIP_H,
     justifyContent: 'center',
   },
