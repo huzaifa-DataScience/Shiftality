@@ -160,6 +160,8 @@ export default function ShiftGridChart({ denseSeries }: Props) {
     });
   }, [series, width]);
 
+  console.log('dots', dots);
+
   return (
     <GradientCardHome style={{ height: scale(320) }}>
       <Text style={styles.title}>Shift Grid (365 dots)</Text>

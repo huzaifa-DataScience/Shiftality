@@ -69,6 +69,26 @@ type BeliefsEditorProps = {
   shadowAddLabel?: string;
 };
 
+// Ensures a belief sentence starts with "I believe ..."
+const ensureStartsWithIBelieve = (raw: string): string => {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  const lower = trimmed.toLowerCase();
+
+  // if user already wrote "I believe ..." or kept the old pattern, don't touch it
+  if (
+    lower.startsWith('i believe') ||
+    lower.startsWith('today, i believed') ||
+    lower.startsWith('today i believe')
+  ) {
+    return trimmed;
+  }
+
+  // otherwise prefix it
+  return `I believe ${trimmed}`;
+};
+
 const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
   empoweringStorageKey = DEFAULT_EMPOWERING_STORAGE_KEY,
   shadowStorageKey = DEFAULT_SHADOW_STORAGE_KEY,
@@ -188,8 +208,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
         setBeliefs(next);
       }
     } else {
+      // ⬇️ enforce "I believe ..." only for newly added beliefs
+      const finalText = isAddingNewBelief
+        ? ensureStartsWithIBelieve(trimmed)
+        : trimmed;
+
       const updated = [...beliefs];
-      updated[editingIndex] = trimmed;
+      updated[editingIndex] = finalText;
       setBeliefs(updated);
     }
 
@@ -231,8 +256,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
         setShadowBeliefs(next);
       }
     } else {
+      // ⬇️ enforce "I believe ..." only for newly added shadow beliefs
+      const finalText = isAddingNewShadowBelief
+        ? ensureStartsWithIBelieve(trimmed)
+        : trimmed;
+
       const updated = [...shadowBeliefs];
-      updated[shadowEditingIndex] = trimmed;
+      updated[shadowEditingIndex] = finalText;
       setShadowBeliefs(updated);
     }
 
@@ -265,6 +295,27 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
       setIsAddingNewShadowBelief(false);
     }
   };
+  const handleDeleteBelief = (index: number) => {
+    const next = beliefs.filter((_, i) => i !== index);
+    setBeliefs(next);
+
+    // reset editing state if we just deleted the one being edited
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      setDraftText('');
+      setIsAddingNewBelief(false);
+    }
+  };
+  const handleDeleteShadowBelief = (index: number) => {
+    const next = shadowBeliefs.filter((_, i) => i !== index);
+    setShadowBeliefs(next);
+
+    if (shadowEditingIndex === index) {
+      setShadowEditingIndex(null);
+      setShadowDraftText('');
+      setIsAddingNewShadowBelief(false);
+    }
+  };
 
   return (
     <>
@@ -289,10 +340,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
             <React.Fragment key={idx}>
               <GradientHintBox
                 text={!isEditing ? belief : undefined}
-                showRecommendedChip={isRecommended && !isEditing} // 👈 changed
+                showRecommendedChip={isRecommended && !isEditing}
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditBelief(idx)}
+                showDeleteButton={!isEditing && !isRecommended}
+                deleteIcon={require('../assets/delete.png')}
+                onPressDelete={() => handleDeleteBelief(idx)}
                 showInput={isEditing}
                 inputValue={draftText}
                 onChangeInputText={setDraftText}
@@ -351,6 +405,9 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditShadowBelief(idx)}
+                showDeleteButton={!isEditing && !isRecommended}
+                deleteIcon={require('../assets/delete.png')}
+                onPressDelete={() => handleDeleteShadowBelief(idx)}
                 showInput={isEditing}
                 inputValue={shadowDraftText}
                 onChangeInputText={setShadowDraftText}

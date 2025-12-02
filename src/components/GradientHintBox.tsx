@@ -62,6 +62,10 @@ type Props = {
   switchTrackOn?: string;
   switchTrackOff?: string;
   switchThumb?: string;
+
+  showDeleteButton?: boolean;
+  deleteIcon?: ImageSourcePropType;
+  onPressDelete?: () => void;
 };
 
 export default function GradientHintBox({
@@ -99,9 +103,12 @@ export default function GradientHintBox({
   showSwitch = false,
   switchValue,
   onToggleSwitch,
-  switchTrackOn = '#4CC3FF', // cyan like your design
+  switchTrackOn = '#4CC3FF',
   switchTrackOff = '#334152',
   switchThumb = '#FFFFFF',
+  showDeleteButton,
+  onPressDelete,
+  deleteIcon,
 }: Props) {
   const [w, setW] = useState(0);
   const [h, setH] = useState(minHeight);
@@ -115,7 +122,8 @@ export default function GradientHintBox({
     [minHeight],
   );
 
-  const showHeaderRow = !!title || showRecommendedChip || showEditButton;
+  const showHeaderRow =
+    !!title || showRecommendedChip || showEditButton || showDeleteButton;
 
   // only show static copy when not in input mode
   const showCopy = !!text && !showInput;
@@ -200,25 +208,45 @@ export default function GradientHintBox({
                   ios_backgroundColor={switchTrackOff}
                 />
               </View>
-            ) : (
-              showEditButton && (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={onPressEdit}
-                  style={styles.editBtnHit}
-                >
-                  <View style={styles.editInner}>
-                    {editIcon ? (
-                      <Image
-                        source={editIcon}
-                        resizeMode="contain"
-                        style={styles.editIcon}
-                      />
-                    ) : null}
-                  </View>
-                </TouchableOpacity>
-              )
-            )}
+            ) : showEditButton || showDeleteButton ? (
+              <View style={styles.actionsRow}>
+                {showEditButton && (
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={onPressEdit}
+                    style={styles.editBtnHit}
+                  >
+                    <View style={styles.editInner}>
+                      {editIcon ? (
+                        <Image
+                          source={editIcon}
+                          resizeMode="contain"
+                          style={styles.editIcon}
+                        />
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                )}
+
+                {showDeleteButton && (
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={onPressDelete}
+                    style={styles.deleteBtnHit}
+                  >
+                    <View style={styles.deleteInner}>
+                      {deleteIcon ? (
+                        <Image
+                          source={deleteIcon}
+                          resizeMode="contain"
+                          style={styles.deleteIcon}
+                        />
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : null}
           </View>
         )}
 
@@ -228,7 +256,6 @@ export default function GradientHintBox({
           </Text>
         )}
 
-        {/* +++ OPTIONAL INPUT BLOCK (single box look) */}
         {showInput && (
           <View
             style={[
@@ -380,5 +407,24 @@ const styles = StyleSheet.create({
   },
   switchHit: {
     paddingLeft: s(6),
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteBtnHit: {
+    marginLeft: s(4),
+    paddingTop: vs(2),
+  },
+  deleteInner: {
+    flex: 1,
+    borderRadius: BTN_R - 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteIcon: {
+    width: s(20),
+    height: s(20),
+    // tintColor: 'transparent',
   },
 });

@@ -150,6 +150,8 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   const initialSpacing = 25;
   const endSpacing = useMemo(() => (pointCount <= 12 ? 25 : 10), [pointCount]);
 
+  console.log('data', data);
+
   return (
     <GradientCardHome>
       <Text style={styles.title}>Shift Map</Text>
