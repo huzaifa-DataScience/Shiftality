@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteBtnHit: {
-    marginLeft: s(4),
+    marginLeft: s(12),
     paddingTop: vs(2),
   },
   deleteInner: {
@@ -423,8 +423,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteIcon: {
-    width: s(20),
-    height: s(20),
-    // tintColor: 'transparent',
+    width: s(18),
+    height: s(18),
   },
 });
