@@ -35,15 +35,6 @@ const ICONS: Record<string, { inactive: ImageSourcePropType }> = {
 };
 
 export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
-  // optional: where to go when the hex is pressed (pick anything you want)
-  // const onPressHex = () => {
-  //   // example: go to the middle route or a specific screen
-  //   const target =
-  //     state.routes[Math.floor(state.routes.length / 2)]?.name ??
-  //     state.routes[0].name;
-  //   navigation.navigate(target as never);
-  // };
-
   return (
     <View
       style={[styles.shell, { backgroundColor: palette.darkBlue }]}
@@ -63,7 +54,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         {/* main bar */}
         <View style={styles.barWrap}>
           <LinearGradient
-            colors={['#1f5b79ff', '#15283bff', '#090c0fff']} // top -> middle -> bottom
+            colors={['#1f5b79ff', '#15283bff', '#090c0fff']}
             locations={[0, 0.55, 1]}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
@@ -72,14 +63,27 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           <View style={styles.row}>
             {state.routes.map((route, index) => {
               const focused = state.index === index;
+
+              const isProfileTab = route.name === 'Profile';
+
               return (
                 <TouchableOpacity
                   key={route.key}
                   style={styles.tabBtn}
                   activeOpacity={0.9}
-                  onPress={() =>
-                    !focused && navigation.navigate(route.name as never)
-                  }
+                  onPress={() => {
+                    if (isProfileTab) {
+                      // 👇 always navigate with a fresh token
+                      navigation.navigate(
+                        'Profile' as never,
+                        {
+                          openJournalToken: Date.now(), // unique per tap
+                        } as never,
+                      );
+                    } else if (!focused) {
+                      navigation.navigate(route.name as never);
+                    }
+                  }}
                 >
                   <Image
                     source={ICONS[route.name]?.inactive}
@@ -99,14 +103,10 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           </View>
         </View>
 
-        {/* centered hex IMAGE (no custom shape) */}
-        <TouchableOpacity
-          style={styles.hexWrap}
-          activeOpacity={0.9}
-          // onPress={onPressHex}
-        >
+        {/* centered hex IMAGE */}
+        <TouchableOpacity style={styles.hexWrap} activeOpacity={0.9}>
           <Image
-            source={ICONS.hexaIcon.inactive} // <-- your polygon asset
+            source={ICONS.hexaIcon.inactive}
             style={styles.hexImage}
             resizeMode="contain"
           />
