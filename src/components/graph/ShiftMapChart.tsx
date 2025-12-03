@@ -1,5 +1,13 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  LayoutChangeEvent,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import Svg, {
   Defs,
   Line,
@@ -49,8 +57,11 @@ const Y_MIN = -36.5;
 const Y_AXIS_LABELS = ['-36', '-24', '-12', '0', '+12', '+24', '+36'];
 
 export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
+  console.log('denseSeries', denseSeries);
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(110));
+  const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
+  const [monthDaysData, setMonthDaysData] = useState<DensePoint[]>([]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -58,16 +69,17 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
     setH(Math.max(vs(80), Math.round(height) || vs(80)));
   }, []);
 
-  // ✅ Month-level data with a representative date for clicks
-  const data = useMemo(() => {
+  // ✅ Month-level data (12 months) - DYNAMIC based on actual data
+  const monthData = useMemo(() => {
     if (!denseSeries || denseSeries.length === 0) return [];
 
     type MonthAgg = {
-      label: string; // "Jan", "Feb", …
-      value: number; // cumulative (clamped)
+      label: string;
+      value: number;
       hasCheckin: boolean;
-      dateForClick: string; // "YYYY-MM-DD" from denseSeries
-      lastDate: string; // for chronological sort
+      dateForClick: string;
+      lastDate: string;
+      monthKey: string;
     };
 
     const byMonth = new Map<string, MonthAgg>();
@@ -77,9 +89,9 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
       if (Number.isNaN(d.getTime())) return;
 
       const year = d.getFullYear();
-      const monthIdx = d.getMonth(); // 0–11
+      const monthIdx = d.getMonth();
       const key = `${year}-${monthIdx}`;
-      const label = MONTHS[monthIdx];
+      const label = MONTHS[monthIdx]; // Get actual month name
 
       const existing = byMonth.get(key);
 
@@ -88,48 +100,85 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
           label,
           value: point.cumulative,
           hasCheckin: !!point.hasCheckin,
-          dateForClick: point.date, // first date we see in this month
+          dateForClick: point.date,
           lastDate: point.date,
+          monthKey: key,
         });
       } else {
-        // always use the *latest* cumulative in that month
         existing.value = point.cumulative;
-        // month has a dot if ANY day had a checkin
         existing.hasCheckin = existing.hasCheckin || !!point.hasCheckin;
-        // track last date for sorting
         existing.lastDate = point.date;
-
-        // if this specific day has a checkin, prefer it for clicks
         if (point.hasCheckin) {
           existing.dateForClick = point.date;
         }
       }
     });
 
-    // sort by lastDate (chronological)
+    // Sort by lastDate (chronologically)
     const sortedMonths = Array.from(byMonth.values()).sort((a, b) =>
       a.lastDate < b.lastDate ? -1 : a.lastDate > b.lastDate ? 1 : 0,
     );
 
-    // only keep the last 12 months
-    const lastTwelve = sortedMonths.slice(-12);
+    // Keep ALL months that have data (don't slice to 12, show what we have)
+    // This ensures December data shows in December position, not January
+    const allMonthsWithData = sortedMonths;
 
-    return lastTwelve.map(m => {
+    return allMonthsWithData.map((m, index) => {
       const clamped = Math.max(Y_MIN, Math.min(Y_MAX, m.value));
 
       return {
         value: clamped,
-        label: m.label,
+        label: m.label, // Use actual month label from the data
         hideDataPoint: !m.hasCheckin,
-        // 👇 this fires when user taps the data point
+        monthKey: m.monthKey,
         onPress: () => {
-          if (m.hasCheckin && onPointPress) {
-            onPointPress(m.dateForClick); // e.g. "2025-12-29"
+          if (m.hasCheckin) {
+            // Get all days in this month
+            const monthDays = denseSeries.filter(p => {
+              const pd = new Date(p.date);
+              return `${pd.getFullYear()}-${pd.getMonth()}` === m.monthKey;
+            });
+            setMonthDaysData(monthDays);
+            setExpandedMonth(m.monthKey);
           }
         },
       };
     });
-  }, [denseSeries, onPointPress]);
+  }, [denseSeries]);
+
+  // ✅ Day-level data (for expanded month)
+  const dayData = useMemo(() => {
+    if (monthDaysData.length === 0) return [];
+
+    return monthDaysData.map((point, idx) => {
+      const clamped = Math.max(Y_MIN, Math.min(Y_MAX, point.cumulative));
+      const d = new Date(point.date);
+      const dayOfMonth = d.getDate();
+
+      // Show label only on certain days to avoid crowding
+      // Show day 1, every 5th day, and last day
+      let label = '';
+      if (dayOfMonth === 1 || dayOfMonth || idx === monthDaysData.length - 1) {
+        label = dayOfMonth.toString();
+      }
+
+      return {
+        value: clamped,
+        label: label, // Dynamic day label with smart spacing
+        hideDataPoint: !point.hasCheckin,
+        date: point.date,
+        hasCheckin: point.hasCheckin,
+        onPress: () => {
+          if (point.hasCheckin && onPointPress) {
+            onPointPress(point.date);
+          }
+        },
+      };
+    });
+  }, [monthDaysData, onPointPress]);
+
+  // ✅ Choose which data to display
+  const data = expandedMonth ? dayData : monthData;
 
   const rawPosition =
     denseSeries && denseSeries.length
@@ -144,17 +193,22 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
     if (pointCount <= 1) return 0;
     if (pointCount <= 6) return 40;
     if (pointCount <= 12) return 30;
-    return 20;
+    return 25;
   }, [pointCount]);
 
   const initialSpacing = 25;
   const endSpacing = useMemo(() => (pointCount <= 12 ? 25 : 10), [pointCount]);
 
-  console.log('data', data);
-
   return (
     <GradientCardHome>
-      <Text style={styles.title}>Shift Map</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Shift Map</Text>
+        {expandedMonth && (
+          <TouchableOpacity onPress={() => setExpandedMonth(null)}>
+            <Text style={styles.backButton}>← Back to Months</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <View style={styles.outlineWrap} onLayout={onLayout}>
         {w > 0 && (
@@ -200,11 +254,9 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
               rulesType="dotted"
               yAxisTextStyle={styles.yAxisText}
               xAxisLabelTextStyle={styles.xAxisLabel}
-              yAxisSide="left"
               color="#00BFFF"
               noOfSections={Y_AXIS_LABELS.length - 1}
               maxValue={Y_MAX}
-              minValue={Y_MIN}
               yAxisLabelTexts={Y_AXIS_LABELS}
               backgroundColor="transparent"
               showFractionalValues={false}
@@ -250,11 +302,22 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: vs(12),
+  },
   title: {
     fontSize: ms(17),
     fontWeight: '700',
     color: palette.white,
-    marginBottom: vs(12),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  backButton: {
+    fontSize: ms(13),
+    fontWeight: '600',
+    color: '#00BFFF',
     fontFamily: 'SourceSansPro-Regular',
   },
   outlineWrap: {

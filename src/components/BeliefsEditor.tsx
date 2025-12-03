@@ -344,7 +344,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditBelief(idx)}
-                showDeleteButton={!isEditing && !isRecommended}
+                showDeleteButton={!isEditing}
                 deleteIcon={require('../assets/delete.png')}
                 onPressDelete={() => handleDeleteBelief(idx)}
                 showInput={isEditing}
@@ -405,7 +405,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditShadowBelief(idx)}
-                showDeleteButton={!isEditing && !isRecommended}
+                showDeleteButton={!isEditing}
                 deleteIcon={require('../assets/delete.png')}
                 onPressDelete={() => handleDeleteShadowBelief(idx)}
                 showInput={isEditing}

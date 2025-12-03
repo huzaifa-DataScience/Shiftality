@@ -9,7 +9,11 @@ import {
 } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import LinearGradient from 'react-native-linear-gradient';
-import { scale as s, verticalScale as vs } from 'react-native-size-matters';
+import {
+  scale as s,
+  scale,
+  verticalScale as vs,
+} from 'react-native-size-matters';
 import { palette } from '../theme';
 
 // --- sizes ---
@@ -70,7 +74,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 <TouchableOpacity
                   key={route.key}
                   style={styles.tabBtn}
-                  activeOpacity={0.9}
+                  // activeOpacity={0.9}
                   onPress={() => {
                     if (isProfileTab) {
                       // 👇 always navigate with a fresh token
@@ -104,13 +108,13 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         </View>
 
         {/* centered hex IMAGE */}
-        <TouchableOpacity style={styles.hexWrap} activeOpacity={0.9}>
+        <View style={styles.hexWrap}>
           <Image
             source={ICONS.hexaIcon.inactive}
             style={styles.hexImage}
             resizeMode="contain"
           />
-        </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -154,8 +158,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS,
   },
   row: {
-    height: BAR_H,
-    paddingHorizontal: s(28),
+    height: scale(70),
+    // paddingHorizontal: s(28),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -171,7 +175,7 @@ const styles = StyleSheet.create({
   hexWrap: {
     position: 'absolute',
     alignSelf: 'center',
-    top: -HEX_RISE, // rise above the bar
+    top: -HEX_RISE,
     width: HEX_W,
     height: HEX_H,
     alignItems: 'center',
