@@ -1,12 +1,13 @@
+// src/components/graph/ShiftMapChart.tsx
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   LayoutChangeEvent,
-  Modal,
   TouchableOpacity,
-  ScrollView,
+  PanResponder,
+  Platform,
 } from 'react-native';
 import Svg, {
   Defs,
@@ -28,11 +29,6 @@ import { DensePoint } from '../../lib/dataClient';
 
 type Props = {
   denseSeries: DensePoint[];
-  /**
-   * Called when user taps a data point in the map.
-   * We pass an ISO date string "YYYY-MM-DD" representing that point.
-   * Parent (SearchScreen) can then open the journal modal for that date.
-   */
   onPointPress?: (isoDate: string) => void;
 };
 
@@ -51,25 +47,24 @@ const MONTHS = [
   'Dec',
 ];
 
-// Y-axis like web: -36.5 .. +36.5
 const Y_MAX = 36.5;
 const Y_MIN = -36.5;
 const Y_AXIS_LABELS = ['-36', '-24', '-12', '0', '+12', '+24', '+36'];
 
 export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
-  console.log('denseSeries', denseSeries);
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(110));
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
   const [monthDaysData, setMonthDaysData] = useState<DensePoint[]>([]);
+  const [chartX, setChartX] = useState(0);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
+    const { width, height, x } = e.nativeEvent.layout;
     setW(Math.round(width));
     setH(Math.max(vs(80), Math.round(height) || vs(80)));
+    setChartX(x);
   }, []);
 
-  // ✅ Month-level data (12 months) - DYNAMIC based on actual data
   const monthData = useMemo(() => {
     if (!denseSeries || denseSeries.length === 0) return [];
 
@@ -91,7 +86,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
       const year = d.getFullYear();
       const monthIdx = d.getMonth();
       const key = `${year}-${monthIdx}`;
-      const label = MONTHS[monthIdx]; // Get actual month name
+      const label = MONTHS[monthIdx];
 
       const existing = byMonth.get(key);
 
@@ -114,26 +109,20 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
       }
     });
 
-    // Sort by lastDate (chronologically)
     const sortedMonths = Array.from(byMonth.values()).sort((a, b) =>
       a.lastDate < b.lastDate ? -1 : a.lastDate > b.lastDate ? 1 : 0,
     );
 
-    // Keep ALL months that have data (don't slice to 12, show what we have)
-    // This ensures December data shows in December position, not January
-    const allMonthsWithData = sortedMonths;
-
-    return allMonthsWithData.map((m, index) => {
+    return sortedMonths.map(m => {
       const clamped = Math.max(Y_MIN, Math.min(Y_MAX, m.value));
 
       return {
         value: clamped,
-        label: m.label, // Use actual month label from the data
+        label: m.label,
         hideDataPoint: !m.hasCheckin,
         monthKey: m.monthKey,
         onPress: () => {
           if (m.hasCheckin) {
-            // Get all days in this month
             const monthDays = denseSeries.filter(p => {
               const pd = new Date(p.date);
               return `${pd.getFullYear()}-${pd.getMonth()}` === m.monthKey;
@@ -146,7 +135,6 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
     });
   }, [denseSeries]);
 
-  // ✅ Day-level data (for expanded month)
   const dayData = useMemo(() => {
     if (monthDaysData.length === 0) return [];
 
@@ -155,8 +143,6 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
       const d = new Date(point.date);
       const dayOfMonth = d.getDate();
 
-      // Show label only on certain days to avoid crowding
-      // Show day 1, every 5th day, and last day
       let label = '';
       if (dayOfMonth === 1 || dayOfMonth || idx === monthDaysData.length - 1) {
         label = dayOfMonth.toString();
@@ -164,7 +150,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
 
       return {
         value: clamped,
-        label: label, // Dynamic day label with smart spacing
+        label,
         hideDataPoint: !point.hasCheckin,
         date: point.date,
         hasCheckin: point.hasCheckin,
@@ -177,14 +163,12 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
     });
   }, [monthDaysData, onPointPress]);
 
-  // ✅ Choose which data to display
   const data = expandedMonth ? dayData : monthData;
 
   const rawPosition =
     denseSeries && denseSeries.length
       ? denseSeries[denseSeries.length - 1].cumulative
       : 0;
-
   const currentPosition = Math.max(Y_MIN, Math.min(Y_MAX, rawPosition));
 
   const pointCount = data.length;
@@ -199,6 +183,29 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   const initialSpacing = 25;
   const endSpacing = useMemo(() => (pointCount <= 12 ? 25 : 10), [pointCount]);
 
+  // ✅ Android touch handler - detect which month was tapped
+  const handleAndroidChartPress = useCallback(
+    (event: any) => {
+      if (Platform.OS !== 'android') return;
+
+      const { locationX } = event.nativeEvent;
+      if (!locationX) return;
+
+      // Calculate which data point was tapped based on spacing
+      const tapPosition = locationX - initialSpacing;
+      if (tapPosition < 0) return;
+
+      const tapIndex = Math.round(tapPosition / spacing);
+      if (tapIndex < 0 || tapIndex >= data.length) return;
+
+      const tappedPoint = data[tapIndex];
+      if (tappedPoint && tappedPoint.onPress) {
+        tappedPoint.onPress();
+      }
+    },
+    [data, spacing, initialSpacing],
+  );
+
   return (
     <GradientCardHome>
       <View style={styles.headerRow}>
@@ -211,6 +218,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
       </View>
 
       <View style={styles.outlineWrap} onLayout={onLayout}>
+        {/* Outer gradient border */}
         {w > 0 && (
           <Svg
             pointerEvents="none"
@@ -242,33 +250,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
 
         <View style={styles.innerBox}>
           <View style={{ position: 'relative', height: 220 }}>
-            <LineChart
-              data={data}
-              curved
-              thickness={3}
-              hideDataPoints={false}
-              dataPointsColor="#00BFFF"
-              dataPointsRadius={5}
-              hideRules={false}
-              rulesColor="rgba(255,255,255,0.1)"
-              rulesType="dotted"
-              yAxisTextStyle={styles.yAxisText}
-              xAxisLabelTextStyle={styles.xAxisLabel}
-              color="#00BFFF"
-              noOfSections={Y_AXIS_LABELS.length - 1}
-              maxValue={Y_MAX}
-              yAxisLabelTexts={Y_AXIS_LABELS}
-              backgroundColor="transparent"
-              showFractionalValues={false}
-              yAxisThickness={0}
-              xAxisThickness={0}
-              initialSpacing={initialSpacing}
-              spacing={spacing}
-              endSpacing={endSpacing}
-              showVerticalLines={false}
-            />
-
-            {/* vertical dotted lines for each month point – DO NOT block touches */}
+            {/* 🔽 Put the vertical guide SVG BEHIND the chart so it doesn’t block touches */}
             <Svg
               height="100%"
               width="100%"
@@ -288,6 +270,40 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
                 />
               ))}
             </Svg>
+
+            {/* Chart on TOP so data point onPress works on Android */}
+            <View
+              onTouchEnd={
+                Platform.OS === 'android' ? handleAndroidChartPress : undefined
+              }
+              style={{ flex: 1 }}
+            >
+              <LineChart
+                data={data}
+                curved
+                thickness={3}
+                hideDataPoints={false}
+                dataPointsColor="#00BFFF"
+                dataPointsRadius={5}
+                hideRules={false}
+                rulesColor="rgba(255,255,255,0.1)"
+                rulesType="dotted"
+                yAxisTextStyle={styles.yAxisText}
+                xAxisLabelTextStyle={styles.xAxisLabel}
+                color="#00BFFF"
+                noOfSections={Y_AXIS_LABELS.length - 1}
+                maxValue={Y_MAX}
+                yAxisLabelTexts={Y_AXIS_LABELS}
+                backgroundColor="transparent"
+                showFractionalValues={false}
+                yAxisThickness={0}
+                xAxisThickness={0}
+                initialSpacing={initialSpacing}
+                spacing={spacing}
+                endSpacing={endSpacing}
+                showVerticalLines={false}
+              />
+            </View>
           </View>
         </View>
 
