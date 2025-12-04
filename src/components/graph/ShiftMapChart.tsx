@@ -8,6 +8,9 @@ import {
   TouchableOpacity,
   PanResponder,
   Platform,
+  Modal,
+  ScrollView,
+  Image,
 } from 'react-native';
 import Svg, {
   Defs,
@@ -57,6 +60,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
   const [monthDaysData, setMonthDaysData] = useState<DensePoint[]>([]);
   const [chartX, setChartX] = useState(0);
+  const [showMonthModal, setShowMonthModal] = useState(false);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height, x } = e.nativeEvent.layout;
@@ -206,10 +210,42 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
     [data, spacing, initialSpacing],
   );
 
+  // ✅ Handle month selection from modal
+  const handleMonthFromModal = useCallback(
+    (monthKey: string) => {
+      const selectedMonth = monthData.find(m => m.monthKey === monthKey);
+      if (selectedMonth && selectedMonth.onPress) {
+        selectedMonth.onPress();
+        setShowMonthModal(false);
+      }
+    },
+    [monthData],
+  );
+
+  // Get the label of the expanded month
+  const expandedMonthLabel = useMemo(() => {
+    if (!expandedMonth) return null;
+    const month = monthData.find(m => m.monthKey === expandedMonth);
+    return month ? month.label : null;
+  }, [expandedMonth, monthData]);
+
   return (
     <GradientCardHome>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Shift Map</Text>
+        <Text style={styles.title}>
+          Shift Map {expandedMonthLabel ? `- ${expandedMonthLabel}` : ''}
+        </Text>
+        {!expandedMonth && (
+          <TouchableOpacity
+            onPress={() => setShowMonthModal(true)}
+            style={styles.iconButton}
+          >
+            <Image
+              source={require('../../assets/calendar.png')}
+              style={styles.icon}
+            />
+          </TouchableOpacity>
+        )}
         {expandedMonth && (
           <TouchableOpacity onPress={() => setExpandedMonth(null)}>
             <Text style={styles.backButton}>← Back to Months</Text>
@@ -313,6 +349,53 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
           </Text>
         </View>
       </View>
+
+      {/* ✅ Month Selection Modal */}
+      <Modal
+        visible={showMonthModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMonthModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Month</Text>
+              <TouchableOpacity onPress={() => setShowMonthModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.monthGrid}>
+              {monthData.map(month => (
+                <TouchableOpacity
+                  key={month.monthKey}
+                  onPress={() => handleMonthFromModal(month.monthKey)}
+                  disabled={month.hideDataPoint}
+                  style={[
+                    styles.monthButton,
+                    month.hideDataPoint && styles.monthButtonDisabled,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.monthButtonText,
+                      month.hideDataPoint && styles.monthButtonTextDisabled,
+                    ]}
+                  >
+                    {month.label}
+                  </Text>
+                  {!month.hideDataPoint && (
+                    <Text style={styles.monthValue}>
+                      {month.value.toFixed(1)}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </GradientCardHome>
   );
 }
@@ -335,6 +418,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#00BFFF',
     fontFamily: 'SourceSansPro-Regular',
+  },
+  iconButton: {
+    padding: s(8),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    width: s(24),
+    height: s(24),
   },
   outlineWrap: {
     width: '100%',
@@ -365,6 +457,78 @@ const styles = StyleSheet.create({
     color: palette.white,
     fontSize: ms(13),
     fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1a1a2e',
+    borderRadius: s(16),
+    width: '85%',
+    maxHeight: '70%',
+    borderWidth: 1,
+    borderColor: '#0AC4FF',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: s(16),
+    paddingVertical: vs(16),
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(10, 196, 255, 0.3)',
+  },
+  modalTitle: {
+    fontSize: ms(16),
+    fontWeight: '700',
+    color: '#00BFFF',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  modalClose: {
+    fontSize: ms(24),
+    color: '#00BFFF',
+    fontWeight: '600',
+  },
+  monthGrid: {
+    paddingHorizontal: s(12),
+    paddingVertical: vs(12),
+  },
+  monthButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: s(16),
+    paddingVertical: vs(12),
+    marginVertical: vs(6),
+    backgroundColor: 'rgba(10, 196, 255, 0.1)',
+    borderRadius: s(10),
+    borderLeftWidth: 3,
+    borderLeftColor: '#00BFFF',
+  },
+  monthButtonDisabled: {
+    backgroundColor: 'rgba(100, 100, 100, 0.1)',
+    borderLeftColor: '#666',
+    opacity: 0.5,
+  },
+  monthButtonText: {
+    fontSize: ms(15),
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  monthButtonTextDisabled: {
+    color: '#999',
+  },
+  monthValue: {
+    fontSize: ms(13),
+    fontWeight: '700',
+    color: '#00BFFF',
     fontFamily: 'SourceSansPro-Regular',
   },
 });
