@@ -6,7 +6,12 @@ import axios, {
   AxiosError,
   InternalAxiosRequestConfig,
 } from 'axios';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Supabase configuration - hardcoded values
+const SUPABASE_URL = 'https://rorytwozdwlsqwkrcpku.supabase.co';
+const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -20,11 +25,23 @@ const apiClient: AxiosInstance = axios.create({
 
 // Request interceptor - Add auth headers to every request
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
     // Add Supabase anon key to headers
     if (config.headers) {
       config.headers['apikey'] = SUPABASE_ANON_KEY;
-      config.headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
+
+      // Try to get stored auth token, fallback to anon key
+      try {
+        const authToken = await AsyncStorage.getItem('auth_token');
+        if (authToken) {
+          config.headers['Authorization'] = `Bearer ${authToken}`;
+        } else {
+          config.headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
+        }
+      } catch (error) {
+        // If AsyncStorage fails, use anon key
+        config.headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
+      }
     }
     return config;
   },
@@ -88,4 +105,3 @@ export const api = {
 };
 
 export default apiClient;
-

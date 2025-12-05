@@ -34,6 +34,10 @@ import {
 } from '../lib/localNotifications';
 import GradientInput from './GradientInput';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
+import { clearProfile } from '../store/reducers/profileReducer';
+import { logout } from '../lib/authService';
+import Toast from 'react-native-toast-message';
 
 type StoredReminder = {
   id: string;
@@ -70,6 +74,8 @@ prompted by your device. Demo reminders
 will show "(Demo)" in the title to distinguish
 them from real reminders.`,
 }) => {
+  const dispatch = useDispatch();
+  const navigation = useNavigation();
   const notificationOutline = require('../assets/notificationOutlineRed.png');
 
   // reminders & selection
@@ -78,7 +84,6 @@ them from real reminders.`,
 
   // NEW: global on/off state
   const [globalEnabled, setGlobalEnabled] = useState<boolean>(true);
-  const navigation = useNavigation();
   // modal state
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -492,7 +497,29 @@ them from real reminders.`,
         }}
         title="Logout"
         onPress={async () => {
-          navigation.navigate('Auth');
+          try {
+            // Clear auth data from AsyncStorage
+            await logout();
+
+            // Clear profile from Redux
+            dispatch(clearProfile());
+
+            // Show success message
+            Toast.show({
+              type: 'success',
+              text1: 'Logged out',
+              text2: 'You have been successfully logged out',
+            });
+
+            // Navigate to auth screen
+            // The RootNavigator will automatically show Auth stack when isAuthenticated is false
+          } catch (error: any) {
+            Toast.show({
+              type: 'error',
+              text1: 'Logout failed',
+              text2: error.message || 'An error occurred while logging out',
+            });
+          }
         }}
       />
 

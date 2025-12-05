@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import {
   scale as s,
   verticalScale as vs,
@@ -15,12 +16,17 @@ import {
 } from 'react-native-size-matters';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux';
 
 import GradientCard from '../../components/GradientCard';
 import GradientInput from '../../components/GradientInput';
 import PrimaryButton from '../../components/PrimaryButton';
 import { palette } from '../../theme';
 import type { AuthStackParamList } from '../../navigation/AuthStack';
+import { login } from '../../lib/authService';
+import { setUserProfile } from '../../store/reducers/profileReducer';
+import { saveAuthTokens, saveUserProfile } from '../../lib/authStorage';
 
 // TODO: swap with your actual icons
 const eyeOpen = require('../../assets/eye-off.png');
@@ -34,14 +40,106 @@ export default function LoginScreen({
   onSignedIn?: () => void;
 }) {
   const navigation = useNavigation<Nav>();
+  const dispatch = useDispatch();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSignIn = () => {
-    // TODO: do validation / API, then:
-    onSignedIn?.();
+  const handleSignIn = async () => {
+    // Basic validation
+    if (!email.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter your email',
+      });
+      return;
+    }
+
+    if (!password.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter your password',
+      });
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter a valid email address',
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await login({
+        email: email.trim(),
+        password: password,
+      });
+
+      // Store auth tokens in AsyncStorage
+      if (response.access_token) {
+        await saveAuthTokens(
+          response.access_token,
+          response.refresh_token,
+          response.user.id,
+        );
+      }
+
+      // Prepare user profile data
+      const userProfile = {
+        id: response.user.id,
+        email: response.user.email,
+        emailConfirmed: !!response.user.email_confirmed_at,
+        phone: response.user.phone || '',
+        createdAt: response.user.created_at,
+        updatedAt: response.user.updated_at,
+        lastSignInAt: response.user.last_sign_in_at,
+        appMetadata: response.user.app_metadata,
+        userMetadata: response.user.user_metadata,
+      };
+
+      // Save user profile to AsyncStorage
+      await saveUserProfile(userProfile);
+
+      // Save user profile to Redux
+      dispatch(
+        setUserProfile({
+          user: userProfile,
+          accessToken: response.access_token,
+          refreshToken: response.refresh_token,
+          expiresAt: response.expires_at,
+        }),
+      );
+
+      // Show success toast
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Login successful!',
+      });
+
+      // Success - navigate to main app
+      onSignedIn?.();
+    } catch (error: any) {
+      // Show error toast
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: error.message || 'Invalid email or password. Please try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -105,10 +203,10 @@ export default function LoginScreen({
 
           {/* CTA */}
           <PrimaryButton
-            backgroundColor={palette.white}
-            textColor={palette.darkBlue}
-            title="Get Started"
+            title={loading ? 'Signing In...' : 'Sign In'}
             onPress={handleSignIn}
+            loading={loading}
+            disabled={loading}
           />
 
           {/* Footer */}

@@ -20,6 +20,7 @@
     "@react-navigation/native": "^7.1.19",
     "@react-navigation/native-stack": "^7.6.0",
     "@reduxjs/toolkit": "^2.10.1",
+    "axios": "^1.13.2",
     "react": "19.1.1",
     "react-native": "0.82.1",
     "react-native-fast-image": "^8.6.3",
@@ -29,6 +30,7 @@
     "react-native-screens": "^4.18.0",
     "react-native-size-matters": "^0.4.2",
     "react-native-svg": "^15.14.0",
+    "react-native-toast-message": "^2.3.3",
     "react-redux": "^9.2.0"
   },
   "devDependencies": {
@@ -53,5 +55,6 @@
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "packageManager": "yarn@3.6.4+sha512.e70835d4d6d62c07be76b3c1529cb640c7443f0fe434ef4b6478a5a399218cbaf1511b396b3c56eb03bc86424cff2320f6167ad2fde273aa0df6e60b7754029f"
 }

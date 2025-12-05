@@ -11,6 +11,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { palette } from './src/theme';
 import { Provider } from 'react-redux';
 import store from './src/store/store';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from './src/lib/toastConfig.tsx';
 
 function NavigationWithTheme() {
   const scheme = useColorScheme();
@@ -28,6 +30,7 @@ export default function App() {
       <Provider store={store}>
         <ThemeProvider>
           <NavigationWithTheme />
+          <Toast config={toastConfig} />
         </ThemeProvider>
       </Provider>
     </SafeAreaProvider>
