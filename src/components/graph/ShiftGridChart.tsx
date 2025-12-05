@@ -23,62 +23,7 @@ type Props = {
   denseSeries: DensePoint[];
 };
 
-const CHART_HEIGHT = 200;
-
-// 🔹 toggle this to enable/disable mock data
-const USE_MOCK_DATA = false;
-
-// 🔹 static dense series for testing
-const MOCK_SERIES: DensePoint[] = [
-  // Below baseline (red)
-  {
-    date: '2025-11-01',
-    dayNumber: 1,
-    score: -2,
-    cumulative: -2,
-    hasCheckin: true,
-  },
-  // At baseline (yellow)
-  {
-    date: '2025-11-02',
-    dayNumber: 2,
-    score: +2,
-    cumulative: 0,
-    hasCheckin: true,
-  },
-  // Above baseline (green)
-  {
-    date: '2025-11-03',
-    dayNumber: 3,
-    score: +3,
-    cumulative: 3,
-    hasCheckin: true,
-  },
-  // No check-in (gray)
-  {
-    date: '2025-11-04',
-    dayNumber: 4,
-    score: 0,
-    cumulative: 0,
-    hasCheckin: false,
-  },
-  // More green
-  {
-    date: '2025-11-05',
-    dayNumber: 5,
-    score: +4,
-    cumulative: 7,
-    hasCheckin: true,
-  },
-  // More red
-  {
-    date: '2025-11-06',
-    dayNumber: 6,
-    score: -5,
-    cumulative: 2,
-    hasCheckin: true,
-  },
-];
+const CHART_HEIGHT = vs(200); // Fixed height like web version
 
 const MONTHS = [
   'Jan',
@@ -98,57 +43,79 @@ const MONTHS = [
 export default function ShiftGridChart({ denseSeries }: Props) {
   const [width, setWidth] = useState(0);
 
-  // 👉 choose which series to use
-  const series: DensePoint[] = USE_MOCK_DATA ? MOCK_SERIES : denseSeries ?? [];
+  const series: DensePoint[] = denseSeries ?? [];
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     setWidth(Math.round(e.nativeEvent.layout.width));
   }, []);
 
-  // --- Month labels (start from first series month, wrap around 12) ---
-  const monthLabels = useMemo(() => {
+  // Fixed header height and center Y position (baseline at Y=0)
+  const headerHeight = vs(24);
+  const paddingY = vs(20);
+  const usableHeight = CHART_HEIGHT - headerHeight - paddingY * 2;
+  const centerY = headerHeight + paddingY + usableHeight / 2;
+
+  // Calculate max cumulative for Y-axis labels and scaling
+  const maxCumulative = useMemo(() => {
+    if (!series || series.length === 0) return 0;
+    return Math.max(...series.map(item => Math.abs(item.cumulative)));
+  }, [series]);
+
+  // Scale factor: map cumulative values to pixel positions
+  // If maxCumulative is 300, we need to fit ±300 in usableHeight/2
+  const yScale = useMemo(() => {
+    return maxCumulative > 0 ? usableHeight / 2 / maxCumulative : 1;
+  }, [maxCumulative, usableHeight]);
+
+  // --- Month labels (positioned at top, evenly distributed) ---
+  const monthLabels = useMemo((): Array<{ label: string; x: number }> => {
     if (!series || series.length === 0) {
-      // fallback: just show calendar year
-      return MONTHS;
+      // Return default month labels evenly spaced
+      return MONTHS.map((month, idx) => ({
+        label: month,
+        x: (idx / 11) * 100,
+      }));
     }
 
-    const firstDate = series[0].date; // "YYYY-MM-DD"
-    const monthStr = firstDate.slice(5, 7); // "01".."12"
-    const startIdx = Math.max(0, Math.min(11, Number(monthStr) - 1));
-
-    const labels: string[] = [];
-    for (let i = 0; i < 12; i++) {
-      labels.push(MONTHS[(startIdx + i) % 12]);
+    const labels: Array<{ label: string; x: number }> = [];
+    for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+      const dayIndex = Math.floor((monthIndex * series.length) / 12);
+      if (dayIndex < series.length) {
+        const item = series[dayIndex];
+        const date = new Date(item.date);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        const xRatio = dayIndex / Math.max(1, series.length - 1);
+        labels.push({ label: monthName, x: xRatio * 100 });
+      }
     }
     return labels;
   }, [series]);
 
-  // --- Dots along the baseline ---
+  // --- Dots positioned vertically based on cumulative score ---
   const dots = useMemo(() => {
     if (!series || series.length === 0 || width === 0) return [];
 
-    const paddingX = 24;
-    const paddingY = 40; // a bit more so months can sit at the bottom
-
+    const paddingX = s(24);
     const usableWidth = Math.max(10, width - paddingX * 2);
-    const usableHeight = Math.max(10, CHART_HEIGHT - paddingY * 2);
-
-    const baselineY = paddingY + usableHeight; // 0-line at bottom of grid
-
-    // scale Y by max abs cumulative so things fit nicely (if you ever move dots vertically)
-    const maxAbs = Math.max(1, ...series.map(d => Math.abs(d.cumulative)));
-    const marginFromEdge = 6;
-    const maxAmplitude = usableHeight - marginFromEdge;
-    const scaleY = maxAmplitude / maxAbs;
 
     const count = series.length;
     const denom = Math.max(1, count - 1);
 
     return series.map((item, index) => {
+      // Horizontal position: day number spread across width (0-100%)
       const xRatio = index / denom;
       const cx = paddingX + xRatio * usableWidth;
-      const cy = baselineY - item.cumulative * scaleY;
 
+      // Vertical position: center ± cumulative scaled by yScale
+      // Positive cumulative goes up, negative goes down
+      const y = centerY - item.cumulative * yScale;
+      // Clamp to prevent dots going off-screen (with 3px margin)
+      const cy = Math.max(
+        headerHeight + paddingY + 3,
+        Math.min(CHART_HEIGHT - paddingY - 3, y),
+      );
+
+      // Color logic (as per documentation)
       let color = '#94A3B8'; // No check-in (gray)
       if (item.hasCheckin) {
         if (item.cumulative > 0) color = '#22C55E'; // Above baseline (green)
@@ -156,14 +123,12 @@ export default function ShiftGridChart({ denseSeries }: Props) {
         else color = '#EAB308'; // At baseline (yellow)
       }
 
-      return { cx, cy, color };
+      return { cx, cy, color, item };
     });
-  }, [series, width]);
-
-  console.log('dots', dots);
+  }, [series, width, centerY, yScale, headerHeight, paddingY]);
 
   return (
-    <GradientCardHome style={{ height: scale(320) }}>
+    <GradientCardHome>
       <Text style={styles.title}>Shift Grid (365 dots)</Text>
 
       <View style={styles.outlineWrap} onLayout={onLayout}>
@@ -201,45 +166,51 @@ export default function ShiftGridChart({ denseSeries }: Props) {
           <View style={{ position: 'relative', height: CHART_HEIGHT }}>
             {width > 0 && (
               <Svg width={width} height={CHART_HEIGHT}>
-                {/* +1 dashed line */}
+                {/* Baseline (Y=0) at center - dashed line */}
                 <Line
-                  x1={24}
-                  x2={width - 24}
-                  y1={CHART_HEIGHT / 2.8}
-                  y2={CHART_HEIGHT / 2.8}
-                  stroke="rgba(255,255,255,0.4)"
+                  x1={s(24)}
+                  x2={width - s(24)}
+                  y1={centerY}
+                  y2={centerY}
+                  stroke="rgba(255,255,255,0.3)"
                   strokeWidth={1}
-                  strokeDasharray="4,4"
+                  strokeDasharray="3,5"
                 />
 
-                {/* 0 baseline bar */}
-                <Line
-                  x1={24}
-                  x2={width - 24}
-                  y1={CHART_HEIGHT - 48}
-                  y2={CHART_HEIGHT - 48}
-                  stroke="#CBD5F5"
-                  strokeWidth={6}
-                  strokeLinecap="round"
-                />
-
-                {/* dots on top of baseline */}
+                {/* Dots positioned vertically based on cumulative score */}
                 {dots.map((d, idx) => (
                   <Circle
                     key={idx}
                     cx={d.cx}
-                    cy={CHART_HEIGHT - 48}
-                    r={3}
+                    cy={d.cy}
+                    r={s(3)}
                     fill={d.color}
                   />
                 ))}
               </Svg>
             )}
 
-            {/* Y labels (+1 / 0) */}
-            <View style={styles.yLabels}>
-              <Text style={styles.yLabelText}>+1</Text>
+            {/* Y-axis labels: +max, 0, -max */}
+            <View
+              style={[
+                styles.yLabels,
+                {
+                  top: headerHeight + paddingY,
+                  height: usableHeight,
+                },
+              ]}
+            >
+              {maxCumulative > 0 && (
+                <Text style={styles.yLabelText}>
+                  +{maxCumulative.toFixed(0)}
+                </Text>
+              )}
               <Text style={styles.yLabelText}>0</Text>
+              {maxCumulative > 0 && (
+                <Text style={styles.yLabelText}>
+                  -{maxCumulative.toFixed(0)}
+                </Text>
+              )}
             </View>
 
             {/* No-data message */}
@@ -253,14 +224,22 @@ export default function ShiftGridChart({ denseSeries }: Props) {
           </View>
         </View>
 
-        {/* Month labels */}
-        <View style={styles.monthsRow}>
-          {monthLabels.map(label => (
-            <Text key={label} style={styles.monthLabel}>
-              {label}
-            </Text>
-          ))}
-        </View>
+        {/* Month labels at top */}
+        {width > 0 && (
+          <View style={styles.monthsRow}>
+            {monthLabels.map((month, idx) => {
+              const leftPosition = (month.x / 100) * (width - s(48)) + s(24);
+              return (
+                <Text
+                  key={`${month.label}-${idx}`}
+                  style={[styles.monthLabel, { left: leftPosition }]}
+                >
+                  {month.label}
+                </Text>
+              );
+            })}
+          </View>
+        )}
 
         {/* Legends */}
         <View style={styles.legendRowOne}>
@@ -298,7 +277,7 @@ const styles = StyleSheet.create({
     borderRadius: s(12),
     position: 'relative',
     overflow: 'hidden',
-    height: CHART_HEIGHT + 110,
+    height: CHART_HEIGHT + vs(110),
   },
   innerBox: {
     paddingVertical: vs(8),
@@ -306,9 +285,7 @@ const styles = StyleSheet.create({
   },
   yLabels: {
     position: 'absolute',
-    left: s(18),
-    top: vs(26),
-    bottom: vs(40),
+    left: s(8),
     justifyContent: 'space-between',
   },
   yLabelText: {
@@ -318,16 +295,17 @@ const styles = StyleSheet.create({
   },
   monthsRow: {
     position: 'absolute',
-    top: scale(10),
-    left: s(30),
-    right: s(24),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    top: vs(10),
+    left: 0,
+    right: 0,
+    height: vs(20),
   },
   monthLabel: {
+    position: 'absolute',
     color: '#FFFFFF',
     fontSize: ms(10),
     fontFamily: 'SourceSansPro-Regular',
+    transform: [{ translateX: -s(15) }], // Center the label on its position
   },
   legendRowOne: {
     flexDirection: 'row',
