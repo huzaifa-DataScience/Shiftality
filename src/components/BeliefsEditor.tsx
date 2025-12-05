@@ -69,24 +69,25 @@ type BeliefsEditorProps = {
   shadowAddLabel?: string;
 };
 
-// Ensures a belief sentence starts with "I believe ..."
+// Ensures a belief sentence starts with "Today, I believed ..."
 const ensureStartsWithIBelieve = (raw: string): string => {
   const trimmed = raw.trim();
   if (!trimmed) return '';
 
   const lower = trimmed.toLowerCase();
 
-  // if user already wrote "I believe ..." or kept the old pattern, don't touch it
+  // if user already wrote "Today, I believed ..." or variations, don't touch it
   if (
-    lower.startsWith('i believe') ||
     lower.startsWith('today, i believed') ||
+    lower.startsWith('today i believed') ||
+    lower.startsWith('i believe') ||
     lower.startsWith('today i believe')
   ) {
     return trimmed;
   }
 
-  // otherwise prefix it
-  return `I believe ${trimmed}`;
+  // otherwise prefix it with "Today, I believed"
+  return `Today, I believed ${trimmed}`;
 };
 
 const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
@@ -187,7 +188,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
     const newIndex = next.length - 1;
     setEditingIndex(newIndex);
-    setDraftText('');
+    setDraftText('Today, I believed '); // Pre-fill with prefix
     setIsAddingNewBelief(true);
   };
 
@@ -277,7 +278,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
     const newIndex = next.length - 1;
     setShadowEditingIndex(newIndex);
-    setShadowDraftText('');
+    setShadowDraftText('Today, I believed '); // Pre-fill with prefix
     setIsAddingNewShadowBelief(true);
   };
 
@@ -354,6 +355,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
                 inputProps={{
                   maxLength: 200,
                   onBlur: () => handleBlurBelief(idx),
+                  autoFocus: isAddingNewBelief && isEditing,
                 }}
                 footerActionLabel={isEditing ? 'Save' : undefined}
                 onPressFooterAction={isEditing ? handleSaveBelief : undefined}
@@ -415,6 +417,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
                 inputProps={{
                   maxLength: 200,
                   onBlur: () => handleBlurShadowBelief(idx),
+                  autoFocus: isAddingNewShadowBelief && isEditing,
                 }}
                 footerActionLabel={isEditing ? 'Save' : undefined}
                 onPressFooterAction={
