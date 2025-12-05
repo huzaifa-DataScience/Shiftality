@@ -234,7 +234,7 @@ export default function DemoScreen() {
     setCheckins(updated);
 
     // @ts-ignore
-    navigation.navigate('Main', { screen: 'Search' });
+    // navigation.navigate('Main', { screen: 'Search' });
   };
 
   const onTriggerDaily = async () => {
