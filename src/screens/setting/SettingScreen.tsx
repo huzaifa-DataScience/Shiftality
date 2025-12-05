@@ -27,6 +27,10 @@ import ReminderTestSection from '../../components/ReminderTestSection';
 import { selectBeliefProfile } from '../../store/reducers/surveyReducer';
 import { useNavigation } from '@react-navigation/native';
 
+import Toast from 'react-native-toast-message';
+import { logout } from '../../lib/authService';
+import { clearProfile } from '../../store/reducers/profileReducer';
+
 const themeOptions = ['System', 'Light', 'Dark'];
 const fontSizeOptions = ['Small', 'Normal', 'Large'];
 
@@ -279,7 +283,46 @@ export default function SettingScreen() {
 
         {/* Shared Reminder Test component (same as DemoScreen) */}
         <ReminderTestSection cardStyle={{ width: scale(330) }} />
+        <PrimaryButton
+          textColor={palette.white}
+          style={{
+            width: '50%',
+            height: 'auto',
+            alignSelf: 'center',
+            textAlign: 'center',
+            color: palette.white,
+            fontSize: ms(14.5),
+            fontFamily: 'SourceSansPro-Regular',
+            fontWeight: '700',
+            opacity: 0.9,
+          }}
+          title="Logout"
+          onPress={async () => {
+            try {
+              // Clear auth data from AsyncStorage
+              await logout();
 
+              // Clear profile from Redux
+              dispatch(clearProfile());
+
+              // Show success message
+              Toast.show({
+                type: 'success',
+                text1: 'Logged out',
+                text2: 'You have been successfully logged out',
+              });
+
+              // Navigate to auth screen
+              // The RootNavigator will automatically show Auth stack when isAuthenticated is false
+            } catch (error: any) {
+              Toast.show({
+                type: 'error',
+                text1: 'Logout failed',
+                text2: error.message || 'An error occurred while logging out',
+              });
+            }
+          }}
+        />
         <View style={{ height: scale(40) }} />
       </ScrollView>
     </View>

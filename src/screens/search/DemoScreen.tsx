@@ -22,6 +22,7 @@ import PrimaryButton from '../../components/PrimaryButton';
 import DebugInfoCard from '../../components/DebugInfoCard';
 import AppImage from '../../components/AppImage';
 import ReminderTestSection from '../../components/ReminderTestSection';
+import BlueHeader from '../../components/BlueHeader';
 
 import {
   getCheckins,
@@ -293,7 +294,10 @@ export default function DemoScreen() {
   return (
     <View style={styles.root}>
       <ScrollView
-        style={{ backgroundColor: palette.darkBlue, marginVertical: scale(50) }}
+        style={{
+          backgroundColor: palette.darkBlue,
+          paddingVertical: scale(50),
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* ───────── Generate Demo Data ───────── */}
@@ -302,6 +306,29 @@ export default function DemoScreen() {
             width: scale(330),
           }}
         >
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{
+              left: 0,
+              top: 0,
+              width: 44,
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            hitSlop={12}
+          >
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: ms(14),
+                lineHeight: 28,
+                fontFamily: 'SourceSansPro-Regular',
+              }}
+            >
+              ‹ Back to Dashboard
+            </Text>
+          </TouchableOpacity>
           <Text style={styles.h1}>Demo (for testing)</Text>
           <Text style={styles.sub}>
             Generate test data and debug your belief tracking journey

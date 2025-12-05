@@ -482,46 +482,6 @@ them from real reminders.`,
 
         <GradientHintBox title={noteTitle} text={noteText} />
       </GradientCardHome>
-      <PrimaryButton
-        textColor={palette.white}
-        style={{
-          width: '50%',
-          height: 'auto',
-          alignSelf: 'center',
-          textAlign: 'center',
-          color: palette.white,
-          fontSize: ms(14.5),
-          fontFamily: 'SourceSansPro-Regular',
-          fontWeight: '700',
-          opacity: 0.9,
-        }}
-        title="Logout"
-        onPress={async () => {
-          try {
-            // Clear auth data from AsyncStorage
-            await logout();
-
-            // Clear profile from Redux
-            dispatch(clearProfile());
-
-            // Show success message
-            Toast.show({
-              type: 'success',
-              text1: 'Logged out',
-              text2: 'You have been successfully logged out',
-            });
-
-            // Navigate to auth screen
-            // The RootNavigator will automatically show Auth stack when isAuthenticated is false
-          } catch (error: any) {
-            Toast.show({
-              type: 'error',
-              text1: 'Logout failed',
-              text2: error.message || 'An error occurred while logging out',
-            });
-          }
-        }}
-      />
 
       {/* Modal */}
       <Modal
