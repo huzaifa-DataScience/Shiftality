@@ -6,11 +6,10 @@ import {
   StyleSheet,
   LayoutChangeEvent,
   TouchableOpacity,
-  PanResponder,
   Platform,
-  Modal,
-  ScrollView,
   Image,
+  Modal,
+  Pressable,
 } from 'react-native';
 import Svg, {
   Defs,
@@ -26,9 +25,13 @@ import {
   moderateScale as ms,
   scale,
 } from 'react-native-size-matters';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import GradientCardHome from '../GradientCardHome';
 import { palette } from '../../theme';
 import { DensePoint } from '../../lib/dataClient';
+import { useJournals } from '../../contexts/JournalContext';
 
 type Props = {
   denseSeries: DensePoint[];
@@ -55,12 +58,15 @@ const Y_MIN = -36.5;
 const Y_AXIS_LABELS = ['-36', '-24', '-12', '0', '+12', '+24', '+36'];
 
 export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
+  const { setSelectedFilterDate, clearSelectedFilterDate } = useJournals();
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(110));
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
   const [monthDaysData, setMonthDaysData] = useState<DensePoint[]>([]);
   const [chartX, setChartX] = useState(0);
-  const [showMonthModal, setShowMonthModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height, x } = e.nativeEvent.layout;
@@ -210,17 +216,79 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
     [data, spacing, initialSpacing],
   );
 
-  // ✅ Handle month selection from modal
-  const handleMonthFromModal = useCallback(
-    (monthKey: string) => {
-      const selectedMonth = monthData.find(m => m.monthKey === monthKey);
-      if (selectedMonth && selectedMonth.onPress) {
-        selectedMonth.onPress();
-        setShowMonthModal(false);
+  // Handle date picker change
+  const onDatePickerChange = useCallback(
+    (e: DateTimePickerEvent, date?: Date) => {
+      if (Platform.OS === 'android') {
+        setShowPicker(false);
+        if (e.type === 'set' && date) {
+          setSelectedDate(date);
+          const isoDate = date.toISOString().split('T')[0];
+          setSelectedFilterDate(isoDate);
+
+          const year = date.getFullYear();
+          const monthIdx = date.getMonth();
+          const monthKey = `${year}-${monthIdx}`;
+
+          // Filter days for the selected month
+          const monthDays = denseSeries.filter(p => {
+            const pd = new Date(p.date);
+            return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
+          });
+
+          if (monthDays.length > 0) {
+            setMonthDaysData(monthDays);
+            setExpandedMonth(monthKey);
+          }
+        }
+      } else {
+        // iOS - auto-select on change
+        if (date) {
+          setShowPicker(false);
+          setSelectedDate(date);
+          const isoDate = date.toISOString().split('T')[0];
+          setSelectedFilterDate(isoDate);
+
+          const year = date.getFullYear();
+          const monthIdx = date.getMonth();
+          const monthKey = `${year}-${monthIdx}`;
+
+          // Filter days for the selected month
+          const monthDays = denseSeries.filter(p => {
+            const pd = new Date(p.date);
+            return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
+          });
+
+          if (monthDays.length > 0) {
+            setMonthDaysData(monthDays);
+            setExpandedMonth(monthKey);
+          }
+        }
       }
     },
-    [monthData],
+    [denseSeries, setSelectedFilterDate],
   );
+
+  // Handle clear date
+  const handleClearDate = useCallback(() => {
+    setSelectedDate(null);
+    setExpandedMonth(null);
+    setMonthDaysData([]);
+    clearSelectedFilterDate();
+  }, [clearSelectedFilterDate]);
+
+  // Open date picker
+  const openDatePicker = useCallback(() => {
+    setShowPicker(true);
+    setTempDate(selectedDate || new Date());
+  }, [selectedDate]);
+
+  // Format date for display
+  const formatDate = useCallback((date: Date) => {
+    return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(
+      date.getDate(),
+    ).padStart(2, '0')}/${date.getFullYear()}`;
+  }, []);
 
   // Get the label of the expanded month
   const expandedMonthLabel = useMemo(() => {
@@ -235,23 +303,67 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
         <Text style={styles.title}>
           Shift Map {expandedMonthLabel ? `- ${expandedMonthLabel}` : ''}
         </Text>
-        {!expandedMonth && (
-          <TouchableOpacity
-            onPress={() => setShowMonthModal(true)}
-            style={styles.iconButton}
-          >
-            <Image
-              source={require('../../assets/calendar.png')}
-              style={styles.icon}
-            />
-          </TouchableOpacity>
-        )}
-        {expandedMonth && (
-          <TouchableOpacity onPress={() => setExpandedMonth(null)}>
-            <Text style={styles.backButton}>← Back to Months</Text>
-          </TouchableOpacity>
-        )}
       </View>
+
+      {selectedDate ? (
+        <View style={styles.selectedDateContainer}>
+          <View style={styles.selectedDateBox}>
+            <Text style={styles.selectedDateText}>
+              {formatDate(selectedDate)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={handleClearDate}
+            style={styles.clearButton}
+          >
+            <Text style={styles.clearText}>Clear</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          onPress={openDatePicker}
+          style={styles.selectDateButton}
+        >
+          <Text style={styles.selectDateText}>
+            Please select date to filter
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Date Picker for Android */}
+      {showPicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={tempDate}
+          mode="date"
+          display="calendar"
+          onChange={onDatePickerChange}
+        />
+      )}
+
+      {/* Date Picker for iOS */}
+      {showPicker && Platform.OS === 'ios' && (
+        <Modal
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowPicker(false)}
+        >
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowPicker(false)}
+          >
+            <Pressable style={styles.iosSheet}>
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display="inline"
+                onChange={onDatePickerChange}
+                style={{ backgroundColor: palette.white }}
+                themeVariant="light"
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
 
       <View style={styles.outlineWrap} onLayout={onLayout}>
         {/* Outer gradient border */}
@@ -349,53 +461,6 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
           </Text>
         </View>
       </View>
-
-      {/* ✅ Month Selection Modal */}
-      <Modal
-        visible={showMonthModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowMonthModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Month</Text>
-              <TouchableOpacity onPress={() => setShowMonthModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.monthGrid}>
-              {monthData.map(month => (
-                <TouchableOpacity
-                  key={month.monthKey}
-                  onPress={() => handleMonthFromModal(month.monthKey)}
-                  disabled={month.hideDataPoint}
-                  style={[
-                    styles.monthButton,
-                    month.hideDataPoint && styles.monthButtonDisabled,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.monthButtonText,
-                      month.hideDataPoint && styles.monthButtonTextDisabled,
-                    ]}
-                  >
-                    {month.label}
-                  </Text>
-                  {!month.hideDataPoint && (
-                    <Text style={styles.monthValue}>
-                      {month.value.toFixed(1)}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </GradientCardHome>
   );
 }
@@ -427,6 +492,79 @@ const styles = StyleSheet.create({
   icon: {
     width: s(24),
     height: s(24),
+    tintColor: '#00BFFF',
+  },
+  blueBox: {
+    width: s(40),
+    height: s(40),
+    backgroundColor: '#00BFFF',
+    borderRadius: s(8),
+  },
+  selectDateButton: {
+    paddingHorizontal: s(16),
+    paddingVertical: vs(12),
+    borderRadius: s(12),
+    borderWidth: 1,
+    borderColor: 'rgba(10, 196, 255, 0.5)',
+    backgroundColor: 'rgba(10, 196, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: vs(12),
+  },
+  selectDateText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: ms(14),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  selectedDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(10),
+    marginBottom: vs(12),
+  },
+  selectedDateBox: {
+    flex: 1,
+    paddingHorizontal: s(16),
+    paddingVertical: vs(12),
+    borderRadius: s(12),
+    borderWidth: 1,
+    borderColor: 'rgba(10, 196, 255, 0.5)',
+    backgroundColor: 'rgba(10, 196, 255, 0.1)',
+  },
+  selectedDateText: {
+    color: '#00BFFF',
+    fontSize: ms(15),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  clearButton: {
+    paddingHorizontal: s(16),
+    paddingVertical: vs(12),
+    backgroundColor: 'rgba(255, 59, 48, 0.2)',
+    borderRadius: s(8),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.5)',
+  },
+  clearText: {
+    color: '#FF3B30',
+    fontSize: ms(14),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  iosSheet: {
+    marginTop: 'auto',
+    backgroundColor: 'transparent',
+    borderTopLeftRadius: s(18),
+    borderTopRightRadius: s(18),
+    marginBottom: scale(200),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   outlineWrap: {
     width: '100%',
@@ -457,78 +595,6 @@ const styles = StyleSheet.create({
     color: palette.white,
     fontSize: ms(13),
     fontWeight: '600',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#1a1a2e',
-    borderRadius: s(16),
-    width: '85%',
-    maxHeight: '70%',
-    borderWidth: 1,
-    borderColor: '#0AC4FF',
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: s(16),
-    paddingVertical: vs(16),
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(10, 196, 255, 0.3)',
-  },
-  modalTitle: {
-    fontSize: ms(16),
-    fontWeight: '700',
-    color: '#00BFFF',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  modalClose: {
-    fontSize: ms(24),
-    color: '#00BFFF',
-    fontWeight: '600',
-  },
-  monthGrid: {
-    paddingHorizontal: s(12),
-    paddingVertical: vs(12),
-  },
-  monthButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: s(16),
-    paddingVertical: vs(12),
-    marginVertical: vs(6),
-    backgroundColor: 'rgba(10, 196, 255, 0.1)',
-    borderRadius: s(10),
-    borderLeftWidth: 3,
-    borderLeftColor: '#00BFFF',
-  },
-  monthButtonDisabled: {
-    backgroundColor: 'rgba(100, 100, 100, 0.1)',
-    borderLeftColor: '#666',
-    opacity: 0.5,
-  },
-  monthButtonText: {
-    fontSize: ms(15),
-    fontWeight: '600',
-    color: '#FFFFFF',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  monthButtonTextDisabled: {
-    color: '#999',
-  },
-  monthValue: {
-    fontSize: ms(13),
-    fontWeight: '700',
-    color: '#00BFFF',
     fontFamily: 'SourceSansPro-Regular',
   },
 });

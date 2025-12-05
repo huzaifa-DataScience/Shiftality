@@ -20,6 +20,7 @@ type Props = {
   minHeight?: number;
   placeholder?: string;
   mode?: 'date' | 'time'; // 👈 NEW
+  hideIcon?: boolean; // 👈 NEW - hide the calendar icon
 };
 
 const GradientDatePicker: React.FC<Props> = ({
@@ -28,6 +29,7 @@ const GradientDatePicker: React.FC<Props> = ({
   minimumDate,
   minHeight = vs(48),
   mode = 'date', // 👈 default is date
+  hideIcon = false, // 👈 default is false (show icon)
 }) => {
   const [show, setShow] = useState(false);
 
@@ -71,7 +73,7 @@ const GradientDatePicker: React.FC<Props> = ({
         minHeight={minHeight}
         valueText={fmt(value)}
         onPress={() => setShow(true)}
-        rightIconSource={calendarPng} // you can swap to a clock icon later if you want
+        rightIconSource={hideIcon ? undefined : calendarPng} // you can swap to a clock icon later if you want
       />
 
       {show && Platform.OS === 'android' && (

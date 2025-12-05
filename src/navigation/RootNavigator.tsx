@@ -6,6 +6,7 @@ import AuthStack from './AuthStack';
 import FinanceSurveyScreen from '../screens/survey/FinanceSurveyScreen';
 import { NavigatorScreenParams } from '@react-navigation/native';
 import DemoScreen from '../screens/search/DemoScreen';
+import { JournalProvider } from '../contexts/JournalContext';
 
 export type RootStackParamList = {
   Auth: undefined; // auth flow (stack)
@@ -20,18 +21,20 @@ export default function RootNavigator() {
   const [isSignedIn, setIsSignedIn] = useState(false);
 
   return (
-    <Root.Navigator screenOptions={{ headerShown: false }}>
-      {!isSignedIn ? (
-        <Root.Screen name="Auth">
-          {() => <AuthStack onSignedIn={() => setIsSignedIn(true)} />}
-        </Root.Screen>
-      ) : (
-        <>
-          <Root.Screen name="Main" component={AppTabs} />
-          <Root.Screen name="FinanceSurvey" component={FinanceSurveyScreen} />
-          <Root.Screen name="DemoScreen" component={DemoScreen} />
-        </>
-      )}
-    </Root.Navigator>
+    <JournalProvider>
+      <Root.Navigator screenOptions={{ headerShown: false }}>
+        {!isSignedIn ? (
+          <Root.Screen name="Auth">
+            {() => <AuthStack onSignedIn={() => setIsSignedIn(true)} />}
+          </Root.Screen>
+        ) : (
+          <>
+            <Root.Screen name="Main" component={AppTabs} />
+            <Root.Screen name="FinanceSurvey" component={FinanceSurveyScreen} />
+            <Root.Screen name="DemoScreen" component={DemoScreen} />
+          </>
+        )}
+      </Root.Navigator>
+    </JournalProvider>
   );
 }

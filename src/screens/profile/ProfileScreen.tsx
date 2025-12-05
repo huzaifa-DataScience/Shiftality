@@ -36,19 +36,17 @@ import {
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
 import BeliefsEditor from '../../components/BeliefsEditor';
 import GradientInput from '../../components/GradientInput';
+import { useJournals } from '../../contexts/JournalContext';
 
-const JOURNAL_STORAGE_KEY = 'shift_journal_entries_v1';
-
-type JournalEntry = {
-  id: string;
-  title: string;
-  description: string;
-  date: string; // YYYY-MM-DD
-  time: string; // HH:mm
-  createdAt: string; // ISO
+type ProfileScreenProps = {
+  openJournalToken?: number;
+  onClose?: () => void;
 };
 
-export default function ProfileScreen() {
+export default function ProfileScreen({
+  openJournalToken: propOpenJournalToken,
+  onClose,
+}: ProfileScreenProps = {}) {
   const navigation = useNavigation();
   const route = useRoute<any>();
 
@@ -76,7 +74,7 @@ export default function ProfileScreen() {
   const displayName = onboarding.firstName?.trim() || 'Your';
 
   // ------- JOURNAL STATE -------
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const { journalEntries, addJournal, deleteJournal } = useJournals();
   const [journalModalVisible, setJournalModalVisible] = useState(false);
   const [isAddingJournal, setIsAddingJournal] = useState(false);
 
@@ -87,31 +85,6 @@ export default function ProfileScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [journalError, setJournalError] = useState<string | null>(null);
-
-  // load journals once
-  useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(JOURNAL_STORAGE_KEY);
-        if (!raw) return;
-        const parsed: JournalEntry[] = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setJournalEntries(parsed);
-        }
-      } catch (e) {
-        console.log('ProfileScreen: error loading journals', e);
-      }
-    })();
-  }, []);
-
-  const saveJournals = async (next: JournalEntry[]) => {
-    setJournalEntries(next);
-    try {
-      await AsyncStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(next));
-    } catch (e) {
-      console.log('ProfileScreen: error saving journals', e);
-    }
-  };
 
   // ------- JOURNAL HELPERS -------
   const formatDate = (d: Date) =>
@@ -173,6 +146,13 @@ export default function ProfileScreen() {
     }, [route.params?.openJournalToken, openJournalSheet]),
   );
 
+  // Open journal when prop changes (for modal usage)
+  useEffect(() => {
+    if (propOpenJournalToken) {
+      openJournalSheet();
+    }
+  }, [propOpenJournalToken, openJournalSheet]);
+
   const handleStartAddJournal = () => {
     setJournalError(null);
     setJournalTitle('');
@@ -195,17 +175,12 @@ export default function ProfileScreen() {
     const dateStr = journalDate.toISOString().slice(0, 10); // YYYY-MM-DD
     const timeStr = journalTime.toTimeString().slice(0, 5); // HH:mm
 
-    const entry: JournalEntry = {
-      id: `journal_${Date.now()}`,
+    await addJournal({
       title,
       description: desc,
       date: dateStr,
       time: timeStr,
-      createdAt: new Date().toISOString(),
-    };
-
-    const next = [...journalEntries, entry];
-    await saveJournals(next);
+    });
 
     // go back to list view
     setIsAddingJournal(false);
@@ -214,8 +189,7 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteJournal = async (id: string) => {
-    const next = journalEntries.filter(entry => entry.id !== id);
-    await saveJournals(next);
+    await deleteJournal(id);
   };
 
   const visibleJournals = [...journalEntries].sort((a, b) =>
@@ -276,11 +250,18 @@ export default function ProfileScreen() {
     <>
       <ScrollView style={{ backgroundColor: palette.darkBlue }}>
         <View style={styles.root}>
+          {/* Close button for modal mode */}
+          {onClose && (
+            <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
+              <Text style={styles.modalCloseText}>✕ Close</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Profile intro card */}
           <GradientCardHome
             style={{
               marginVertical: vs(20),
-              marginTop: scale(50),
+              marginTop: onClose ? scale(20) : scale(50),
               width: scale(330),
             }}
           >
@@ -561,7 +542,7 @@ export default function ProfileScreen() {
                   <Text style={styles.modalLabel}>Title</Text>
                   <GradientInput
                     value={journalTitle}
-                    onChangeText={t => {
+                    onChangeText={(t: string) => {
                       setJournalTitle(t);
                       if (journalError) setJournalError(null);
                     }}
@@ -571,7 +552,7 @@ export default function ProfileScreen() {
                   <Text style={styles.modalLabel}>Description</Text>
                   <GradientInput
                     value={journalDesc}
-                    onChangeText={t => {
+                    onChangeText={(t: string) => {
                       setJournalDesc(t);
                       if (journalError) setJournalError(null);
                     }}
@@ -670,6 +651,18 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingBottom: scale(30),
+  },
+  modalCloseButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: s(20),
+    paddingVertical: vs(15),
+    marginTop: vs(10),
+  },
+  modalCloseText: {
+    color: '#00BFFF',
+    fontSize: ms(16),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
   },
   firstSectitle: {
     color: palette.white,
