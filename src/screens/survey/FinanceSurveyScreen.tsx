@@ -70,7 +70,7 @@ export default function FinanceSurveyScreen() {
       setStep(s => s + 1);
       scrollRef.current?.scrollTo({ y: 0, animated: true });
     } else {
-      navigation.navigate('Main', { screen: 'Profile' });
+      navigation.navigate('Main', { screen: 'CenterProfile' });
     }
   };
   const goBack = () => {
