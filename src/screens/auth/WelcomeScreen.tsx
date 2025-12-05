@@ -41,7 +41,7 @@ export default function WelcomeScreen({ navigation }: any) {
           backgroundColor={palette.white}
           textColor={palette.darkBlue}
           title="Get started"
-          onPress={() => navigation.navigate('Signup')}
+          onPress={() => navigation.navigate('Login')}
         />
       </View>
     </SafeAreaView>

@@ -12,61 +12,77 @@ const RADIUS = 22;
 
 const GradientCard: React.FC<Props> = ({ children, style, contentStyle }) => {
   return (
-    <View style={[styles.stack, style]}>
-      {/* Top-right cyan spotlight */}
-      {/* Top-right cyan spotlight (light at the END) */}
+    <View style={style}>
+      {/* Gradient border wrapper - creates the visible border effect */}
+      {/* Cyan at top-left, transitioning to dark blue at bottom-right */}
       <LinearGradient
-        pointerEvents="none"
-        colors={[
-          'rgba(0, 0, 0, 0)', // top-left fade
-          'rgba(16, 20, 25, 0.2)', // cool mid tone
-          'rgba(42, 60, 75, 0.45)', // soft mid-dark depth
-          'rgba(88, 165, 220, 0.60)', // glow highlight near bottom-right
-        ]}
-        locations={[0.0, 0.35, 0.65, 1.0]}
-        start={{ x: 0.0, y: 1.0 }} // top-left corner
-        end={{ x: 1.0, y: 0.0 }} // bottom-right glow
-        style={styles.glow}
-      />
-
-      {/* Bottom-center subtle bloom */}
-      <LinearGradient
-        colors={[
-          'rgba(46,123,255,0.22)', // bottom bright
-          'rgba(54, 119, 231, 0.1)',
-          'rgba(46,123,255,0.00)', // fades out upward
-        ]}
-        locations={[0, 0.45, 1]}
-        start={{ x: 0.5, y: 1 }}
-        end={{ x: 0.5, y: 0 }}
-        style={styles.bloomBottomV}
-        pointerEvents="none"
-      />
-
-      {/* Horizontal centering mask (edges vanish, center lifted) */}
-      <LinearGradient
-        colors={[
-          'rgba(46,123,255,0.00)', // left transparent
-          'rgba(46,123,255,0.16)', // center brighter
-          'rgba(46,123,255,0.00)', // right transparent
-        ]}
+        colors={['#0AC4FF', '#0AC4FF', '#1a4258ff']}
         locations={[0, 0.5, 1]}
-        start={{ x: 0, y: 1 }}
+        start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.bloomBottomH}
-        pointerEvents="none"
-      />
-      <View style={[styles.inner, contentStyle]}>{children}</View>
+        style={styles.borderGradient}
+      >
+        <View style={styles.stack}>
+          {/* Top-right cyan spotlight */}
+          <LinearGradient
+            pointerEvents="none"
+            colors={[
+              'rgba(0, 0, 0, 0)', // top-left fade
+              'rgba(16, 20, 25, 0.2)', // cool mid tone
+              'rgba(42, 60, 75, 0.45)', // soft mid-dark depth
+              'rgba(88, 165, 220, 0.60)', // glow highlight near bottom-right
+            ]}
+            locations={[0.0, 0.35, 0.65, 1.0]}
+            start={{ x: 0.0, y: 1.0 }} // top-left corner
+            end={{ x: 1.0, y: 0.0 }} // bottom-right glow
+            style={styles.glow}
+          />
+
+          {/* Bottom-center subtle bloom */}
+          <LinearGradient
+            colors={[
+              'rgba(46,123,255,0.22)', // bottom bright
+              'rgba(54, 119, 231, 0.1)',
+              'rgba(46,123,255,0.00)', // fades out upward
+            ]}
+            locations={[0, 0.45, 1]}
+            start={{ x: 0.5, y: 1 }}
+            end={{ x: 0.5, y: 0 }}
+            style={styles.bloomBottomV}
+            pointerEvents="none"
+          />
+
+          {/* Horizontal centering mask (edges vanish, center lifted) */}
+          <LinearGradient
+            colors={[
+              'rgba(46,123,255,0.00)', // left transparent
+              'rgba(46,123,255,0.16)', // center brighter
+              'rgba(46,123,255,0.00)', // right transparent
+            ]}
+            locations={[0, 0.5, 1]}
+            start={{ x: 0, y: 1 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.bloomBottomH}
+            pointerEvents="none"
+          />
+          <View style={[styles.inner, contentStyle]}>{children}</View>
+        </View>
+      </LinearGradient>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  borderGradient: {
+    borderRadius: RADIUS,
+    // padding: 1, // Creates 1px border width
+    overflow: 'hidden',
+  },
   stack: {
     position: 'relative',
-    borderRadius: RADIUS,
+    borderRadius: RADIUS - 1, // Slightly smaller to account for border
     overflow: 'hidden',
-    // keep the base surface dark like the design; adjust if you already set it outside
+    backgroundColor: '#1A1E2A', // Dark background to match Figma
   },
   inner: {
     paddingHorizontal: 20,
@@ -97,27 +113,27 @@ const styles = StyleSheet.create({
   },
   bloomBottomV: {
     position: 'absolute',
-    left: '4%',
-    right: '4%',
-    bottom: -12, // slight spill below the card for softness
+    left: 0,
+    right: 0,
+    bottom: 0, // Align with card bottom
     height: 30, // vertical reach
-    borderTopLeftRadius: RADIUS,
-    borderTopRightRadius: RADIUS,
+    borderBottomLeftRadius: RADIUS - 1,
+    borderBottomRightRadius: RADIUS - 1,
   },
   bloomBottomH: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: -12,
+    bottom: 0, // Align with card bottom
     height: 70,
-    borderTopLeftRadius: RADIUS,
-    borderTopRightRadius: RADIUS,
+    borderBottomLeftRadius: RADIUS - 1,
+    borderBottomRightRadius: RADIUS - 1,
   },
   glow: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    borderRadius: RADIUS,
+    borderRadius: RADIUS - 1,
   },
 });
 

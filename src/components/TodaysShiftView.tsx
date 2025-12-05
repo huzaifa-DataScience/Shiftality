@@ -27,7 +27,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import GradientBoxWithButton from '../components/GradientBoxWithButton';
 import GradientHintBoxWithLikert from '../components/GradientHintBoxWithLikert';
 import { palette } from '../theme';
-import { Checkin } from '../lib/dataClient';
+import { Checkin, getCheckins } from '../lib/dataClient';
 
 // ⚡ same keys as ProfileScreen
 const EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
@@ -57,7 +57,7 @@ type Props = {
 };
 
 export default function TodaysShiftView({ onCheckinUpdate }: Props) {
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(true); // Default to true (show detailed view)
 
   // beliefs loaded from storage
   const [empoweringBeliefs, setEmpoweringBeliefs] = useState<string[]>(
@@ -103,16 +103,35 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
     }
   }, []);
 
+  // Check if today's shift is locked
+  const checkTodaysShift = useCallback(async () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+      const checkins = await getCheckins();
+      const todaysCheckin = checkins.find(c => c.date === today);
+
+      // If there's a checkin for today, hide detailed view (show completed view)
+      // If no checkin, show detailed view
+      setShowDetails(!todaysCheckin);
+    } catch (e) {
+      console.log("Error checking today's shift", e);
+      // On error, default to showing detailed view
+      setShowDetails(true);
+    }
+  }, []);
+
   // Initial mount
   useEffect(() => {
     loadBeliefsFromStorage();
-  }, [loadBeliefsFromStorage]);
+    checkTodaysShift();
+  }, [loadBeliefsFromStorage, checkTodaysShift]);
 
   // Reload whenever the screen gains focus
   useFocusEffect(
     useCallback(() => {
       loadBeliefsFromStorage();
-    }, [loadBeliefsFromStorage]),
+      checkTodaysShift();
+    }, [loadBeliefsFromStorage, checkTodaysShift]),
   );
 
   const countYes = (list: string[]) =>
@@ -137,7 +156,7 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
     setResponses(prev => ({ ...prev, [text]: value }));
   };
 
-  const handleLock = () => {
+  const handleLock = async () => {
     const empoweringYes = countYes(empoweringBeliefs);
     const shadowYes = countYes(shadowBeliefs);
 
@@ -157,7 +176,10 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
       created_at: new Date().toISOString(),
     };
 
-    onCheckinUpdate(checkin);
+    // Wait for checkin to be saved before updating UI
+    await onCheckinUpdate(checkin);
+    // Hide detailed view and show completed view immediately after locking
+    // No need to re-check since we just saved it
     setShowDetails(false);
   };
 

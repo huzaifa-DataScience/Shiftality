@@ -33,6 +33,7 @@ import {
   cancelAllReminderNotifications,
 } from '../lib/localNotifications';
 import GradientInput from './GradientInput';
+import { useNavigation } from '@react-navigation/native';
 
 type StoredReminder = {
   id: string;
@@ -77,7 +78,7 @@ them from real reminders.`,
 
   // NEW: global on/off state
   const [globalEnabled, setGlobalEnabled] = useState<boolean>(true);
-
+  const navigation = useNavigation();
   // modal state
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -476,6 +477,24 @@ them from real reminders.`,
 
         <GradientHintBox title={noteTitle} text={noteText} />
       </GradientCardHome>
+      <PrimaryButton
+        textColor={palette.white}
+        style={{
+          width: '50%',
+          height: 'auto',
+          alignSelf: 'center',
+          textAlign: 'center',
+          color: palette.white,
+          fontSize: ms(14.5),
+          fontFamily: 'SourceSansPro-Regular',
+          fontWeight: '700',
+          opacity: 0.9,
+        }}
+        title="Logout"
+        onPress={async () => {
+          navigation.navigate('Auth');
+        }}
+      />
 
       {/* Modal */}
       <Modal
