@@ -1,6 +1,15 @@
 // src/components/graph/ShiftGridChart.tsx
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  LayoutChangeEvent,
+  TouchableOpacity,
+  Platform,
+  Modal,
+  Pressable,
+} from 'react-native';
 import Svg, {
   Defs,
   Line,
@@ -15,9 +24,13 @@ import {
   moderateScale as ms,
   scale,
 } from 'react-native-size-matters';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import GradientCardHome from '../GradientCardHome';
 import { palette } from '../../theme';
 import type { DensePoint } from '../../lib/dataClient';
+import { useJournals } from '../../contexts/JournalContext';
 
 type Props = {
   denseSeries: DensePoint[];
@@ -41,9 +54,47 @@ const MONTHS = [
 ];
 
 export default function ShiftGridChart({ denseSeries }: Props) {
+  const { setSelectedFilterDate, clearSelectedFilterDate, selectedFilterDate } =
+    useJournals();
   const [width, setWidth] = useState(0);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
 
-  const series: DensePoint[] = denseSeries ?? [];
+  // Sync local selectedDate with context's selectedFilterDate
+  useEffect(() => {
+    if (selectedFilterDate) {
+      const date = new Date(selectedFilterDate);
+      if (!isNaN(date.getTime())) {
+        setSelectedDate(date);
+      }
+    } else {
+      setSelectedDate(null);
+    }
+  }, [selectedFilterDate]);
+
+  // Filter series based on selected date's month
+  const series: DensePoint[] = useMemo(() => {
+    const allSeries = denseSeries ?? [];
+
+    // If no date is selected, show all data
+    if (!selectedFilterDate || !selectedDate) {
+      return allSeries;
+    }
+
+    // Filter to show only the selected month
+    const selectedYear = selectedDate.getFullYear();
+    const selectedMonth = selectedDate.getMonth();
+
+    return allSeries.filter(item => {
+      const itemDate = new Date(item.date);
+      if (isNaN(itemDate.getTime())) return false;
+      return (
+        itemDate.getFullYear() === selectedYear &&
+        itemDate.getMonth() === selectedMonth
+      );
+    });
+  }, [denseSeries, selectedFilterDate, selectedDate]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     setWidth(Math.round(e.nativeEvent.layout.width));
@@ -77,6 +128,15 @@ export default function ShiftGridChart({ denseSeries }: Props) {
       }));
     }
 
+    // If a date is selected, show only that month's label
+    if (selectedDate) {
+      const monthName = selectedDate.toLocaleDateString('en-US', {
+        month: 'short',
+      });
+      return [{ label: monthName, x: 50 }]; // Center the label
+    }
+
+    // Otherwise, show all months evenly distributed
     const labels: Array<{ label: string; x: number }> = [];
     for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
       const dayIndex = Math.floor((monthIndex * series.length) / 12);
@@ -89,7 +149,7 @@ export default function ShiftGridChart({ denseSeries }: Props) {
       }
     }
     return labels;
-  }, [series]);
+  }, [series, selectedDate]);
 
   // --- Dots positioned vertically based on cumulative score ---
   const dots = useMemo(() => {
@@ -127,9 +187,123 @@ export default function ShiftGridChart({ denseSeries }: Props) {
     });
   }, [series, width, centerY, yScale, headerHeight, paddingY]);
 
+  // Handle date picker change
+  const onDatePickerChange = useCallback(
+    (e: DateTimePickerEvent, date?: Date) => {
+      if (Platform.OS === 'android') {
+        setShowPicker(false);
+        if (e.type === 'set' && date) {
+          setSelectedDate(date);
+          const isoDate = date.toISOString().split('T')[0];
+          setSelectedFilterDate(isoDate);
+        }
+      } else {
+        // iOS - auto-select on change
+        if (date) {
+          setShowPicker(false);
+          setSelectedDate(date);
+          const isoDate = date.toISOString().split('T')[0];
+          setSelectedFilterDate(isoDate);
+        }
+      }
+    },
+    [setSelectedFilterDate],
+  );
+
+  // Handle clear date
+  const handleClearDate = useCallback(() => {
+    setSelectedDate(null);
+    clearSelectedFilterDate();
+  }, [clearSelectedFilterDate]);
+
+  // Open date picker
+  const openDatePicker = useCallback(() => {
+    setShowPicker(true);
+    setTempDate(selectedDate || new Date());
+  }, [selectedDate]);
+
+  // Format date for display
+  const formatDate = useCallback((date: Date) => {
+    return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(
+      date.getDate(),
+    ).padStart(2, '0')}/${date.getFullYear()}`;
+  }, []);
+
+  // Get title with month if date is selected
+  const chartTitle = useMemo(() => {
+    if (selectedDate) {
+      const monthName = selectedDate.toLocaleDateString('en-US', {
+        month: 'long',
+      });
+      const year = selectedDate.getFullYear();
+      return `Shift Grid - ${monthName} ${year}`;
+    }
+    return 'Shift Grid (365 dots)';
+  }, [selectedDate]);
+
   return (
     <GradientCardHome>
-      <Text style={styles.title}>Shift Grid (365 dots)</Text>
+      <Text style={styles.title}>{chartTitle}</Text>
+
+      {selectedDate ? (
+        <View style={styles.selectedDateContainer}>
+          <View style={styles.selectedDateBox}>
+            <Text style={styles.selectedDateText}>
+              {formatDate(selectedDate)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={handleClearDate}
+            style={styles.clearButton}
+          >
+            <Text style={styles.clearText}>Clear</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          onPress={openDatePicker}
+          style={styles.selectDateButton}
+        >
+          <Text style={styles.selectDateText}>
+            Please select date to filter
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Date Picker for Android */}
+      {showPicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={tempDate}
+          mode="date"
+          display="calendar"
+          onChange={onDatePickerChange}
+        />
+      )}
+
+      {/* Date Picker for iOS */}
+      {showPicker && Platform.OS === 'ios' && (
+        <Modal
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowPicker(false)}
+        >
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowPicker(false)}
+          >
+            <Pressable style={styles.iosSheet}>
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display="inline"
+                onChange={onDatePickerChange}
+                style={{ backgroundColor: palette.white }}
+                themeVariant="light"
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
 
       <View style={styles.outlineWrap} onLayout={onLayout}>
         {/* Gradient outline */}
@@ -341,5 +515,71 @@ const styles = StyleSheet.create({
     fontSize: ms(12.5),
     textAlign: 'center',
     fontFamily: 'SourceSansPro-Regular',
+  },
+  selectDateButton: {
+    paddingHorizontal: s(16),
+    paddingVertical: vs(12),
+    borderRadius: s(12),
+    borderWidth: 1,
+    borderColor: 'rgba(10, 196, 255, 0.5)',
+    backgroundColor: 'rgba(10, 196, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: vs(12),
+  },
+  selectDateText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: ms(14),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  selectedDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(10),
+    marginBottom: vs(12),
+  },
+  selectedDateBox: {
+    flex: 1,
+    paddingHorizontal: s(16),
+    paddingVertical: vs(12),
+    borderRadius: s(12),
+    borderWidth: 1,
+    borderColor: 'rgba(10, 196, 255, 0.5)',
+    backgroundColor: 'rgba(10, 196, 255, 0.1)',
+  },
+  selectedDateText: {
+    color: '#00BFFF',
+    fontSize: ms(15),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  clearButton: {
+    paddingHorizontal: s(16),
+    paddingVertical: vs(12),
+    backgroundColor: 'rgba(255, 59, 48, 0.2)',
+    borderRadius: s(8),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.5)',
+  },
+  clearText: {
+    color: '#FF3B30',
+    fontSize: ms(14),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  iosSheet: {
+    marginTop: 'auto',
+    backgroundColor: 'transparent',
+    borderTopLeftRadius: s(18),
+    borderTopRightRadius: s(18),
+    marginBottom: scale(200),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

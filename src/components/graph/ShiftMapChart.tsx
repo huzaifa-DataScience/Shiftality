@@ -1,5 +1,5 @@
 // src/components/graph/ShiftMapChart.tsx
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -58,7 +58,8 @@ const Y_MIN = -36.5;
 const Y_AXIS_LABELS = ['-36', '-24', '-12', '0', '+12', '+24', '+36'];
 
 export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
-  const { setSelectedFilterDate, clearSelectedFilterDate } = useJournals();
+  const { setSelectedFilterDate, clearSelectedFilterDate, selectedFilterDate } =
+    useJournals();
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(110));
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
@@ -67,6 +68,36 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
+
+  // Sync local selectedDate with context's selectedFilterDate
+  useEffect(() => {
+    if (selectedFilterDate) {
+      const date = new Date(selectedFilterDate);
+      if (!isNaN(date.getTime())) {
+        setSelectedDate(date);
+
+        // Also set expandedMonth and monthDaysData to match the selected date
+        const year = date.getFullYear();
+        const monthIdx = date.getMonth();
+        const monthKey = `${year}-${monthIdx}`;
+
+        // Filter days for the selected month
+        const monthDays = denseSeries.filter(p => {
+          const pd = new Date(p.date);
+          return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
+        });
+
+        if (monthDays.length > 0) {
+          setMonthDaysData(monthDays);
+          setExpandedMonth(monthKey);
+        }
+      }
+    } else {
+      setSelectedDate(null);
+      setExpandedMonth(null);
+      setMonthDaysData([]);
+    }
+  }, [selectedFilterDate, denseSeries]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height, x } = e.nativeEvent.layout;
