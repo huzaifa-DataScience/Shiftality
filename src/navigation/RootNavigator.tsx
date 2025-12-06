@@ -17,12 +17,14 @@ import {
   getRefreshToken,
   getUserProfile,
 } from '../lib/authStorage';
+import SplashScreen from '../screens/auth/SplashScreen';
 
 export type RootStackParamList = {
   Auth: undefined; // auth flow (stack)
   Main: NavigatorScreenParams<TabParamList>; // tabs
   FinanceSurvey: undefined; // push-over screen
   DemoScreen: undefined; // push-over screen
+  Splash: undefined; // splash screen
 };
 
 const Root = createNativeStackNavigator<RootStackParamList>();
@@ -31,6 +33,7 @@ export default function RootNavigator() {
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Restore auth state from storage on app start
   useEffect(() => {
@@ -42,7 +45,9 @@ export default function RootNavigator() {
           getUserProfile(),
         ]);
 
-        if (accessToken && refreshToken && userProfile) {
+        const tokenPresent = !!(accessToken && refreshToken && userProfile);
+
+        if (tokenPresent) {
           // Restore user profile to Redux
           dispatch(
             setUserProfile({
@@ -63,9 +68,19 @@ export default function RootNavigator() {
     restoreAuth();
   }, [dispatch]);
 
+  // Handle splash screen completion
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
+
   // Show loading state while checking auth
   if (!isInitialized) {
-    return null; // Or show a loading screen
+    return null;
+  }
+
+  // Always show splash screen on app start (for both authenticated and unauthenticated users)
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
   return (
