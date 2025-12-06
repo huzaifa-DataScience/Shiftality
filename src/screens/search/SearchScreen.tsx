@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { palette } from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientHintBox from '../../components/GradientHintBox';
@@ -33,6 +33,7 @@ import {
 import { useJournals } from '../../contexts/JournalContext';
 
 export default function SearchScreen() {
+  const { theme } = useAppTheme();
   const navigation = useNavigation();
   const onboarding = useSelector(selectHomeOnboarding);
   const [selected, setSelected] = useState<'map' | 'grid'>('grid');
@@ -219,12 +220,17 @@ export default function SearchScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: theme.colors.darkBlue }]}>
       <View style={styles.titleWrapper}>
-        <Text style={styles.title}>Your Reality Shift Dashboard</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>
+          Your Reality Shift Dashboard
+        </Text>
       </View>
       <ScrollView
-        style={{ backgroundColor: palette.darkBlue, marginVertical: scale(30) }}
+        style={{
+          backgroundColor: theme.colors.darkBlue,
+          marginVertical: scale(30),
+        }}
         showsVerticalScrollIndicator={false}
       >
         <GradientCardHome style={{ width: scale(330) }}>
@@ -249,8 +255,10 @@ export default function SearchScreen() {
               onPress={() => navigation.navigate('setting')}
             />
           </View>
-          <Text style={styles.title}>Hey Huzaifa, ready to shift?</Text>
-          <Text style={styles.subTitle}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Hey Huzaifa, ready to shift?
+          </Text>
+          <Text style={[styles.subTitle, { color: theme.colors.text }]}>
             Your daily reality shift journey continues
           </Text>
           <View style={{ height: scale(10) }} />
@@ -285,8 +293,10 @@ export default function SearchScreen() {
         <View style={{ height: scale(20) }} />
 
         <GradientCardHome>
-          <Text style={styles.title}>Shift Likelihood</Text>
-          <Text style={styles.subTitle}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Shift Likelihood
+          </Text>
+          <Text style={[styles.subTitle, { color: theme.colors.text }]}>
             Based on your last 30 days. Avg score {avgScore.toFixed(1)}
           </Text>
           <View style={styles.gaugeContainer}>
@@ -340,47 +350,3 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: palette.darkBlue,
-  },
-  titleWrapper: {
-    marginTop: scale(50),
-  },
-  title: {
-    fontSize: scale(22),
-    color: palette.white,
-    fontWeight: '700',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  subTitle: {
-    fontSize: scale(16),
-    color: palette.white,
-    fontWeight: '400',
-    lineHeight: scale(30),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  gaugeContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: vs(4),
-  },
-  bottomText: {
-    textAlign: 'center',
-    color: '#FFFFFF',
-    fontSize: ms(13.5),
-    marginTop: vs(12),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: s(12),
-  },
-  chartWrapper: {
-    marginTop: vs(10),
-    width: s(330),
-    alignSelf: 'center',
-  },
-});

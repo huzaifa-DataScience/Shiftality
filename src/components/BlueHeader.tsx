@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { palette } from '../theme/colors';
+import { useAppTheme } from '../theme/ThemeProvider';
 
 type Props = {
   showBack?: boolean;
@@ -11,12 +11,15 @@ type Props = {
 };
 
 export default function BlueHeader({ showBack, onBack, height = 120 }: Props) {
+  const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ backgroundColor: palette.darkBlue }}>
+    <View style={{ backgroundColor: theme.colors.darkBlue }}>
       {/* Paint the notch area in blue */}
-      <View style={{ height: insets.top, backgroundColor: palette.darkBlue }} />
+      <View
+        style={{ height: insets.top, backgroundColor: theme.colors.darkBlue }}
+      />
 
       <View style={[styles.bar, { height }]}>
         {showBack ? (
@@ -25,7 +28,9 @@ export default function BlueHeader({ showBack, onBack, height = 120 }: Props) {
             style={styles.backBtn}
             hitSlop={12}
           >
-            <Text style={styles.backGlyph}>‹</Text>
+            <Text style={[styles.backGlyph, { color: theme.colors.text }]}>
+              ‹
+            </Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.backBtn} />
@@ -37,7 +42,6 @@ export default function BlueHeader({ showBack, onBack, height = 120 }: Props) {
 
 const styles = StyleSheet.create({
   bar: {
-    backgroundColor: palette.darkBlue,
     paddingHorizontal: 16,
     justifyContent: 'flex-end',
     paddingBottom: 12,
@@ -49,7 +53,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backGlyph: {
-    color: '#fff',
     fontSize: 28,
     lineHeight: 28,
     fontFamily: 'SourceSansPro-Regular',

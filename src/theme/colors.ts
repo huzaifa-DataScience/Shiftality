@@ -1,4 +1,4 @@
-// Minimal palette for the hard-coded dark UI.
+// Minimal palette for the dark UI.
 // (Kept your original keys for compatibility)
 export const palette = {
   // original

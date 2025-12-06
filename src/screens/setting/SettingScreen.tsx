@@ -1,5 +1,5 @@
 // src/screens/SearchScreen.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   Switch,
   TouchableOpacity,
 } from 'react-native';
-import { palette } from '../../theme';
 import GradientCardHome from '../../components/GradientCardHome';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 import GradientHintBox from '../../components/GradientHintBox';
@@ -30,6 +29,7 @@ import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { logout } from '../../lib/authService';
 import { clearProfile } from '../../store/reducers/profileReducer';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 const themeOptions = ['System', 'Light', 'Dark'];
 const fontSizeOptions = ['Small', 'Normal', 'Large'];
@@ -39,6 +39,7 @@ export default function SettingScreen() {
   const navigation = useNavigation();
   const onboarding = useSelector(selectHomeOnboarding);
   const beliefProfile = useSelector(selectBeliefProfile);
+  const { theme, themeMode, setThemeMode } = useAppTheme();
 
   console.log('onboarding ==> ', onboarding);
 
@@ -54,7 +55,15 @@ export default function SettingScreen() {
     onboarding.shadowPath || 'Describe the patterns you want to transform...',
   );
 
-  const [themeVal, setThemeVal] = useState<string>('System');
+  // Map theme mode to display value
+  const themeVal =
+    themeMode === 'system' ? 'System' : themeMode === 'dark' ? 'Dark' : 'Light';
+
+  const handleThemeChange = async (value: string) => {
+    const mode: 'light' | 'dark' | 'system' =
+      value === 'System' ? 'system' : value === 'Dark' ? 'dark' : 'light';
+    await setThemeMode(mode);
+  };
   const [fontVal, setFontVal] = useState<string>('Normal');
   const [colorBlind, setColorBlind] = useState<boolean>(true);
   const [reminder, setReminder] = useState<boolean>(true);
@@ -76,10 +85,75 @@ export default function SettingScreen() {
       ? `${Math.round(onboarding.baselineIndex)}/100`
       : '—';
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        root: {
+          flex: 1,
+          alignItems: 'center',
+          backgroundColor: theme.colors.darkBlue,
+        },
+        title: {
+          fontSize: scale(18),
+          fontWeight: '800',
+          color: theme.colors.text,
+          marginBottom: scale(10),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        subTitle: {
+          fontSize: scale(16),
+          fontWeight: '500',
+          color: theme.colors.text,
+          lineHeight: scale(20),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        label: {
+          color: theme.colors.text,
+          fontSize: s(14),
+          fontWeight: '800',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        sectionHeading: {
+          color: theme.colors.text,
+          fontSize: s(16),
+          fontWeight: '800',
+          marginBottom: s(10),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        switchRow: {
+          alignItems: 'flex-end',
+          marginBottom: s(8),
+        },
+        helper: {
+          color: theme.colors.text,
+          opacity: 0.9,
+          fontSize: s(16),
+          lineHeight: s(24),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        cta: {
+          width: '100%',
+          height: vs(38),
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderRadius: s(30),
+        },
+        ctaText: {
+          color: theme.colors.txtBlue,
+          fontSize: ms(18),
+          fontWeight: '700',
+          opacity: 0.9,
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        rightIcon: { width: s(25), height: s(25), marginBottom: scale(20) },
+      }),
+    [theme],
+  );
+
   return (
     <View style={styles.root}>
       <ScrollView
-        style={{ backgroundColor: palette.darkBlue, marginVertical: scale(50) }}
+        style={{ backgroundColor: theme.colors.darkBlue, marginVertical: scale(50) }}
         showsVerticalScrollIndicator={false}
       >
         <GradientCardHome style={{ width: scale(330) }}>
@@ -187,7 +261,7 @@ export default function SettingScreen() {
           <GradientSelect
             value={themeVal}
             options={themeOptions}
-            onChange={setThemeVal}
+            onChange={handleThemeChange}
             sheetTitle="Select Theme"
             containerStyle={{ marginTop: s(8) }}
           />
@@ -284,7 +358,7 @@ export default function SettingScreen() {
         {/* Shared Reminder Test component (same as DemoScreen) */}
         <ReminderTestSection cardStyle={{ width: scale(330) }} />
         <PrimaryButton
-          textColor={palette.white}
+          textColor={theme.colors.text}
           style={{
             width: '50%',
             height: 'auto',
@@ -329,63 +403,3 @@ export default function SettingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: palette.darkBlue,
-  },
-  title: {
-    fontSize: scale(18),
-    fontWeight: '800',
-    color: palette.white,
-    marginBottom: scale(10),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  subTitle: {
-    fontSize: scale(16),
-    fontWeight: '500',
-    color: palette.white,
-    lineHeight: scale(20),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  label: {
-    color: palette.white,
-    fontSize: s(14),
-    fontWeight: '800',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  sectionHeading: {
-    color: palette.white,
-    fontSize: s(16),
-    fontWeight: '800',
-    marginBottom: s(10),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  switchRow: {
-    alignItems: 'flex-end',
-    marginBottom: s(8),
-  },
-  helper: {
-    color: palette.white,
-    opacity: 0.9,
-    fontSize: s(16),
-    lineHeight: s(24),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  cta: {
-    width: '100%',
-    height: vs(38),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: s(30),
-  },
-  ctaText: {
-    color: palette.txtBlue,
-    fontSize: ms(18),
-    fontWeight: '700',
-    opacity: 0.9,
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  rightIcon: { width: s(25), height: s(25), marginBottom: scale(20) },
-});

@@ -1,5 +1,5 @@
 // src/screens/ProfileScreen.tsx
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 
-import { palette } from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientHintBox from '../../components/GradientHintBox';
 import TripleRingGauge from '../../components/TripleRingGauge';
@@ -47,6 +47,7 @@ export default function ProfileScreen({
   openJournalToken: propOpenJournalToken,
   onClose,
 }: ProfileScreenProps = {}) {
+  const { theme } = useAppTheme();
   const navigation = useNavigation();
   const route = useRoute<any>();
 
@@ -245,10 +246,264 @@ export default function ProfileScreen({
     bestLeverText = `Pick one tiny daily action in ${topA} you\ncan complete in under two minutes.`;
   }
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        root: {
+          flex: 1,
+          alignItems: 'center',
+          paddingBottom: scale(30),
+        },
+        modalCloseButton: {
+          alignSelf: 'flex-end',
+          paddingHorizontal: s(20),
+          paddingVertical: vs(15),
+          marginTop: vs(10),
+        },
+        modalCloseText: {
+          color: theme.colors.txtBlue,
+          fontSize: ms(16),
+          fontWeight: '600',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        firstSectitle: {
+          color: theme.colors.text,
+          fontSize: ms(22),
+          fontWeight: '600',
+          marginVertical: vs(4),
+          textAlign: 'left',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        Sectitle: {
+          color: theme.colors.text,
+          fontSize: ms(22),
+          fontWeight: '600',
+          marginVertical: vs(4),
+          textAlign: 'left',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        subSectitle: {
+          color: theme.colors.text,
+          fontSize: ms(16),
+          fontWeight: '500',
+          marginVertical: vs(8),
+          textAlign: 'left',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        sublensSectitle: {
+          color: theme.colors.text,
+          fontSize: ms(15),
+          fontWeight: '500',
+          marginVertical: vs(8),
+          textAlign: 'left',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        grid: {
+          marginTop: vs(8),
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          rowGap: vs(18),
+        },
+        cell: {
+          width: (scale(330) - s(16) * 2 - s(12) * 2) / 3,
+          alignItems: 'center',
+        },
+        gaugeWrap: {
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: vs(8),
+        },
+        gaugePct: {
+          position: 'absolute',
+          color: theme.colors.text,
+          fontWeight: '800',
+          fontSize: ms(13),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        cellLabel: {
+          color: theme.colors.text,
+          textAlign: 'center',
+          fontSize: ms(12),
+          lineHeight: ms(16),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        ctaWrap: {
+          width: scale(50),
+        },
+        cta: {
+          width: scale(300),
+          height: vs(40),
+          borderRadius: s(30),
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        ctaTextMuted: {
+          color: theme.colors.txtBlue,
+          fontSize: ms(14.5),
+          fontWeight: '700',
+          opacity: 0.9,
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        modalBackdropContainer: {
+          flex: 1,
+          justifyContent: 'flex-end',
+          backgroundColor: 'rgba(0,0,0,0.55)',
+        },
+        modalBackdrop: {
+          flex: 1,
+        },
+        modalCard: {
+          backgroundColor: theme.colors.card,
+          paddingHorizontal: s(16),
+          paddingTop: vs(14),
+          paddingBottom: vs(24),
+          borderTopLeftRadius: s(20),
+          borderTopRightRadius: s(20),
+          maxHeight: vs(520),
+        },
+        modalTitle: {
+          color: theme.colors.text,
+          fontSize: ms(18),
+          fontWeight: '800',
+          marginBottom: vs(10),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        modalLabel: {
+          color: theme.colors.text,
+          fontSize: ms(14),
+          fontWeight: '700',
+          marginTop: vs(10),
+          marginBottom: vs(4),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        rowBetween: {
+          flexDirection: 'row',
+          marginTop: vs(8),
+        },
+        pickerButton: {
+          borderRadius: s(12),
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          paddingVertical: vs(10),
+          paddingHorizontal: s(10),
+        },
+        pickerButtonText: {
+          color: theme.colors.text,
+          fontSize: ms(14),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        errorText: {
+          color: '#FF6B6B',
+          fontSize: ms(12),
+          marginTop: vs(6),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        modalButtons: {
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          marginTop: vs(16),
+        },
+        modalButton: {
+          paddingVertical: vs(8),
+          paddingHorizontal: s(16),
+          borderRadius: s(20),
+          marginLeft: s(8),
+        },
+        modalButtonText: {
+          color: theme.colors.text,
+          fontSize: ms(14),
+          fontWeight: '700',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        emptyText: {
+          color: theme.colors.textMuted,
+          fontSize: ms(14),
+          marginTop: vs(8),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        journalList: {
+          height: vs(220),
+          marginTop: vs(4),
+        },
+        journalListContent: {
+          paddingBottom: vs(8),
+        },
+        journalItem: {
+          backgroundColor: theme.colors.card,
+          borderRadius: s(14),
+          paddingVertical: vs(10),
+          paddingHorizontal: s(12),
+          marginBottom: vs(10),
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          shadowColor: '#000',
+          shadowOpacity: 0.25,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 3,
+        },
+        journalHeaderRow: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+        },
+        journalItemTitle: {
+          color: theme.colors.text,
+          fontSize: ms(15),
+          fontWeight: '700',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        journalItemMeta: {
+          color: theme.colors.textMuted,
+          fontSize: ms(12),
+          marginTop: vs(4),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        journalItemDesc: {
+          color: theme.colors.text,
+          fontSize: ms(13),
+          marginTop: vs(6),
+          lineHeight: ms(18),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        addJournalBtn: {
+          marginTop: vs(14),
+          paddingVertical: vs(10),
+          borderRadius: s(20),
+          borderWidth: 1,
+          borderColor: theme.colors.txtBlue,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        addJournalBtnText: {
+          color: theme.colors.txtBlue,
+          fontSize: ms(14.5),
+          fontWeight: '700',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        deleteBadge: {
+          paddingHorizontal: s(10),
+          paddingVertical: vs(4),
+          borderRadius: s(12),
+          borderWidth: 1,
+          borderColor: 'rgba(255,100,100,0.9)',
+          alignSelf: 'flex-start',
+          marginLeft: s(8),
+        },
+        deleteBadgeText: {
+          color: '#FF6B6B',
+          fontSize: ms(11.5),
+          fontWeight: '700',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+      }),
+    [theme],
+  );
+
   // ------- RENDER -------
   return (
     <>
-      <ScrollView style={{ backgroundColor: palette.darkBlue }}>
+      <ScrollView style={{ backgroundColor: theme.colors.darkBlue }}>
         <View style={styles.root}>
           {/* Close button for modal mode */}
           {onClose && (
@@ -321,7 +576,7 @@ export default function ProfileScreen({
                           />
                           <Text
                             style={{
-                              color: palette.white,
+                              color: theme.colors.text,
                               textAlign: 'center',
                               marginTop: vs(8),
                               opacity: 0.92,
@@ -406,11 +661,11 @@ export default function ProfileScreen({
               <View style={{ height: scale(10) }} />
 
               <PrimaryButton
-                textColor={palette.white}
+                textColor={theme.colors.text}
                 style={{
                   width: '100%',
                   height: 'auto',
-                  color: palette.white,
+                  color: theme.colors.text,
                   fontSize: ms(14.5),
                   fontWeight: '700',
                   fontFamily: 'SourceSansPro-Regular',
@@ -427,7 +682,7 @@ export default function ProfileScreen({
                 onPress={() => console.log('Edit Belief Set')}
               >
                 <LinearGradient
-                  colors={['#143f65ff', '#1C2A3A']}
+                  colors={theme.colors.cardGradient}
                   start={{ x: 0, y: 0.5 }}
                   end={{ x: 1, y: 0.5 }}
                   style={styles.cta}
@@ -527,7 +782,7 @@ export default function ProfileScreen({
                     <TouchableOpacity
                       style={[
                         styles.modalButton,
-                        { backgroundColor: '#2b3950' },
+                        { backgroundColor: theme.colors.card },
                       ]}
                       onPress={closeJournalSheet}
                     >
@@ -617,7 +872,7 @@ export default function ProfileScreen({
                     <TouchableOpacity
                       style={[
                         styles.modalButton,
-                        { backgroundColor: '#2b3950' },
+                        { backgroundColor: theme.colors.card },
                       ]}
                       onPress={() => {
                         setIsAddingJournal(false);
@@ -629,7 +884,7 @@ export default function ProfileScreen({
                     <TouchableOpacity
                       style={[
                         styles.modalButton,
-                        { backgroundColor: '#00BFFF' },
+                        { backgroundColor: theme.colors.txtBlue },
                       ]}
                       onPress={handleSaveJournal}
                     >
@@ -646,254 +901,3 @@ export default function ProfileScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    paddingBottom: scale(30),
-  },
-  modalCloseButton: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: s(20),
-    paddingVertical: vs(15),
-    marginTop: vs(10),
-  },
-  modalCloseText: {
-    color: '#00BFFF',
-    fontSize: ms(16),
-    fontWeight: '600',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  firstSectitle: {
-    color: palette.white,
-    fontSize: ms(22),
-    fontWeight: '600',
-    marginVertical: vs(4),
-    textAlign: 'left',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  Sectitle: {
-    color: palette.white,
-    fontSize: ms(22),
-    fontWeight: '600',
-    marginVertical: vs(4),
-    textAlign: 'left',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  subSectitle: {
-    color: palette.white,
-    fontSize: ms(16),
-    fontWeight: '500',
-    marginVertical: vs(8),
-    textAlign: 'left',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  sublensSectitle: {
-    color: palette.white,
-    fontSize: ms(15),
-    fontWeight: '500',
-    marginVertical: vs(8),
-    textAlign: 'left',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  grid: {
-    marginTop: vs(8),
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: vs(18),
-  },
-  cell: {
-    width: (scale(330) - s(16) * 2 - s(12) * 2) / 3,
-    alignItems: 'center',
-  },
-  gaugeWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: vs(8),
-  },
-  gaugePct: {
-    position: 'absolute',
-    color: palette.white,
-    fontWeight: '800',
-    fontSize: ms(13),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  cellLabel: {
-    color: palette.white,
-    textAlign: 'center',
-    fontSize: ms(12),
-    lineHeight: ms(16),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  ctaWrap: {
-    width: scale(50),
-  },
-  cta: {
-    width: scale(300),
-    height: vs(40),
-    borderRadius: s(30),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaTextMuted: {
-    color: palette.txtBlue,
-    fontSize: ms(14.5),
-    fontWeight: '700',
-    opacity: 0.9,
-    fontFamily: 'SourceSansPro-Regular',
-  },
-
-  // Journal modal styles
-  modalBackdropContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  modalBackdrop: {
-    flex: 1,
-  },
-  modalCard: {
-    backgroundColor: '#101725',
-    paddingHorizontal: s(16),
-    paddingTop: vs(14),
-    paddingBottom: vs(24),
-    borderTopLeftRadius: s(20),
-    borderTopRightRadius: s(20),
-    maxHeight: vs(520),
-  },
-  modalTitle: {
-    color: palette.white,
-    fontSize: ms(18),
-    fontWeight: '800',
-    marginBottom: vs(10),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  modalLabel: {
-    color: palette.white,
-    fontSize: ms(14),
-    fontWeight: '700',
-    marginTop: vs(10),
-    marginBottom: vs(4),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  rowBetween: {
-    flexDirection: 'row',
-    marginTop: vs(8),
-  },
-  pickerButton: {
-    borderRadius: s(12),
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    paddingVertical: vs(10),
-    paddingHorizontal: s(10),
-  },
-  pickerButtonText: {
-    color: palette.white,
-    fontSize: ms(14),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  errorText: {
-    color: '#FF6B6B',
-    fontSize: ms(12),
-    marginTop: vs(6),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: vs(16),
-  },
-  modalButton: {
-    paddingVertical: vs(8),
-    paddingHorizontal: s(16),
-    borderRadius: s(20),
-    marginLeft: s(8),
-  },
-  modalButtonText: {
-    color: palette.white,
-    fontSize: ms(14),
-    fontWeight: '700',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  emptyText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: ms(14),
-    marginTop: vs(8),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  journalList: {
-    height: vs(220),
-    marginTop: vs(4),
-  },
-  journalListContent: {
-    paddingBottom: vs(8),
-  },
-  journalItem: {
-    backgroundColor: '#141D2C',
-    borderRadius: s(14),
-    paddingVertical: vs(10),
-    paddingHorizontal: s(12),
-    marginBottom: vs(10),
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  journalHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  journalItemTitle: {
-    color: palette.white,
-    fontSize: ms(15),
-    fontWeight: '700',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  journalItemMeta: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: ms(12),
-    marginTop: vs(4),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  journalItemDesc: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: ms(13),
-    marginTop: vs(6),
-    lineHeight: ms(18),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  addJournalBtn: {
-    marginTop: vs(14),
-    paddingVertical: vs(10),
-    borderRadius: s(20),
-    borderWidth: 1,
-    borderColor: '#00BFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addJournalBtnText: {
-    color: '#00BFFF',
-    fontSize: ms(14.5),
-    fontWeight: '700',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  deleteBadge: {
-    paddingHorizontal: s(10),
-    paddingVertical: vs(4),
-    borderRadius: s(12),
-    borderWidth: 1,
-    borderColor: 'rgba(255,100,100,0.9)',
-    alignSelf: 'flex-start',
-    marginLeft: s(8),
-  },
-  deleteBadgeText: {
-    color: '#FF6B6B',
-    fontSize: ms(11.5),
-    fontWeight: '700',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-});
