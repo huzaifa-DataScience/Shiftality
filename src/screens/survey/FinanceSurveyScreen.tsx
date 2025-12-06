@@ -1,5 +1,5 @@
 // src/screens/survey/FinanceSurveyScreen.tsx
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
   moderateScale as ms,
   scale,
 } from 'react-native-size-matters';
-import { palette } from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import Stepper from '../../components/survey/Stepper';
 import LikertCard from '../../components/survey/LikertCard';
@@ -34,6 +34,7 @@ type AnswersForStep = Record<number, LikertValue>;
 export default function FinanceSurveyScreen() {
   type RootNav = NativeStackNavigationProp<RootStackParamList>;
 
+  const { theme } = useAppTheme();
   const navigation = useNavigation<RootNav>();
   const dispatch = useDispatch();
 
@@ -80,10 +81,53 @@ export default function FinanceSurveyScreen() {
     }
   };
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        headerTitle: {
+          color: theme.colors.text,
+          fontSize: ms(28),
+          fontWeight: '800',
+          marginTop: vs(6),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        headerSub: {
+          color: theme.colors.text,
+          fontSize: ms(18),
+          fontFamily: 'SourceSansPro-Regular',
+          marginTop: vs(2),
+          textAlign: 'center',
+        },
+        footer: { alignItems: 'center', paddingVertical: vs(16) },
+        ctaWrap: { width: scale(330) },
+        cta: {
+          width: scale(330),
+          height: vs(40),
+          borderRadius: s(30),
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        ctaText: {
+          color: theme.colors.text,
+          fontSize: ms(14.5),
+          fontWeight: '800',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        ctaTextMuted: {
+          color: theme.colors.text,
+          fontSize: ms(14.5),
+          fontFamily: 'SourceSansPro-Regular',
+          fontWeight: '700',
+          opacity: 0.9,
+        },
+      }),
+    [theme],
+  );
+
   return (
     <ScrollView
       ref={scrollRef}
-      style={{ flex: 1, backgroundColor: palette.darkBlue }}
+      style={{ flex: 1, backgroundColor: theme.colors.darkBlue }}
       contentContainerStyle={{ paddingVertical: vs(46) }}
       onScrollBeginDrag={(e: NativeSyntheticEvent<NativeScrollEvent>) => {}}
       scrollEventThrottle={16}
@@ -122,7 +166,7 @@ export default function FinanceSurveyScreen() {
           onPress={goBack}
         >
           <LinearGradient
-            colors={['#143f65ff', '#1C2A3A']}
+            colors={theme.colors.cardGradient}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={[styles.cta, step === 0 && { opacity: 0.6 }]}
@@ -133,13 +177,13 @@ export default function FinanceSurveyScreen() {
         <View style={{ height: scale(10) }} />
 
         <PrimaryButton
-          textColor={palette.white}
+          textColor={theme.colors.text}
           style={{
             width: '95%',
             height: 'auto',
             alignSelf: 'center',
             textAlign: 'center',
-            color: palette.white,
+            color: theme.colors.text,
             fontSize: ms(14.5),
             fontFamily: 'SourceSansPro-Regular',
             fontWeight: '700',
@@ -154,41 +198,3 @@ export default function FinanceSurveyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  headerTitle: {
-    color: palette.white,
-    fontSize: ms(28),
-    fontWeight: '800',
-    marginTop: vs(6),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  headerSub: {
-    color: palette.white,
-    fontSize: ms(18),
-    fontFamily: 'SourceSansPro-Regular',
-    marginTop: vs(2),
-    textAlign: 'center',
-  },
-  footer: { alignItems: 'center', paddingVertical: vs(16) },
-  ctaWrap: { width: scale(330) },
-  cta: {
-    width: scale(330),
-    height: vs(40),
-    borderRadius: s(30),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaText: {
-    color: palette.white,
-    fontSize: ms(14.5),
-    fontWeight: '800',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  ctaTextMuted: {
-    color: palette.white,
-    fontSize: ms(14.5),
-    fontFamily: 'SourceSansPro-Regular',
-    fontWeight: '700',
-    opacity: 0.9,
-  },
-});

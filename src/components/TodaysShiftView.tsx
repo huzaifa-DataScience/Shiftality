@@ -26,7 +26,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import GradientBoxWithButton from '../components/GradientBoxWithButton';
 import GradientHintBoxWithLikert from '../components/GradientHintBoxWithLikert';
-import { palette } from '../theme';
+import { useAppTheme } from '../theme/ThemeProvider';
 import { Checkin, getCheckins } from '../lib/dataClient';
 
 // ⚡ same keys as ProfileScreen
@@ -57,6 +57,7 @@ type Props = {
 };
 
 export default function TodaysShiftView({ onCheckinUpdate }: Props) {
+  const { theme } = useAppTheme();
   const [showDetails, setShowDetails] = useState(true); // Default to true (show detailed view)
 
   // beliefs loaded from storage
@@ -245,8 +246,10 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
         )}
 
         {/* Header */}
-        <Text style={styles.title}>Today's Shift</Text>
-        <Text style={styles.desc}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>
+          Today's Shift
+        </Text>
+        <Text style={[styles.desc, { color: theme.colors.text }]}>
           Check what felt true today. Empowering Beliefs raise your score;
           Shadow Beliefs lower it. Max ±10 per day.
         </Text>
@@ -304,7 +307,7 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
         ))}
 
         {/* ✅ Correct Score Display */}
-        <Text style={styles.scoreText}>
+        <Text style={[styles.scoreText, { color: theme.colors.text }]}>
           Today's score: (+{empoweringYesCount}) + (-{shadowYesCount}) ={' '}
           {rawScore}
         </Text>
@@ -334,7 +337,9 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
             end={{ x: 1, y: 0.5 }}
             style={styles.lockButton}
           >
-            <Text style={styles.lockText}>Lock Today's Shift</Text>
+            <Text style={[styles.lockText, { color: theme.colors.txtBlue }]}>
+              Lock Today's Shift
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -364,14 +369,12 @@ const styles = StyleSheet.create({
     padding: scale(10),
   },
   title: {
-    color: palette.white,
     fontSize: s(20),
     fontWeight: '700',
     marginBottom: vs(6),
     fontFamily: 'SourceSansPro-Regular',
   },
   desc: {
-    color: palette.white,
     fontSize: s(14),
     lineHeight: s(19),
     marginBottom: vs(14),
@@ -385,7 +388,6 @@ const styles = StyleSheet.create({
     fontFamily: 'SourceSansPro-Regular',
   },
   scoreText: {
-    color: palette.white,
     fontSize: s(15),
     fontWeight: '600',
     marginTop: vs(14),
@@ -399,7 +401,6 @@ const styles = StyleSheet.create({
     borderRadius: s(30),
   },
   lockText: {
-    color: palette.txtBlue,
     fontSize: s(14.5),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',

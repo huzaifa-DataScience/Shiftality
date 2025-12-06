@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   TextInput,
@@ -24,6 +24,7 @@ import Svg, {
   Stop,
   Rect,
 } from 'react-native-svg';
+import { useAppTheme } from '../theme/ThemeProvider';
 
 type BaseProps = {
   radius?: number;
@@ -55,6 +56,7 @@ const GradientInput: React.FC<Props> = ({
   style,
   ...textInputProps
 }) => {
+  const { theme } = useAppTheme();
   const [w, setW] = useState(0);
   const [h, setH] = useState(minHeight);
 
@@ -69,6 +71,46 @@ const GradientInput: React.FC<Props> = ({
 
   const contentPaddingLeft = leftIconSource ? s(12) : 0;
   const contentPaddingRight = rightIconSource ? s(40) : 0;
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        wrap: { width: '100%', position: 'relative' },
+        input: {
+          fontSize: ms(16),
+          fontWeight: '500',
+          backgroundColor: 'transparent',
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.text,
+        },
+        pressable: { justifyContent: 'center', backgroundColor: 'transparent' },
+        leftIcon: {
+          position: 'absolute',
+          left: s(12),
+          top: '50%',
+          width: s(18),
+          height: s(18),
+          transform: [{ translateY: -s(9) }],
+          opacity: 0.9,
+        },
+        rightIconBtn: {
+          position: 'absolute',
+          right: s(8),
+          top: '50%',
+          transform: [{ translateY: -s(14) }],
+        },
+        rightIconBg: {
+          width: s(28),
+          height: s(28),
+          borderRadius: s(14),
+          backgroundColor: 'rgba(66,149,255,0.18)',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        rightIcon: { width: s(20), height: s(20), tintColor: theme.colors.txtBlue },
+      }),
+    [theme],
+  );
 
   return (
     <View style={[styles.wrap, containerStyle]} onLayout={onLayout}>
@@ -124,14 +166,19 @@ const GradientInput: React.FC<Props> = ({
         >
           <Text
             numberOfLines={1}
-            style={{ color: valueText ? '#FFF' : '#8EA0B6', fontSize: ms(15) }}
+            style={[
+              {
+                color: valueText ? theme.colors.text : theme.colors.textMuted,
+                fontSize: ms(15),
+              },
+            ]}
           >
             {valueText || placeholderText}
           </Text>
         </TouchableOpacity>
       ) : (
         <TextInput
-          placeholderTextColor="#8EA0B6"
+          placeholderTextColor={theme.colors.textMuted}
           style={[
             styles.input,
             {
@@ -165,41 +212,5 @@ const GradientInput: React.FC<Props> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  wrap: { width: '100%', position: 'relative' },
-  input: {
-    color: '#FFF',
-    fontSize: ms(16),
-    fontWeight: '500',
-    backgroundColor: 'transparent',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  pressable: { justifyContent: 'center', backgroundColor: 'transparent' },
-  leftIcon: {
-    position: 'absolute',
-    left: s(12),
-    top: '50%',
-    width: s(18),
-    height: s(18),
-    transform: [{ translateY: -s(9) }],
-    opacity: 0.9,
-  },
-  rightIconBtn: {
-    position: 'absolute',
-    right: s(8),
-    top: '50%',
-    transform: [{ translateY: -s(14) }],
-  },
-  rightIconBg: {
-    width: s(28),
-    height: s(28),
-    borderRadius: s(14),
-    backgroundColor: 'rgba(66,149,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rightIcon: { width: s(20), height: s(20), tintColor: '#8EDAFF' },
-});
 
 export default GradientInput;

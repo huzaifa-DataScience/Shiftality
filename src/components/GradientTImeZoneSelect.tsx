@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useAppTheme } from '../theme/ThemeProvider';
 import {
   View,
   Text,
@@ -13,7 +14,7 @@ import {
   moderateScale as ms,
 } from 'react-native-size-matters';
 import GradientInput from './GradientInput';
-import { palette } from '../theme';
+import { useAppTheme } from '../theme/ThemeProvider';
 
 // PNG icon (adjust path if yours differs)
 const caretPng = require('../assets/caret-down.png');
@@ -31,6 +32,8 @@ const GradientTimezoneSelect: React.FC<Props> = ({
   onChange,
   minHeight = vs(48),
 }) => {
+  const { theme } = useAppTheme();
+  const { theme } = useAppTheme();
   const [open, setOpen] = useState(false);
 
   const timezones = useMemo(() => {
@@ -58,6 +61,42 @@ const GradientTimezoneSelect: React.FC<Props> = ({
       'America/Los_Angeles',
     ];
   }, []);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        modalBackdrop: {
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.45)',
+          justifyContent: 'flex-end',
+        },
+        modalSheet: {
+          maxHeight: '60%',
+          backgroundColor: theme.colors.card,
+          paddingBottom: vs(12),
+          borderTopLeftRadius: s(18),
+          borderTopRightRadius: s(18),
+        },
+        sheetTitle: {
+          color: theme.colors.text,
+          fontSize: ms(16),
+          fontWeight: '700',
+          paddingHorizontal: s(16),
+          paddingVertical: vs(12),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        optionRow: {
+          paddingVertical: vs(12),
+          paddingHorizontal: s(16),
+        },
+        optionText: {
+          color: theme.colors.text,
+          fontSize: ms(14),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+      }),
+    [theme],
+  );
 
   return (
     <>
@@ -103,37 +142,5 @@ const GradientTimezoneSelect: React.FC<Props> = ({
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    maxHeight: '60%',
-    backgroundColor: '#0E1520',
-    paddingBottom: vs(12),
-    borderTopLeftRadius: s(18),
-    borderTopRightRadius: s(18),
-  },
-  sheetTitle: {
-    color: '#FFF',
-    fontSize: ms(16),
-    fontWeight: '700',
-    paddingHorizontal: s(16),
-    paddingVertical: vs(12),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  optionRow: {
-    paddingVertical: vs(12),
-    paddingHorizontal: s(16),
-  },
-  optionText: {
-    color: '#E9F1FF',
-    fontSize: ms(14),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-});
 
 export default GradientTimezoneSelect;
