@@ -13,7 +13,7 @@ import { ms, s, scale, vs } from 'react-native-size-matters';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { palette } from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientHintBox from '../../components/GradientHintBox';
 import GradientInput from '../../components/GradientInput';
@@ -82,6 +82,7 @@ function addDaysStr(dateStr: string, days: number): string {
 }
 
 export default function DemoScreen() {
+  const { theme } = useAppTheme();
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const onboarding = useSelector(selectHomeOnboarding);
@@ -291,11 +292,90 @@ export default function DemoScreen() {
   const timezone = onboarding?.timezone || 'UTC';
   const journeyStart = onboarding?.journeyStartDate?.slice(0, 10) || '—';
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        root: {
+          flex: 1,
+          alignItems: 'center',
+          backgroundColor: theme.colors.darkBlue,
+        },
+        title: {
+          fontSize: scale(18),
+          fontWeight: '800',
+          color: theme.colors.text,
+          marginBottom: scale(10),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        subTitle: {
+          fontSize: scale(16),
+          fontWeight: '500',
+          color: theme.colors.text,
+          lineHeight: scale(20),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        h1: {
+          color: theme.colors.text,
+          fontSize: s(18),
+          fontWeight: '800',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        sub: {
+          color: theme.colors.text,
+          fontSize: s(16),
+          lineHeight: s(22),
+          marginTop: vs(6),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        fieldBlock: {
+          marginTop: vs(10),
+        },
+        label: {
+          color: theme.colors.text,
+          fontWeight: '800',
+          fontSize: ms(14),
+          marginBottom: vs(8),
+          marginTop: vs(6),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        cta: {
+          height: vs(39),
+          width: scale(285),
+          marginLeft: scale(8),
+          borderRadius: s(24),
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        ctaText: {
+          color: theme.colors.black,
+          fontSize: ms(15),
+          fontWeight: '800',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        row: {
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+        rowTxt: {
+          color: theme.colors.text,
+          fontSize: ms(15),
+          fontWeight: '700',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        refresh: {
+          width: s(18),
+          height: s(18),
+          marginRight: s(10),
+        },
+      }),
+    [theme],
+  );
+
   return (
     <View style={styles.root}>
       <ScrollView
         style={{
-          backgroundColor: palette.darkBlue,
+          backgroundColor: theme.colors.darkBlue,
           paddingVertical: scale(50),
         }}
         showsVerticalScrollIndicator={false}
@@ -320,7 +400,7 @@ export default function DemoScreen() {
           >
             <Text
               style={{
-                color: '#fff',
+                color: theme.colors.text,
                 fontSize: ms(14),
                 lineHeight: 28,
                 fontFamily: 'SourceSansPro-Regular',
@@ -376,13 +456,13 @@ export default function DemoScreen() {
           <View style={{ height: vs(20) }} />
 
           <PrimaryButton
-            textColor={palette.white}
+            textColor={theme.colors.text}
             style={{
               width: '95%',
               height: 'auto',
               alignSelf: 'center',
               textAlign: 'center',
-              color: palette.white,
+              color: theme.colors.text,
               fontSize: ms(14.5),
               fontFamily: 'SourceSansPro-Regular',
               fontWeight: '700',
@@ -403,7 +483,7 @@ export default function DemoScreen() {
               end={{ x: 1, y: 0.5 }}
               style={[styles.cta, { opacity: 0.95 }]}
             >
-              <Text style={[styles.ctaText, { color: palette.txtBlue }]}>
+              <Text style={[styles.ctaText, { color: theme.colors.txtBlue }]}>
                 Trigger Daily Shift
               </Text>
             </LinearGradient>
@@ -456,77 +536,3 @@ export default function DemoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: palette.darkBlue,
-  },
-  title: {
-    fontSize: scale(18),
-    fontWeight: '800',
-    color: palette.white,
-    marginBottom: scale(10),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  subTitle: {
-    fontSize: scale(16),
-    fontWeight: '500',
-    color: palette.white,
-    lineHeight: scale(20),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  h1: {
-    color: palette.white,
-    fontSize: s(18),
-    fontWeight: '800',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  sub: {
-    color: palette.white,
-    fontSize: s(16),
-    lineHeight: s(22),
-    marginTop: vs(6),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  fieldBlock: {
-    marginTop: vs(10),
-  },
-  label: {
-    color: palette.white,
-    fontWeight: '800',
-    fontSize: ms(14),
-    marginBottom: vs(8),
-    marginTop: vs(6),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  cta: {
-    height: vs(39),
-    width: scale(285),
-    marginLeft: scale(8),
-    borderRadius: s(24),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaText: {
-    color: '#0E2440',
-    fontSize: ms(15),
-    fontWeight: '800',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rowTxt: {
-    color: palette.white,
-    fontSize: ms(15),
-    fontWeight: '700',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  refresh: {
-    width: s(18),
-    height: s(18),
-    marginRight: s(10),
-  },
-});

@@ -14,12 +14,15 @@ import {
   moderateScale as ms,
 } from 'react-native-size-matters';
 import PrimaryButton from '../../components/PrimaryButton';
-import { palette } from '../../theme/colors';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 export default function WelcomeScreen({ navigation }: any) {
+  const { theme, isDark } = useAppTheme();
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: palette.darkBlue }]}>
-      <StatusBar barStyle="light-content" />
+    <SafeAreaView
+      style={[styles.root, { backgroundColor: theme.colors.darkBlue }]}
+    >
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       <Image
         source={require('../../assets/WelcomeIcon.png')}
@@ -29,17 +32,15 @@ export default function WelcomeScreen({ navigation }: any) {
 
       <View style={styles.body}>
         <View style={styles.headerBlock}>
-          <Text style={[styles.title, { color: palette.white }]}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
             Welcome to SHIFTALITY
           </Text>
-          <Text style={[styles.sub, { color: 'rgba(255,255,255,0.8)' }]}>
+          <Text style={[styles.sub, { color: theme.colors.textMuted }]}>
             Best and popular apps for live education{'\n'}course from home
           </Text>
         </View>
 
         <PrimaryButton
-          backgroundColor={palette.white}
-          textColor={palette.darkBlue}
           title="Get started"
           onPress={() => navigation.navigate('Login')}
         />

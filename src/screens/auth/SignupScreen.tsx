@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
   scale,
 } from 'react-native-size-matters';
 import GradientCard from '../../components/GradientCard';
-import { palette } from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
 import PrimaryButton from '../../components/PrimaryButton';
 import GradientInput from '../../components/GradientInput';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -27,6 +27,7 @@ const eyeOpen = require('../../assets/eye-off.png');
 const eyeClosed = require('../../assets/eye-off.png');
 
 export default function SignUpScreen() {
+  const { theme } = useAppTheme();
   // inside component
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
@@ -38,8 +39,75 @@ export default function SignUpScreen() {
   const [showPwd, setShowPwd] = useState(false);
   const [showCPwd, setShowCPwd] = useState(false);
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        root: {
+          flex: 1,
+        },
+        scroll: {
+          alignItems: 'center',
+          paddingVertical: vs(48),
+        },
+        title: {
+          color: theme.colors.text,
+          fontSize: ms(26),
+          fontWeight: '700',
+          textAlign: 'center',
+          marginTop: vs(4),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        subtitle: {
+          color: theme.colors.textMuted,
+          fontSize: ms(14),
+          textAlign: 'center',
+          width: '80%',
+          marginTop: vs(6),
+          lineHeight: ms(20),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        label: {
+          color: theme.colors.text,
+          fontSize: ms(14),
+          marginTop: vs(16),
+          marginBottom: vs(6),
+          fontWeight: '600',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        inputWithIcon: {
+          position: 'relative',
+          width: '100%',
+        },
+        eyeBtn: {
+          position: 'absolute',
+          right: s(14),
+          top: '50%',
+          transform: [{ translateY: -vs(12) }],
+        },
+        eyeIcon: {
+          width: s(22),
+          height: s(22),
+          opacity: 0.9,
+        },
+        footerText: {
+          color: theme.colors.textMuted,
+          marginTop: vs(18),
+          fontSize: ms(14),
+          textAlign: 'center',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        link: {
+          color: theme.colors.txtBlue,
+          fontWeight: '600',
+          textAlign: 'center',
+          marginBottom: Platform.OS === 'ios' ? scale(-2) : scale(-4),
+        },
+      }),
+    [theme],
+  );
+
   return (
-    <View style={[styles.root, { backgroundColor: palette.darkBlue }]}>
+    <View style={[styles.root, { backgroundColor: theme.colors.darkBlue }]}>
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
@@ -119,8 +187,6 @@ export default function SignUpScreen() {
           <View style={{ height: vs(24) }} />
 
           <PrimaryButton
-            backgroundColor={palette.white}
-            textColor={palette.darkBlue}
             title="Get started"
             onPress={() => {
               navigation.navigate('Login');
@@ -144,65 +210,3 @@ export default function SignUpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  scroll: {
-    alignItems: 'center',
-    paddingVertical: vs(48),
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: ms(26),
-    fontWeight: '700',
-    textAlign: 'center',
-    marginTop: vs(4),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  subtitle: {
-    color: '#B0B6C3',
-    fontSize: ms(14),
-    textAlign: 'center',
-    width: '80%',
-    marginTop: vs(6),
-    lineHeight: ms(20),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  label: {
-    color: '#FFFFFF',
-    fontSize: ms(14),
-    marginTop: vs(16),
-    marginBottom: vs(6),
-    fontWeight: '600',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  inputWithIcon: {
-    position: 'relative',
-    width: '100%',
-  },
-  eyeBtn: {
-    position: 'absolute',
-    right: s(14),
-    top: '50%',
-    transform: [{ translateY: -vs(12) }],
-  },
-  eyeIcon: {
-    width: s(22),
-    height: s(22),
-    opacity: 0.9,
-  },
-  footerText: {
-    color: '#B0B6C3',
-    marginTop: vs(18),
-    fontSize: ms(14),
-    textAlign: 'center',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  link: {
-    color: '#3DA9FF',
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: Platform.OS === 'ios' ? scale(-2) : scale(-4),
-  },
-});

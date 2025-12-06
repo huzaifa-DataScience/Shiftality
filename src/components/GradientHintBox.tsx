@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,7 @@ import Svg, {
   Rect,
 } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
-import { palette } from '../theme';
+import { useAppTheme } from '../theme/ThemeProvider';
 
 type Props = {
   text?: string; // now optional (used for static copy OR placeholder)
@@ -110,6 +110,7 @@ export default function GradientHintBox({
   onPressDelete,
   deleteIcon,
 }: Props) {
+  const { theme } = useAppTheme();
   const [w, setW] = useState(0);
   const [h, setH] = useState(minHeight);
 
@@ -133,6 +134,134 @@ export default function GradientHintBox({
 
   // allow overriding TextInput style from inputProps.style
   const { style: inputStyleOverride, ...restInputProps } = inputProps || {};
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        wrap: { width: '100%', position: 'relative' },
+        inner: { paddingHorizontal: s(16), paddingVertical: vs(12) },
+
+        headerRow: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          marginBottom: vs(8),
+          gap: s(10),
+        },
+        title: {
+          fontSize: ms(16),
+          fontWeight: '700',
+          marginBottom: vs(6),
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.text,
+        },
+
+        recoChip: {
+          alignSelf: 'flex-start',
+          height: CHIP_H,
+          borderRadius: CHIP_H,
+          justifyContent: 'center',
+        },
+        recoText: {
+          fontSize: ms(16),
+          fontWeight: '700',
+          textAlign: 'center',
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.text,
+        },
+
+        editBtnHit: {
+          marginLeft: s(8),
+          paddingTop: vs(2),
+        },
+        editInner: {
+          flex: 1,
+          borderRadius: BTN_R - 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        editIcon: {
+          width: s(20),
+          height: s(20),
+          tintColor: theme.colors.txtBlue,
+        },
+
+        copy: {
+          fontSize: ms(14),
+          lineHeight: ms(20),
+          fontWeight: '600',
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.text,
+        },
+
+        // +++ INPUT styles
+        inputBlock: {
+          marginTop: vs(14),
+        },
+        inputLabel: {
+          fontWeight: '800',
+          fontSize: ms(15),
+          marginBottom: vs(8),
+          color: theme.colors.text,
+        },
+        textArea: {
+          minHeight: vs(90),
+          paddingHorizontal: s(12),
+          fontSize: ms(14),
+          lineHeight: ms(20),
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.text,
+        },
+
+        secondary: {
+          opacity: 0.9,
+          marginTop: vs(10),
+          fontSize: ms(14.5),
+          fontWeight: '700',
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.text,
+        },
+
+        footerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginTop: vs(10),
+        },
+        footerIcon: {
+          width: s(18),
+          height: s(18),
+          tintColor: theme.colors.txtBlue,
+          marginRight: s(10),
+        },
+        footerText: {
+          fontSize: ms(15),
+          fontWeight: '700',
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.text,
+        },
+        switchHit: {
+          paddingLeft: s(6),
+        },
+        actionsRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+        deleteBtnHit: {
+          marginLeft: s(12),
+          paddingTop: vs(2),
+        },
+        deleteInner: {
+          flex: 1,
+          borderRadius: BTN_R - 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        deleteIcon: {
+          width: s(18),
+          height: s(18),
+        },
+      }),
+    [theme],
+  );
 
   return (
     <View
@@ -174,10 +303,7 @@ export default function GradientHintBox({
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
               {!!title && (
-                <Text
-                  style={[styles.title, { color: palette.white }, titleStyle]}
-                  numberOfLines={2}
-                >
+                <Text style={[styles.title, titleStyle]} numberOfLines={2}>
                   {title}
                 </Text>
               )}
@@ -250,11 +376,7 @@ export default function GradientHintBox({
           </View>
         )}
 
-        {showCopy && (
-          <Text style={[styles.copy, { color: palette.white }, textStyle]}>
-            {text}
-          </Text>
-        )}
+        {showCopy && <Text style={[styles.copy, textStyle]}>{text}</Text>}
 
         {showInput && (
           <View
@@ -271,7 +393,7 @@ export default function GradientHintBox({
               value={inputValue}
               onChangeText={onChangeInputText}
               placeholder={effectivePlaceholder}
-              placeholderTextColor="rgba(255,255,255,0.6)"
+              placeholderTextColor={theme.colors.textMuted}
               multiline
               textAlignVertical="top"
               style={[styles.textArea, inputStyleOverride]}
@@ -308,122 +430,3 @@ export default function GradientHintBox({
 const CHIP_H = vs(28);
 const BTN = s(30);
 const BTN_R = s(10);
-
-const styles = StyleSheet.create({
-  wrap: { width: '100%', position: 'relative' },
-  inner: { paddingHorizontal: s(16), paddingVertical: vs(12) },
-
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: vs(8),
-    gap: s(10),
-  },
-  title: {
-    fontSize: ms(16),
-    fontWeight: '700',
-    marginBottom: vs(6),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-
-  recoChip: {
-    alignSelf: 'flex-start',
-    height: CHIP_H,
-    // width: scale(100),
-    borderRadius: CHIP_H,
-    justifyContent: 'center',
-  },
-  recoText: {
-    color: palette.white,
-    fontSize: ms(16),
-    fontWeight: '700',
-    textAlign: 'center',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-
-  editBtnHit: {
-    marginLeft: s(8),
-    paddingTop: vs(2),
-  },
-  editInner: {
-    flex: 1,
-    borderRadius: BTN_R - 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editIcon: { width: s(20), height: s(20), tintColor: '#4ec7efff' },
-
-  copy: {
-    fontSize: ms(14),
-    lineHeight: ms(20),
-    fontWeight: '600',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-
-  // +++ INPUT styles
-  inputBlock: {
-    marginTop: vs(14),
-  },
-  inputLabel: {
-    color: palette.white,
-    fontWeight: '800',
-    fontSize: ms(15),
-    marginBottom: vs(8),
-  },
-  textArea: {
-    minHeight: vs(90),
-    paddingHorizontal: s(12),
-    color: palette.white,
-    fontSize: ms(14),
-    lineHeight: ms(20),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-
-  secondary: {
-    color: palette.white,
-    opacity: 0.9,
-    marginTop: vs(10),
-    fontSize: ms(14.5),
-    fontWeight: '700',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: vs(10),
-  },
-  footerIcon: {
-    width: s(18),
-    height: s(18),
-    tintColor: '#50bafbff',
-    marginRight: s(10),
-  },
-  footerText: {
-    color: palette.white,
-    fontSize: ms(15),
-    fontWeight: '700',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  switchHit: {
-    paddingLeft: s(6),
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  deleteBtnHit: {
-    marginLeft: s(12),
-    paddingTop: vs(2),
-  },
-  deleteInner: {
-    flex: 1,
-    borderRadius: BTN_R - 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteIcon: {
-    width: s(18),
-    height: s(18),
-  },
-});

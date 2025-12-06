@@ -14,7 +14,7 @@ import {
   scale,
   verticalScale as vs,
 } from 'react-native-size-matters';
-import { palette } from '../theme';
+import { useAppTheme } from '../theme/ThemeProvider';
 import JournalModal from '../components/JournalModal';
 
 // --- sizes ---
@@ -54,10 +54,11 @@ export default function CustomTabBar({
   showJournalModal,
   onCloseJournal,
 }: CustomTabBarProps) {
+  const { theme } = useAppTheme();
   return (
     <>
       <View
-        style={[styles.shell, { backgroundColor: palette.darkBlue }]}
+        style={[styles.shell, { backgroundColor: theme.colors.darkBlue }]}
         pointerEvents="box-none"
       >
         <View style={styles.shadowWrap}>
