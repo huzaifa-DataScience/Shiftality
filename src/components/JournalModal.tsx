@@ -15,7 +15,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { ms, s, scale, vs } from 'react-native-size-matters';
-import { palette } from '../theme';
+import { useAppTheme } from '../theme/ThemeProvider';
 import GradientInput from './GradientInput';
 import { useJournals } from '../contexts/JournalContext';
 
@@ -25,6 +25,7 @@ type JournalModalProps = {
 };
 
 export default function JournalModal({ visible, onClose }: JournalModalProps) {
+  const { theme } = useAppTheme();
   const { journalEntries, addJournal, deleteJournal, selectedFilterDate } =
     useJournals();
   const [isAddingJournal, setIsAddingJournal] = useState(false);
@@ -237,7 +238,7 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
 
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
+                    style={[styles.modalButton, { backgroundColor: theme.colors.card }]}
                     onPress={closeModal}
                   >
                     <Text style={styles.modalButtonText}>Close</Text>
@@ -324,7 +325,7 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
 
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
+                    style={[styles.modalButton, { backgroundColor: theme.colors.card }]}
                     onPress={() => {
                       setIsAddingJournal(false);
                       setJournalError(null);
@@ -333,7 +334,7 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
                     <Text style={styles.modalButtonText}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#00BFFF' }]}
+                    style={[styles.modalButton, { backgroundColor: theme.colors.txtBlue }]}
                     onPress={handleSaveJournal}
                   >
                     <Text style={styles.modalButtonText}>Save</Text>
@@ -358,7 +359,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalCard: {
-    backgroundColor: '#101725',
+    backgroundColor: theme.colors.background,
     paddingHorizontal: s(16),
     paddingTop: vs(14),
     paddingBottom: vs(24),
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
     maxHeight: vs(520),
   },
   modalTitle: {
-    color: palette.white,
+    color: theme.colors.text,
     fontSize: ms(18),
     fontWeight: '800',
     marginBottom: vs(10),
@@ -392,7 +393,7 @@ const styles = StyleSheet.create({
     paddingBottom: vs(8),
   },
   journalItem: {
-    backgroundColor: '#141D2C',
+    backgroundColor: theme.colors.card,
     borderRadius: s(14),
     paddingVertical: vs(10),
     paddingHorizontal: s(12),
@@ -410,7 +411,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   journalItemTitle: {
-    color: palette.white,
+    color: theme.colors.text,
     fontSize: ms(15),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
@@ -453,7 +454,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addJournalBtnText: {
-    color: '#00BFFF',
+    color: theme.colors.txtBlue,
     fontSize: ms(14.5),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
@@ -470,13 +471,13 @@ const styles = StyleSheet.create({
     marginLeft: s(8),
   },
   modalButtonText: {
-    color: palette.white,
+    color: theme.colors.text,
     fontSize: ms(14),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
   },
   modalLabel: {
-    color: palette.white,
+    color: theme.colors.text,
     fontSize: ms(14),
     fontWeight: '700',
     marginTop: vs(10),
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(10),
   },
   pickerButtonText: {
-    color: palette.white,
+    color: theme.colors.text,
     fontSize: ms(14),
     fontFamily: 'SourceSansPro-Regular',
   },

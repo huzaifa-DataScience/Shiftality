@@ -32,8 +32,8 @@ export default function PrimaryButton({
   style,
   gradientColors,
 }: Props) {
-  const { colors } = useAppTheme();
-  const stops = gradientColors ?? colors.primaryGradient; // [start, end]
+  const { theme } = useAppTheme();
+  const stops = gradientColors ?? theme.colors.primaryGradient; // [start, end]
   const isDisabled = disabled || loading;
 
   return (

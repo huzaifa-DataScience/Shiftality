@@ -1,7 +1,7 @@
 // HomeScreen.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { palette } from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientInput from '../../components/GradientInput';
 import GradientTimezoneSelect from '../../components/GradientTImeZoneSelect';
@@ -34,6 +34,7 @@ import {
 } from '../../store/reducers/homeOnboardingReducer';
 
 export default function HomeScreen() {
+  const { theme } = useAppTheme();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch();
@@ -79,8 +80,94 @@ export default function HomeScreen() {
     isDndStartValid &&
     isDndEndValid;
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        root: {
+          flex: 1,
+          alignItems: 'center',
+          paddingBottom: scale(30),
+        },
+        title: {
+          color: theme.colors.text,
+          fontSize: ms(26),
+          fontWeight: '800',
+          textAlign: 'center',
+          marginTop: vs(4),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        Sectitle: {
+          color: theme.colors.text,
+          fontSize: ms(22),
+          fontWeight: '600',
+          marginVertical: vs(4),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        subtitle: {
+          color: theme.colors.textMuted,
+          fontSize: ms(14),
+          textAlign: 'center',
+          width: '80%',
+          marginTop: vs(6),
+          lineHeight: ms(20),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        label: {
+          color: theme.colors.text,
+          fontSize: ms(14),
+          marginTop: vs(16),
+          marginBottom: vs(6),
+          fontWeight: '700',
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        helper: {
+          color: theme.colors.textMuted,
+          fontSize: ms(12),
+          marginTop: vs(6),
+          fontFamily: 'SourceSansPro-Regular',
+        },
+        cardTitle: {
+          fontSize: ms(22),
+          fontWeight: '700',
+          marginBottom: vs(8),
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.text,
+        },
+        cardSub: {
+          fontSize: ms(14),
+          lineHeight: ms(20),
+          marginBottom: vs(14),
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.textMuted,
+        },
+        row2: {
+          flexDirection: 'row',
+          gap: s(12),
+          marginTop: vs(12),
+        },
+        col: {
+          flex: 1,
+        },
+        smallLabel: {
+          fontSize: ms(14),
+          fontWeight: '700',
+          marginBottom: vs(6),
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.text,
+        },
+        footNote: {
+          fontSize: ms(14),
+          lineHeight: ms(20),
+          marginTop: vs(16),
+          fontFamily: 'SourceSansPro-Regular',
+          color: theme.colors.textMuted,
+        },
+      }),
+    [theme],
+  );
+
   return (
-    <ScrollView style={{ backgroundColor: palette.darkBlue }}>
+    <ScrollView style={{ backgroundColor: theme.colors.darkBlue }}>
       <View style={styles.root}>
         <GradientCardHome style={{ marginTop: vs(50), width: scale(330) }}>
           <View style={{ alignItems: 'center' }}>
@@ -96,7 +183,7 @@ export default function HomeScreen() {
             minHeight={vs(45)}
             placeholder="Enter Your Name"
             value={firstName}
-            onChangeText={t => dispatch(setFirstName(t))}
+            onChangeText={(t: string) => dispatch(setFirstName(t))}
           />
           <Text style={styles.helper}>2–20 Characters</Text>
 
@@ -160,11 +247,11 @@ export default function HomeScreen() {
 
         {/* CARD 3: Preferred Check-in Time */}
         <GradientCardHome style={{ marginBottom: vs(20), width: scale(330) }}>
-          <Text style={[styles.cardTitle, { color: palette.white }]}>
+          <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
             Preferred Check-in Time *
           </Text>
 
-          <Text style={[styles.cardSub, { color: palette.white }]}>
+          <Text style={[styles.cardSub, { color: theme.colors.text }]}>
             Choose a time when your day is winding down and you can self-reflect
             without distractions. This is your moment to honestly assess your
             beliefs and track your reality shift progress.
@@ -180,7 +267,7 @@ export default function HomeScreen() {
           {/* DND row */}
           <View style={styles.row2}>
             <View style={styles.col}>
-              <Text style={[styles.smallLabel, { color: palette.white }]}>
+              <Text style={[styles.smallLabel, { color: theme.colors.text }]}>
                 Do Not Disturb Start
               </Text>
               <GradientDatePicker
@@ -191,7 +278,7 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.col}>
-              <Text style={[styles.smallLabel, { color: palette.white }]}>
+              <Text style={[styles.smallLabel, { color: theme.colors.text }]}>
                 Do Not Disturb End
               </Text>
               <GradientDatePicker
@@ -202,7 +289,7 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <Text style={[styles.footNote, { color: palette.white }]}>
+          <Text style={styles.footNote}>
             Reminders will be sent every 30 minutes for 2 hours starting at your
             preferred check-in time. No reminders will be sent during Do Not
             Disturb hours.
@@ -218,10 +305,6 @@ export default function HomeScreen() {
 
         <PrimaryButton
           disabled={!canContinue}
-          backgroundColor={
-            canContinue ? palette.white : 'rgba(255,255,255,0.3)'
-          }
-          textColor={canContinue ? palette.darkBlue : 'rgba(14,21,32,0.6)'}
           style={{ width: '95%', alignSelf: 'center' }}
           title="Continue to Shiftality Scan"
           onPress={() => {
@@ -234,80 +317,3 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    paddingBottom: scale(30),
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: ms(26),
-    fontWeight: '800',
-    textAlign: 'center',
-    marginTop: vs(4),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  Sectitle: {
-    color: '#FFFFFF',
-    fontSize: ms(22),
-    fontWeight: '600',
-    marginVertical: vs(4),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  subtitle: {
-    color: '#B0B6C3',
-    fontSize: ms(14),
-    textAlign: 'center',
-    width: '80%',
-    marginTop: vs(6),
-    lineHeight: ms(20),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  label: {
-    color: '#FFFFFF',
-    fontSize: ms(14),
-    marginTop: vs(16),
-    marginBottom: vs(6),
-    fontWeight: '700',
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  helper: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: ms(12),
-    marginTop: vs(6),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  cardTitle: {
-    fontSize: ms(22),
-    fontWeight: '700',
-    marginBottom: vs(8),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  cardSub: {
-    fontSize: ms(14),
-    lineHeight: ms(20),
-    marginBottom: vs(14),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  row2: {
-    flexDirection: 'row',
-    gap: s(12),
-    marginTop: vs(12),
-  },
-  col: {
-    flex: 1,
-  },
-  smallLabel: {
-    fontSize: ms(14),
-    fontWeight: '700',
-    marginBottom: vs(6),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-  footNote: {
-    fontSize: ms(14),
-    lineHeight: ms(20),
-    marginTop: vs(16),
-    fontFamily: 'SourceSansPro-Regular',
-  },
-});
