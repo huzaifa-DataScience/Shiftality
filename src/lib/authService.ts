@@ -74,12 +74,11 @@ export async function login(
 
     return response.data;
   } catch (error: any) {
+    console.log('🚀 ~ error:', error?.response);
     // Handle specific error responses
     if (error.response?.data) {
       const authError = error.response.data as AuthError;
-      throw new Error(
-        authError.error_description || authError.error || 'Login failed',
-      );
+      throw new Error(authError.msg || authError.error || 'Login failed');
     }
     throw new Error(error.message || 'Network error. Please try again.');
   }
@@ -90,6 +89,92 @@ export async function login(
  */
 export async function logout(): Promise<void> {
   await clearAuthData();
+}
+
+/**
+ * Signup with email and password using Supabase Auth
+ */
+export interface SignupCredentials {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export interface SignupResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  expires_at: number;
+  refresh_token: string;
+  user: {
+    id: string;
+    aud: string;
+    role: string;
+    email: string;
+    email_confirmed_at: string | null;
+    phone: string;
+    confirmation_sent_at: string | null;
+    confirmed_at: string | null;
+    recovery_sent_at: string | null;
+    last_sign_in_at: string;
+    app_metadata: {
+      provider: string;
+      providers: string[];
+    };
+    user_metadata: {
+      email: string;
+      email_verified: boolean;
+      phone_verified: boolean;
+      sub: string;
+      full_name?: string;
+    };
+    identities?: Array<{
+      identity_id: string;
+      id: string;
+      user_id: string;
+      identity_data: any;
+      provider: string;
+      last_sign_in_at: string;
+      created_at: string;
+      updated_at: string;
+      email: string;
+    }>;
+    created_at: string;
+    updated_at: string;
+    is_anonymous: boolean;
+  };
+  weak_password?: any;
+}
+
+export async function signup(
+  credentials: SignupCredentials,
+): Promise<SignupResponse> {
+  try {
+    const payload: any = {
+      email: credentials.email,
+      password: credentials.password,
+    };
+
+    // Add name to user_metadata if provided
+    if (credentials.name) {
+      payload.data = {
+        full_name: credentials.name,
+      };
+    }
+
+    const response = await api.post<SignupResponse>('/auth/v1/signup', payload);
+
+    return response.data;
+  } catch (error: any) {
+    // Handle specific error responses
+    if (error.response?.data) {
+      const authError = error.response.data as AuthError;
+      throw new Error(
+        authError.error_description || authError.error || 'Signup failed',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
 }
 
 /**
@@ -122,38 +207,22 @@ export interface UpdateProfileResponse {
 }
 
 export async function updateProfile(
-  userId: string,
   payload: UpdateProfilePayload,
 ): Promise<UpdateProfileResponse> {
   try {
     // Update profile in Supabase - using PATCH with user_id filter
-    const response = await api.patch<UpdateProfileResponse>(
-      `/rest/v1/profiles?id=eq.${userId}`,
+    const response = await api.post<UpdateProfileResponse>(
+      `/functions/v1/update-profile`,
       payload,
-      {
-        headers: {
-          Prefer: 'return=representation',
-        },
-      },
     );
 
-    if (
-      response.data &&
-      Array.isArray(response.data) &&
-      response.data.length > 0
-    ) {
-      return response.data[0];
-    }
-
-    throw new Error('Profile update failed: No data returned');
+    return response.data;
   } catch (error: any) {
     // Handle specific error responses
     if (error.response?.data) {
-      const errorData = error.response.data;
+      const authError = error.response.data as AuthError;
       throw new Error(
-        errorData.message ||
-          errorData.error_description ||
-          'Profile update failed',
+        authError.msg || authError.error || 'Profile update failed',
       );
     }
     throw new Error(error.message || 'Network error. Please try again.');

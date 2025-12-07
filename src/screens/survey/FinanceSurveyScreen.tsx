@@ -191,9 +191,9 @@ export default function FinanceSurveyScreen() {
       scrollRef.current?.scrollTo({ y: 0, animated: true });
     } else {
       // On last step, call handleCompleteScan
-      // handleCompleteScan();
+      handleCompleteScan();
 
-      navigation.navigate('Main', { screen: 'CenterProfile' });
+      // navigation.navigate('Main', { screen: 'CenterProfile' });
     }
   };
   const goBack = () => {

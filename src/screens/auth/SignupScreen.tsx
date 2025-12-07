@@ -8,6 +8,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import {
   scale as s,
   verticalScale as vs,
@@ -21,6 +22,7 @@ import GradientInput from '../../components/GradientInput';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/AuthStack';
 import { useNavigation } from '@react-navigation/native';
+import { signup } from '../../lib/authService';
 
 // TODO: replace with your actual assets
 const eyeOpen = require('../../assets/eye-off.png');
@@ -37,6 +39,90 @@ export default function SignUpScreen() {
   const [confirm, setConfirm] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [showCPwd, setShowCPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    [key: string]: string;
+  }>({});
+
+  const validateForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+
+    if (!name.trim()) {
+      errors.name = 'Name is required';
+    } else if (name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters';
+    }
+
+    if (!email.trim()) {
+      errors.email = 'Email is required';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        errors.email = 'Please enter a valid email address';
+      }
+    }
+
+    if (!password.trim()) {
+      errors.password = 'Password is required';
+    } else if (password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!confirm.trim()) {
+      errors.confirm = 'Please confirm your password';
+    } else if (password !== confirm) {
+      errors.confirm = 'Passwords do not match';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSignUp = async () => {
+    // Clear previous errors
+    setValidationErrors({});
+
+    // Validate form
+    if (!validateForm()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please fix all errors before continuing',
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await signup({
+        email: email.trim(),
+        password: password,
+        name: name.trim(),
+      });
+
+      // Show success message
+      Toast.show({
+        type: 'success',
+        text1: 'Account Created',
+        text2: 'Your account has been created successfully!',
+      });
+
+      // Navigate to login screen after a short delay
+      setTimeout(() => {
+        navigation.navigate('Login');
+      }, 1000);
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Signup Failed',
+        text2: error.message || 'Failed to create account. Please try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: palette.darkBlue }]}>
@@ -59,6 +145,9 @@ export default function SignUpScreen() {
             value={name}
             onChangeText={setName}
           />
+          {validationErrors.name && (
+            <Text style={styles.errorText}>{validationErrors.name}</Text>
+          )}
 
           {/* Email */}
           <Text style={styles.label}>Email</Text>
@@ -69,6 +158,9 @@ export default function SignUpScreen() {
             value={email}
             onChangeText={setEmail}
           />
+          {validationErrors.email && (
+            <Text style={styles.errorText}>{validationErrors.email}</Text>
+          )}
 
           {/* Password */}
           <Text style={styles.label}>Password</Text>
@@ -92,6 +184,9 @@ export default function SignUpScreen() {
               />
             </TouchableOpacity>
           </View>
+          {validationErrors.password && (
+            <Text style={styles.errorText}>{validationErrors.password}</Text>
+          )}
 
           {/* Confirm Password */}
           <Text style={styles.label}>Confirm Password</Text>
@@ -115,17 +210,21 @@ export default function SignUpScreen() {
               />
             </TouchableOpacity>
           </View>
+          {validationErrors.confirm && (
+            <Text style={styles.errorText}>{validationErrors.confirm}</Text>
+          )}
 
           <View style={{ height: vs(24) }} />
 
           <PrimaryButton
-            backgroundColor={palette.white}
-            textColor={palette.darkBlue}
-            title="Get started"
-            onPress={() => {
-              navigation.navigate('Login');
-            }}
+            title={loading ? 'Creating Account...' : 'Get started'}
+            onPress={handleSignUp}
+            loading={loading}
+            disabled={loading}
           />
+          {validationErrors.general && (
+            <Text style={styles.errorText}>{validationErrors.general}</Text>
+          )}
 
           <Text style={styles.footerText}>
             Do you have account?{' '}
@@ -204,5 +303,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: Platform.OS === 'ios' ? scale(-2) : scale(-4),
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: ms(12),
+    marginTop: vs(4),
+    fontFamily: 'SourceSansPro-Regular',
   },
 });
