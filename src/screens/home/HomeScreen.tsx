@@ -1,6 +1,12 @@
 // HomeScreen.tsx
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import { palette } from '../../theme';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientInput from '../../components/GradientInput';
@@ -19,6 +25,9 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
 import { useSelector, useDispatch } from 'react-redux';
+import Toast from 'react-native-toast-message';
+import { updateProfile } from '../../lib/authService';
+import { selectUser } from '../../store/reducers/profileReducer';
 
 import {
   selectHomeOnboarding,
@@ -37,6 +46,11 @@ export default function HomeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const [isLoading, setIsLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    [key: string]: string;
+  }>({});
 
   const {
     firstName,
@@ -69,6 +83,66 @@ export default function HomeScreen() {
   const isDndStartValid = !!dndStart;
   const isDndEndValid = !!dndEnd;
 
+  // Enhanced validation with error messages
+  const validateForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+
+    if (!isNameValid) {
+      errors.firstName =
+        trimmedName.length < 2
+          ? 'First name must be at least 2 characters'
+          : 'First name must be 20 characters or less';
+    }
+
+    if (!isTimezoneValid) {
+      errors.timezone = 'Please select a timezone';
+    }
+
+    if (!isJourneyDateValid) {
+      errors.journeyStartDate = 'Please select a journey start date';
+    } else {
+      // Check if date is in the past
+      const journeyDate = new Date(journeyStartDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (journeyDate < today) {
+        errors.journeyStartDate = 'Journey start date cannot be in the past';
+      }
+    }
+
+    if (!isNorthStarValid) {
+      errors.northStar = 'Please describe your North Star goal';
+    }
+
+    if (!isShadowPathValid) {
+      errors.shadowPath = 'Please describe your Shadow Path';
+    }
+
+    if (!isCheckInValid) {
+      errors.checkInTime = 'Please select a check-in time';
+    }
+
+    if (!isDndStartValid) {
+      errors.dndStart = 'Please select a Do Not Disturb start time';
+    }
+
+    if (!isDndEndValid) {
+      errors.dndEnd = 'Please select a Do Not Disturb end time';
+    }
+
+    // Validate DND times make sense
+    if (isDndStartValid && isDndEndValid) {
+      const dndStartTime = new Date(dndStart);
+      const dndEndTime = new Date(dndEnd);
+      if (dndStartTime >= dndEndTime) {
+        errors.dndTimes = 'Do Not Disturb end time must be after start time';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const canContinue =
     isNameValid &&
     isTimezoneValid &&
@@ -78,6 +152,85 @@ export default function HomeScreen() {
     isCheckInValid &&
     isDndStartValid &&
     isDndEndValid;
+
+  // Handle profile update
+  const handleContinue = async () => {
+    if (!canContinue || isLoading) return;
+
+    // Clear previous validation errors
+    setValidationErrors({});
+
+    // Validate form
+    if (!validateForm()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please fix all errors before continuing',
+      });
+      return;
+    }
+
+    if (!user?.id) {
+      Toast.show({
+        type: 'error',
+        text1: 'Authentication Error',
+        text2: 'Please log in to continue',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Format dates/times for API
+      const journeyDate = new Date(journeyStartDate);
+      const checkIn = new Date(checkInTime);
+      const dndStartTime = new Date(dndStart);
+      const dndEndTime = new Date(dndEnd);
+
+      // Extract time strings (HH:mm format)
+      const formatTime = (date: Date): string => {
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+      };
+
+      // Prepare payload
+      const payload = {
+        first_name: trimmedName,
+        timezone: timezone!,
+        journey_start_date: journeyDate.toISOString().split('T')[0], // YYYY-MM-DD
+        north_star: northStar.trim(),
+        shadow_path: shadowPath.trim(),
+        check_in_time: formatTime(checkIn),
+        dnd_start: formatTime(dndStartTime),
+        dnd_end: formatTime(dndEndTime),
+        allow_notifications: allowNotifications,
+      };
+
+      await updateProfile(user.id, payload);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Profile Updated',
+        text2: 'Your profile has been updated successfully',
+      });
+
+      // Navigate to next screen after successful update
+      setTimeout(() => {
+        navigation.navigate('FinanceSurvey');
+      }, 500);
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Update Failed',
+        text2: error.message || 'Failed to update profile. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <ScrollView style={{ backgroundColor: palette.darkBlue }}>
@@ -96,8 +249,11 @@ export default function HomeScreen() {
             minHeight={vs(45)}
             placeholder="Enter Your Name"
             value={firstName}
-            onChangeText={t => dispatch(setFirstName(t))}
+            onChangeText={(t: string) => dispatch(setFirstName(t))}
           />
+          {validationErrors.firstName && (
+            <Text style={styles.errorText}>{validationErrors.firstName}</Text>
+          )}
           <Text style={styles.helper}>2–20 Characters</Text>
 
           {/* Time Zone */}
@@ -106,6 +262,9 @@ export default function HomeScreen() {
             value={timezone}
             onChange={tz => dispatch(setTimezone(tz))}
           />
+          {validationErrors.timezone && (
+            <Text style={styles.errorText}>{validationErrors.timezone}</Text>
+          )}
 
           {/* Journey Start Date */}
           <Text style={[styles.label, { marginTop: vs(18) }]}>
@@ -117,6 +276,11 @@ export default function HomeScreen() {
             minimumDate={new Date()}
           />
           <Text style={styles.helper}>Cannot be in the past</Text>
+          {validationErrors.journeyStartDate && (
+            <Text style={styles.errorText}>
+              {validationErrors.journeyStartDate}
+            </Text>
+          )}
         </GradientCardHome>
 
         {/* CARD 2: North Star + Shadow Path */}
@@ -138,6 +302,11 @@ export default function HomeScreen() {
               style: { minHeight: scale(50) },
             }}
           />
+          {validationErrors.northStar && (
+            <Text style={[styles.errorText, { marginTop: vs(8) }]}>
+              {validationErrors.northStar}
+            </Text>
+          )}
 
           <View style={{ alignItems: 'center', marginVertical: s(15) }}>
             <Text style={styles.Sectitle}>
@@ -156,6 +325,11 @@ export default function HomeScreen() {
               style: { minHeight: scale(50) },
             }}
           />
+          {validationErrors.shadowPath && (
+            <Text style={[styles.errorText, { marginTop: vs(8) }]}>
+              {validationErrors.shadowPath}
+            </Text>
+          )}
         </GradientCardHome>
 
         {/* CARD 3: Preferred Check-in Time */}
@@ -176,6 +350,9 @@ export default function HomeScreen() {
             value={new Date(checkInTime)}
             onChange={d => dispatch(setCheckInTime(d.toISOString()))}
           />
+          {validationErrors.checkInTime && (
+            <Text style={styles.errorText}>{validationErrors.checkInTime}</Text>
+          )}
 
           {/* DND row */}
           <View style={styles.row2}>
@@ -201,6 +378,11 @@ export default function HomeScreen() {
               />
             </View>
           </View>
+          {validationErrors.dndTimes && (
+            <Text style={[styles.errorText, { marginTop: vs(8) }]}>
+              {validationErrors.dndTimes}
+            </Text>
+          )}
 
           <Text style={[styles.footNote, { color: palette.white }]}>
             Reminders will be sent every 30 minutes for 2 hours starting at your
@@ -217,17 +399,11 @@ export default function HomeScreen() {
         />
 
         <PrimaryButton
-          disabled={!canContinue}
-          backgroundColor={
-            canContinue ? palette.white : 'rgba(255,255,255,0.3)'
-          }
-          textColor={canContinue ? palette.darkBlue : 'rgba(14,21,32,0.6)'}
+          disabled={!canContinue || isLoading}
+          loading={isLoading}
           style={{ width: '95%', alignSelf: 'center' }}
           title="Continue to Shiftality Scan"
-          onPress={() => {
-            if (!canContinue) return; // double safety
-            navigation.navigate('FinanceSurvey');
-          }}
+          onPress={handleContinue}
         />
       </View>
     </ScrollView>
@@ -308,6 +484,12 @@ const styles = StyleSheet.create({
     fontSize: ms(14),
     lineHeight: ms(20),
     marginTop: vs(16),
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: ms(12),
+    marginTop: vs(4),
     fontFamily: 'SourceSansPro-Regular',
   },
 });

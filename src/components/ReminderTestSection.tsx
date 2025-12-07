@@ -80,6 +80,7 @@ them from real reminders.`,
 
   // reminders & selection
   const [reminders, setReminders] = useState<StoredReminder[]>([]);
+  console.log('🚀 ~ reminders:', reminders);
   const [selectedPillIndex, setSelectedPillIndex] = useState<number | null>(0);
 
   // NEW: global on/off state

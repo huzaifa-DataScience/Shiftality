@@ -49,6 +49,7 @@ export default function SearchScreen() {
     useCallback(() => {
       const load = async () => {
         const stored = await getCheckins();
+        console.log('🚀 ~ load ~ stored:', stored);
         setCheckins(stored);
 
         if (onboarding?.journeyStartDate) {

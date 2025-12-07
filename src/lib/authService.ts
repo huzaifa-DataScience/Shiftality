@@ -77,7 +77,9 @@ export async function login(
     // Handle specific error responses
     if (error.response?.data) {
       const authError = error.response.data as AuthError;
-      throw new Error(authError.error_description || authError.error || 'Login failed');
+      throw new Error(
+        authError.error_description || authError.error || 'Login failed',
+      );
     }
     throw new Error(error.message || 'Network error. Please try again.');
   }
@@ -90,3 +92,148 @@ export async function logout(): Promise<void> {
   await clearAuthData();
 }
 
+/**
+ * Update user profile data
+ */
+export interface UpdateProfilePayload {
+  first_name?: string;
+  timezone?: string;
+  journey_start_date?: string; // ISO date string
+  north_star?: string;
+  shadow_path?: string;
+  check_in_time?: string; // ISO time string
+  dnd_start?: string; // ISO time string
+  dnd_end?: string; // ISO time string
+  allow_notifications?: boolean;
+}
+
+export interface UpdateProfileResponse {
+  id: string;
+  first_name?: string;
+  timezone?: string;
+  journey_start_date?: string;
+  north_star?: string;
+  shadow_path?: string;
+  check_in_time?: string;
+  dnd_start?: string;
+  dnd_end?: string;
+  allow_notifications?: boolean;
+  updated_at: string;
+}
+
+export async function updateProfile(
+  userId: string,
+  payload: UpdateProfilePayload,
+): Promise<UpdateProfileResponse> {
+  try {
+    // Update profile in Supabase - using PATCH with user_id filter
+    const response = await api.patch<UpdateProfileResponse>(
+      `/rest/v1/profiles?id=eq.${userId}`,
+      payload,
+      {
+        headers: {
+          Prefer: 'return=representation',
+        },
+      },
+    );
+
+    if (
+      response.data &&
+      Array.isArray(response.data) &&
+      response.data.length > 0
+    ) {
+      return response.data[0];
+    }
+
+    throw new Error('Profile update failed: No data returned');
+  } catch (error: any) {
+    // Handle specific error responses
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      throw new Error(
+        errorData.message ||
+          errorData.error_description ||
+          'Profile update failed',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+/**
+ * Submit questionnaire answers
+ */
+export interface QuestionAnswer {
+  question_text: string;
+  question_index: number;
+  answer: string; // 's_agree' | 'agree' | 'unsure' | 'disagree' | 's_disagree'
+}
+
+export interface SectionAnswer {
+  category: string; // section title (e.g., "Finance", "Health & Energy")
+  answers: QuestionAnswer[];
+}
+
+export interface SubmitQuestionnairePayload {
+  user_id: string;
+  answers: SectionAnswer[]; // Array of 6 section objects
+  completed_at?: string; // ISO timestamp
+}
+
+export interface SubmitQuestionnaireResponse {
+  id: string;
+  user_id: string;
+  answers: SectionAnswer[];
+  completed_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function submitQuestionnaire(
+  userId: string,
+  payload: Omit<SubmitQuestionnairePayload, 'user_id'>,
+): Promise<SubmitQuestionnaireResponse> {
+  try {
+    const fullPayload: SubmitQuestionnairePayload = {
+      user_id: userId,
+      ...payload,
+      completed_at: payload.completed_at || new Date().toISOString(),
+    };
+
+    const response = await api.post<SubmitQuestionnaireResponse>(
+      '/rest/v1/questionnaires',
+      fullPayload,
+      {
+        headers: {
+          Prefer: 'return=representation',
+        },
+      },
+    );
+
+    if (
+      response.data &&
+      Array.isArray(response.data) &&
+      response.data.length > 0
+    ) {
+      return response.data[0];
+    }
+
+    // If response is not an array, it's likely the object directly
+    if (response.data && typeof response.data === 'object') {
+      return response.data as SubmitQuestionnaireResponse;
+    }
+
+    throw new Error('Questionnaire submission failed: No data returned');
+  } catch (error: any) {
+    // Handle specific error responses
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      throw new Error(
+        errorData.message ||
+          errorData.error_description ||
+          'Questionnaire submission failed',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}

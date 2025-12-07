@@ -21,13 +21,16 @@ import GradientCardHome from '../../components/GradientCardHome';
 import Stepper from '../../components/survey/Stepper';
 import LikertCard from '../../components/survey/LikertCard';
 import { SECTIONS } from './sections';
-import type { LikertValue } from '../../components/survey/LikertPill';
+import type { LikertValue } from '../../store/reducers/surveyReducer';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { saveSurveyAnswer } from '../../store/reducers/surveyReducer';
+import { selectUser } from '../../store/reducers/profileReducer';
+import { submitQuestionnaire } from '../../lib/authService';
+import Toast from 'react-native-toast-message';
 
 type AnswersForStep = Record<number, LikertValue>;
 
@@ -36,6 +39,10 @@ export default function FinanceSurveyScreen() {
 
   const navigation = useNavigation<RootNav>();
   const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const surveyAnswers = useSelector(
+    (state: any) => state.survey.answers as Record<string, number>,
+  );
 
   const scrollRef = useRef<ScrollView>(null);
   const [step, setStep] = useState(0);
@@ -43,6 +50,16 @@ export default function FinanceSurveyScreen() {
   const [allAnswers, setAllAnswers] = useState<Record<number, AnswersForStep>>(
     {},
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Map points back to LikertValue for API submission
+  const POINT_TO_VALUE: Record<number, LikertValue> = {
+    2: 's_agree',
+    1: 'agree',
+    0: 'unsure',
+    [-1]: 'disagree',
+    [-2]: 's_disagree',
+  };
 
   const setAnswer = (qIdx: number, v: LikertValue) => {
     // UI local state
@@ -57,7 +74,7 @@ export default function FinanceSurveyScreen() {
         sectionIndex: step,
         questionIndex: qIdx,
         value: v,
-      }),
+      }) as any,
     );
   };
 
@@ -65,11 +82,117 @@ export default function FinanceSurveyScreen() {
   const answersForStep = allAnswers[step] || {};
   const isStepComplete = current.questions.every((_, i) => !!answersForStep[i]);
 
+  // Format all answers with questions for API submission
+  // Groups answers by section/category
+  const formatAnswersForAPI = () => {
+    const sectionAnswers: Array<{
+      category: string;
+      answers: Array<{
+        question_text: string;
+        question_index: number;
+        answer: string;
+      }>;
+    }> = [];
+
+    SECTIONS.forEach((section, sectionIndex) => {
+      const sectionAnswersList: Array<{
+        question_text: string;
+        question_index: number;
+        answer: string;
+      }> = [];
+
+      section.questions.forEach((questionText, questionIndex) => {
+        const key = `${sectionIndex}_${questionIndex}`;
+        const points = surveyAnswers[key];
+
+        // Convert points back to LikertValue
+        let answer: LikertValue = 'unsure'; // default
+        if (points !== undefined && points !== null) {
+          answer = POINT_TO_VALUE[points] || 'unsure';
+        }
+
+        sectionAnswersList.push({
+          question_text: questionText,
+          question_index: questionIndex,
+          answer: answer,
+        });
+      });
+
+      sectionAnswers.push({
+        category: section.title,
+        answers: sectionAnswersList,
+      });
+    });
+
+    return sectionAnswers;
+  };
+
+  const handleCompleteScan = async () => {
+    if (!user?.id) {
+      Toast.show({
+        type: 'error',
+        text1: 'Authentication Error',
+        text2: 'Please log in to submit your answers',
+      });
+      return;
+    }
+
+    // Check if all questions are answered
+    const allAnswered = SECTIONS.every((section, sectionIndex) =>
+      section.questions.every((_, questionIndex) => {
+        const key = `${sectionIndex}_${questionIndex}`;
+        return surveyAnswers[key] !== undefined && surveyAnswers[key] !== null;
+      }),
+    );
+
+    if (!allAnswered) {
+      Toast.show({
+        type: 'error',
+        text1: 'Incomplete Survey',
+        text2: 'Please answer all questions before completing the scan',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const answers = formatAnswersForAPI();
+      await submitQuestionnaire(user.id, {
+        answers,
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Survey Completed',
+        text2: 'Your answers have been submitted successfully',
+      });
+
+      // Navigate after a short delay
+      setTimeout(() => {
+        navigation.navigate('Main', { screen: 'CenterProfile' });
+      }, 500);
+    } catch (error: any) {
+      console.error('Questionnaire submission error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Submission Failed',
+        text2:
+          error.message || 'Failed to submit questionnaire. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const goNext = () => {
     if (step < totalSteps - 1 && isStepComplete) {
       setStep(s => s + 1);
       scrollRef.current?.scrollTo({ y: 0, animated: true });
     } else {
+      // On last step, call handleCompleteScan
+      // handleCompleteScan();
+
       navigation.navigate('Main', { screen: 'CenterProfile' });
     }
   };
@@ -133,21 +256,20 @@ export default function FinanceSurveyScreen() {
         <View style={{ height: scale(10) }} />
 
         <PrimaryButton
-          textColor={palette.white}
           style={{
             width: '95%',
-            height: 'auto',
             alignSelf: 'center',
-            textAlign: 'center',
-            color: palette.white,
-            fontSize: ms(14.5),
-            fontFamily: 'SourceSansPro-Regular',
-            fontWeight: '700',
-            opacity: 0.9,
           }}
-          title={step === totalSteps - 1 ? 'Complete Scan' : 'Next Section'}
+          title={
+            step === totalSteps - 1
+              ? isSubmitting
+                ? 'Submitting...'
+                : 'Complete Scan'
+              : 'Next Section'
+          }
           onPress={goNext}
-          disabled={!isStepComplete}
+          disabled={!isStepComplete || isSubmitting}
+          loading={isSubmitting && step === totalSteps - 1}
         />
       </View>
     </ScrollView>

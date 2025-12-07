@@ -102,6 +102,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
   shadowAddLabel = '+ Add Shadow Belief',
 }) => {
   const [beliefs, setBeliefs] = useState<string[]>(defaultEmpoweringBeliefs);
+  console.log('🚀 ~ beliefs:', beliefs);
   const [shadowBeliefs, setShadowBeliefs] =
     useState<string[]>(defaultShadowBeliefs);
 

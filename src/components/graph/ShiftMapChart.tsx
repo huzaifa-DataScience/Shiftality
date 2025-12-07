@@ -55,7 +55,22 @@ const MONTHS = [
 
 const Y_MAX = 36.5;
 const Y_MIN = -36.5;
-const Y_AXIS_LABELS = ['-36', '-24', '-12', '0', '+12', '+24', '+36'];
+// Offset to shift negative values into visible range
+const Y_OFFSET = Math.abs(Y_MIN); // 36.5
+
+// Generate Y-axis labels with 2 decimal places
+const generateYAxisLabels = (): string[] => {
+  const labels: string[] = [];
+  const step = (Y_MAX - Y_MIN) / 6; // 7 labels total (including both ends)
+  for (let i = 0; i <= 6; i++) {
+    const value = Y_MIN + i * step;
+    // Format to 2 decimal places and add + sign for positive values
+    const formatted = value >= 0 ? `+${value.toFixed(2)}` : value.toFixed(2);
+    labels.push(formatted);
+  }
+  return labels;
+};
+const Y_AXIS_LABELS = generateYAxisLabels();
 
 export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   const { setSelectedFilterDate, clearSelectedFilterDate, selectedFilterDate } =
@@ -155,10 +170,12 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
     );
 
     return sortedMonths.map(m => {
-      const clamped = Math.max(Y_MIN, Math.min(Y_MAX, m.value));
+      // Transform value: shift by Y_OFFSET to make negatives visible
+      // -36.5 becomes 0, 0 becomes 36.5, 36.5 becomes 73
+      const transformedValue = m.value + Y_OFFSET;
 
       return {
-        value: clamped,
+        value: transformedValue,
         label: m.label,
         hideDataPoint: !m.hasCheckin,
         monthKey: m.monthKey,
@@ -180,7 +197,8 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
     if (monthDaysData.length === 0) return [];
 
     return monthDaysData.map((point, idx) => {
-      const clamped = Math.max(Y_MIN, Math.min(Y_MAX, point.cumulative));
+      // Transform value: shift by Y_OFFSET to make negatives visible
+      const transformedValue = point.cumulative + Y_OFFSET;
       const d = new Date(point.date);
       const dayOfMonth = d.getDate();
 
@@ -190,7 +208,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
       }
 
       return {
-        value: clamped,
+        value: transformedValue,
         label,
         hideDataPoint: !point.hasCheckin,
         date: point.date,
@@ -206,11 +224,26 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
 
   const data = expandedMonth ? dayData : monthData;
 
+  // Ensure data values are within the chart range (0 to Y_MAX + Y_OFFSET)
+  // After transformation, values should be between 0 (was -36.5) and 73 (was 36.5)
+  const normalizedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    const maxChartValue = Y_MAX + Y_OFFSET; // 73
+    return data.map(d => {
+      // Clamp the transformed value to ensure it's visible
+      const clampedValue = Math.max(0, Math.min(maxChartValue, d.value));
+      return {
+        ...d,
+        value: clampedValue,
+      };
+    });
+  }, [data]);
+
   const rawPosition =
     denseSeries && denseSeries.length
       ? denseSeries[denseSeries.length - 1].cumulative
       : 0;
-  const currentPosition = Math.max(Y_MIN, Math.min(Y_MAX, rawPosition));
+  const currentPosition = rawPosition; // Keep original value for display
 
   const pointCount = data.length;
 
@@ -436,7 +469,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
               style={{ position: 'absolute', top: 0, left: 0 }}
               pointerEvents="none"
             >
-              {data.map((_, index) => (
+              {normalizedData.map((_, index) => (
                 <Line
                   key={index}
                   x1={initialSpacing + index * spacing}
@@ -458,7 +491,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
               style={{ flex: 1 }}
             >
               <LineChart
-                data={data}
+                data={normalizedData}
                 curved
                 thickness={3}
                 hideDataPoints={false}
@@ -471,16 +504,18 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
                 xAxisLabelTextStyle={styles.xAxisLabel}
                 color="#00BFFF"
                 noOfSections={Y_AXIS_LABELS.length - 1}
-                maxValue={Y_MAX}
+                maxValue={Y_MAX + Y_OFFSET}
                 yAxisLabelTexts={Y_AXIS_LABELS}
                 backgroundColor="transparent"
-                showFractionalValues={false}
+                showFractionalValues={true}
                 yAxisThickness={0}
                 xAxisThickness={0}
                 initialSpacing={initialSpacing}
                 spacing={spacing}
                 endSpacing={endSpacing}
                 showVerticalLines={false}
+                adjustToWidth={true}
+                isAnimated={false}
               />
             </View>
           </View>
@@ -488,7 +523,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
 
         <View style={styles.footerBox}>
           <Text style={styles.footerText}>
-            Current Position: {currentPosition}
+            Current Position: {currentPosition.toFixed(2)}
           </Text>
         </View>
       </View>

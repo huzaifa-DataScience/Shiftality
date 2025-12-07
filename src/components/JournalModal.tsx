@@ -27,6 +27,7 @@ type JournalModalProps = {
 export default function JournalModal({ visible, onClose }: JournalModalProps) {
   const { journalEntries, addJournal, deleteJournal, selectedFilterDate } =
     useJournals();
+  console.log('🚀 ~ JournalModal ~ journalEntries:', journalEntries);
   const [isAddingJournal, setIsAddingJournal] = useState(false);
 
   const [journalTitle, setJournalTitle] = useState('');
