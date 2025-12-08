@@ -9,6 +9,7 @@ import {
   Platform,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import Svg, {
   Defs,
@@ -30,7 +31,9 @@ import DateTimePicker, {
 import GradientCardHome from '../GradientCardHome';
 import { palette } from '../../theme';
 import type { DensePoint } from '../../lib/dataClient';
+import { buildDenseSeries } from '../../lib/dataClient';
 import { useJournals } from '../../contexts/JournalContext';
+import { getCheckins, getProfile } from '../../lib/authService';
 
 type Props = {
   denseSeries: DensePoint[];
@@ -60,6 +63,42 @@ export default function ShiftGridChart({ denseSeries }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(false);
+  const [checkins, setCheckins] = useState<DensePoint[]>([]);
+
+  // 🆕 Fetch checkins from API and build denseSeries
+  useEffect(() => {
+    const fetchCheckinsData = async () => {
+      try {
+        setIsLoading(true);
+
+        // Get all checkins from API
+        const checkinsData = await getCheckins();
+
+        console.log(
+          `✅ [ShiftGridChart] Received ${checkinsData.length} checkins from API`,
+        );
+
+        // Build denseSeries from fetched checkins
+        const builtSeries = buildDenseSeries(checkinsData);
+        setCheckins(builtSeries);
+        console.log(
+          `📊 [ShiftGridChart] Built denseSeries with ${builtSeries.length} days`,
+        );
+      } catch (error: any) {
+        console.error(
+          '❌ [ShiftGridChart] Error fetching checkins:',
+          error.message,
+        );
+        // Fallback to prop denseSeries if API fails
+        setCheckins(denseSeries || []);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCheckinsData();
+  }, []);
 
   // Sync local selectedDate with context's selectedFilterDate
   useEffect(() => {
@@ -75,7 +114,7 @@ export default function ShiftGridChart({ denseSeries }: Props) {
 
   // Filter series based on selected date's month
   const series: DensePoint[] = useMemo(() => {
-    const allSeries = denseSeries ?? [];
+    const allSeries = checkins ?? [];
 
     // If no date is selected, show all data
     if (!selectedFilterDate || !selectedDate) {
@@ -94,7 +133,7 @@ export default function ShiftGridChart({ denseSeries }: Props) {
         itemDate.getMonth() === selectedMonth
       );
     });
-  }, [denseSeries, selectedFilterDate, selectedDate]);
+  }, [checkins, selectedFilterDate, selectedDate]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     setWidth(Math.round(e.nativeEvent.layout.width));
@@ -243,6 +282,26 @@ export default function ShiftGridChart({ denseSeries }: Props) {
 
   return (
     <GradientCardHome>
+      {isLoading && (
+        <View
+          style={[
+            styles.loaderContainer,
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999,
+              borderRadius: s(12),
+            },
+          ]}
+        >
+          <ActivityIndicator size="large" color="#0AC4FF" />
+          <Text style={styles.loaderText}>Loading shift grid data...</Text>
+        </View>
+      )}
+
       <Text style={styles.title}>{chartTitle}</Text>
 
       {selectedDate ? (
@@ -581,5 +640,17 @@ const styles = StyleSheet.create({
     marginBottom: scale(200),
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loaderContainer: {
+    backgroundColor: 'rgba(10, 11, 26, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: vs(16),
+  },
+  loaderText: {
+    color: '#0AC4FF',
+    fontSize: ms(14),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
   },
 });

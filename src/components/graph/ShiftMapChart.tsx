@@ -10,6 +10,7 @@ import {
   Image,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import Svg, {
   Defs,
@@ -30,8 +31,9 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import GradientCardHome from '../GradientCardHome';
 import { palette } from '../../theme';
-import { DensePoint } from '../../lib/dataClient';
+import { DensePoint, buildDenseSeries } from '../../lib/dataClient';
 import { useJournals } from '../../contexts/JournalContext';
+import { getCheckins, getProfile } from '../../lib/authService';
 
 type Props = {
   denseSeries: DensePoint[];
@@ -83,6 +85,41 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(false);
+  const [checkins, setCheckins] = useState<DensePoint[]>(denseSeries || []);
+
+  // 🆕 Fetch checkins from API and build denseSeries
+  useEffect(() => {
+    const fetchCheckinsData = async () => {
+      try {
+        setIsLoading(true);
+        // Get all checkins from API
+        const checkinsData = await getCheckins();
+
+        console.log(
+          `✅ [ShiftMapChart] Received ${checkinsData.length} checkins from API`,
+        );
+
+        // Build denseSeries from fetched checkins
+        const builtSeries = buildDenseSeries(checkinsData);
+        setCheckins(builtSeries);
+        console.log(
+          `📊 [ShiftMapChart] Built denseSeries with ${builtSeries.length} days`,
+        );
+      } catch (error: any) {
+        console.error(
+          '❌ [ShiftMapChart] Error fetching checkins:',
+          error.message,
+        );
+        // Fallback to prop denseSeries if API fails
+        // setCheckins(denseSeries || []);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCheckinsData();
+  }, []);
 
   // Sync local selectedDate with context's selectedFilterDate
   useEffect(() => {
@@ -97,7 +134,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
         const monthKey = `${year}-${monthIdx}`;
 
         // Filter days for the selected month
-        const monthDays = denseSeries.filter(p => {
+        const monthDays = checkins.filter(p => {
           const pd = new Date(p.date);
           return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
         });
@@ -112,7 +149,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
       setExpandedMonth(null);
       setMonthDaysData([]);
     }
-  }, [selectedFilterDate, denseSeries]);
+  }, [selectedFilterDate, checkins]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height, x } = e.nativeEvent.layout;
@@ -122,7 +159,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   }, []);
 
   const monthData = useMemo(() => {
-    if (!denseSeries || denseSeries.length === 0) return [];
+    if (!checkins || checkins.length === 0) return [];
 
     type MonthAgg = {
       label: string;
@@ -135,7 +172,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
 
     const byMonth = new Map<string, MonthAgg>();
 
-    denseSeries.forEach(point => {
+    checkins.forEach(point => {
       const d = new Date(point.date);
       if (Number.isNaN(d.getTime())) return;
 
@@ -181,7 +218,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
         monthKey: m.monthKey,
         onPress: () => {
           if (m.hasCheckin) {
-            const monthDays = denseSeries.filter(p => {
+            const monthDays = checkins.filter(p => {
               const pd = new Date(p.date);
               return `${pd.getFullYear()}-${pd.getMonth()}` === m.monthKey;
             });
@@ -191,7 +228,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
         },
       };
     });
-  }, [denseSeries]);
+  }, [checkins]);
 
   const dayData = useMemo(() => {
     if (monthDaysData.length === 0) return [];
@@ -240,9 +277,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   }, [data]);
 
   const rawPosition =
-    denseSeries && denseSeries.length
-      ? denseSeries[denseSeries.length - 1].cumulative
-      : 0;
+    checkins && checkins.length ? checkins[checkins.length - 1].cumulative : 0;
   const currentPosition = rawPosition; // Keep original value for display
 
   const pointCount = data.length;
@@ -295,7 +330,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
           const monthKey = `${year}-${monthIdx}`;
 
           // Filter days for the selected month
-          const monthDays = denseSeries.filter(p => {
+          const monthDays = checkins.filter(p => {
             const pd = new Date(p.date);
             return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
           });
@@ -318,7 +353,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
           const monthKey = `${year}-${monthIdx}`;
 
           // Filter days for the selected month
-          const monthDays = denseSeries.filter(p => {
+          const monthDays = checkins.filter(p => {
             const pd = new Date(p.date);
             return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
           });
@@ -330,7 +365,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
         }
       }
     },
-    [denseSeries, setSelectedFilterDate],
+    [checkins, setSelectedFilterDate],
   );
 
   // Handle clear date
@@ -363,6 +398,26 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
 
   return (
     <GradientCardHome>
+      {isLoading && (
+        <View
+          style={[
+            styles.loaderContainer,
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999,
+              borderRadius: s(12),
+            },
+          ]}
+        >
+          <ActivityIndicator size="large" color="#0AC4FF" />
+          <Text style={styles.loaderText}>Loading shift map data...</Text>
+        </View>
+      )}
+
       <View style={styles.headerRow}>
         <Text style={styles.title}>
           Shift Map {expandedMonthLabel ? `- ${expandedMonthLabel}` : ''}
@@ -660,6 +715,18 @@ const styles = StyleSheet.create({
   footerText: {
     color: palette.white,
     fontSize: ms(13),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+  },
+  loaderContainer: {
+    backgroundColor: 'rgba(10, 11, 26, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: vs(16),
+  },
+  loaderText: {
+    color: '#0AC4FF',
+    fontSize: ms(14),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',
   },

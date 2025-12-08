@@ -456,3 +456,71 @@ export async function createCheckin(
     throw new Error(error.message || 'Network error. Please try again.');
   }
 }
+
+export interface GetCheckinsResponse {
+  data?: CheckinPayload[];
+  checkins?: CheckinPayload[];
+  success?: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface GetCheckinsParams {
+  start_date?: string; // "YYYY-MM-DD"
+  end_date?: string; // "YYYY-MM-DD"
+  limit?: number;
+  offset?: number;
+}
+
+export async function getCheckins(
+  params: GetCheckinsParams = {},
+): Promise<CheckinPayload[]> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    // Build query string from params
+    const queryParams = new URLSearchParams();
+    if (params.start_date) queryParams.append('start_date', params.start_date);
+    if (params.end_date) queryParams.append('end_date', params.end_date);
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.offset) queryParams.append('offset', params.offset.toString());
+
+    const queryString = queryParams.toString();
+    const endpoint = `/functions/v1/get-checkins${
+      queryString ? `?${queryString}` : ''
+    }`;
+
+    console.log('🔐 [getCheckins] Fetching checkins from:', endpoint);
+
+    const response = await api.get<GetCheckinsResponse>(endpoint, {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        apikey: SUPABASE_ANON_KEY,
+      },
+    });
+
+    // Handle different response formats
+    const checkins = response.data?.data || response.data?.checkins || [];
+
+    console.log(
+      `✅ [getCheckins] Retrieved ${checkins.length} checkins from backend`,
+      checkins,
+    );
+
+    return checkins;
+  } catch (error: any) {
+    console.error('❌ [getCheckins] Error fetching checkins:', error);
+    // Handle specific error responses
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      throw new Error(
+        errorData.message ||
+          errorData.error_description ||
+          'Failed to fetch checkins',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
