@@ -1,5 +1,5 @@
 // HomeScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,45 +24,101 @@ import PrimaryButton from '../../components/PrimaryButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/RootNavigator';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import Toast from 'react-native-toast-message';
-import { updateProfile } from '../../lib/authService';
+import { getProfile, updateProfile } from '../../lib/authService';
 import { selectUser } from '../../store/reducers/profileReducer';
-
-import {
-  selectHomeOnboarding,
-  setFirstName,
-  setTimezone,
-  setJourneyStartDate,
-  setNorthStar,
-  setShadowPath,
-  setCheckInTime,
-  setDndStart,
-  setDndEnd,
-  setAllowNotifications,
-} from '../../store/reducers/homeOnboardingReducer';
 
 export default function HomeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: string;
   }>({});
 
-  const {
-    firstName,
-    timezone,
-    journeyStartDate, // ISO strings
-    northStar,
-    shadowPath,
-    checkInTime,
-    dndStart,
-    dndEnd,
-    allowNotifications,
-  } = useSelector(selectHomeOnboarding);
+  // Local state for form fields (from getProfile data)
+  const [firstName, setFirstName] = useState('');
+  const [timezone, setTimezone] = useState('');
+  const [journeyStartDate, setJourneyStartDate] = useState(
+    new Date().toISOString(),
+  );
+  const [northStar, setNorthStar] = useState('');
+  const [shadowPath, setShadowPath] = useState('');
+  const [checkInTime, setCheckInTime] = useState(new Date().toISOString());
+  const [dndStart, setDndStart] = useState(new Date().toISOString());
+  const [dndEnd, setDndEnd] = useState(new Date().toISOString());
+  const [allowNotifications, setAllowNotifications] = useState(true);
+
+  // Load profile data on component mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const userProfile = await getProfile();
+        console.log('userProfile ==> ', userProfile);
+
+        // Populate form fields from profile data
+        if (userProfile?.profile?.first_name) {
+          setFirstName(userProfile?.profile?.first_name);
+        }
+        if (userProfile?.profile?.timezone) {
+          setTimezone(userProfile?.profile?.timezone);
+        }
+        if (userProfile?.profile?.journey_start_date) {
+          setJourneyStartDate(
+            new Date(userProfile?.profile?.journey_start_date).toISOString(),
+          );
+        }
+        if (userProfile?.profile?.north_star) {
+          setNorthStar(userProfile?.profile?.north_star);
+        }
+        if (userProfile?.profile?.shadow_path) {
+          setShadowPath(userProfile?.profile?.shadow_path);
+        }
+        if (userProfile?.profile?.preferred_checkin_time) {
+          // Convert HH:mm:ss format to ISO time string
+          const today = new Date().toISOString().split('T')[0];
+          setCheckInTime(
+            new Date(
+              `${today}T${userProfile?.profile?.preferred_checkin_time}`,
+            ).toISOString(),
+          );
+        }
+        if (userProfile?.profile?.settings?.dnd_start) {
+          const today = new Date().toISOString().split('T')[0];
+          setDndStart(
+            new Date(
+              `${today}T${userProfile?.profile?.settings?.dnd_start}`,
+            ).toISOString(),
+          );
+        }
+        if (userProfile?.profile?.settings?.dnd_end) {
+          const today = new Date().toISOString().split('T')[0];
+          setDndEnd(
+            new Date(
+              `${today}T${userProfile?.profile?.settings?.dnd_end}`,
+            ).toISOString(),
+          );
+        }
+        if (userProfile?.allow_notifications !== undefined) {
+          setAllowNotifications(userProfile?.profile?.allow_notifications);
+        }
+      } catch (error: any) {
+        console.error('Error loading profile:', error);
+        Toast.show({
+          type: 'error',
+          text1: 'Load Failed',
+          text2: error.message || 'Failed to load profile data',
+        });
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   const northStarPlaceholder =
     "Paint the picture of where you'll be in one year—your highest potential reality, the version of yourself you're shifting toward …";
@@ -208,7 +264,7 @@ export default function HomeScreen() {
         allow_notifications: allowNotifications,
       };
 
-      await updateProfile(user.id, payload);
+      await updateProfile(payload);
 
       Toast.show({
         type: 'success',
@@ -249,7 +305,7 @@ export default function HomeScreen() {
             minHeight={vs(45)}
             placeholder="Enter Your Name"
             value={firstName}
-            onChangeText={(t: string) => dispatch(setFirstName(t))}
+            onChangeText={(t: string) => setFirstName(t)}
           />
           {validationErrors.firstName && (
             <Text style={styles.errorText}>{validationErrors.firstName}</Text>
@@ -260,7 +316,7 @@ export default function HomeScreen() {
           <Text style={[styles.label, { marginTop: vs(18) }]}>Time Zone</Text>
           <GradientTimezoneSelect
             value={timezone}
-            onChange={tz => dispatch(setTimezone(tz))}
+            onChange={tz => setTimezone(tz)}
           />
           {validationErrors.timezone && (
             <Text style={styles.errorText}>{validationErrors.timezone}</Text>
@@ -272,7 +328,7 @@ export default function HomeScreen() {
           </Text>
           <GradientDatePicker
             value={new Date(journeyStartDate)} // string -> Date
-            onChange={d => dispatch(setJourneyStartDate(d.toISOString()))} // Date -> string
+            onChange={d => setJourneyStartDate(d.toISOString())} // Date -> string
             minimumDate={new Date()}
           />
           <Text style={styles.helper}>Cannot be in the past</Text>
@@ -295,7 +351,7 @@ export default function HomeScreen() {
             text={northStarPlaceholder}
             showInput
             inputValue={northStar}
-            onChangeInputText={t => dispatch(setNorthStar(t))}
+            onChangeInputText={t => setNorthStar(t)}
             inputProps={{
               multiline: true,
               textAlignVertical: 'top',
@@ -318,7 +374,7 @@ export default function HomeScreen() {
             text={shadowPathPlaceholder}
             showInput
             inputValue={shadowPath}
-            onChangeInputText={t => dispatch(setShadowPath(t))}
+            onChangeInputText={t => setShadowPath(t)}
             inputProps={{
               multiline: true,
               textAlignVertical: 'top',
@@ -348,7 +404,7 @@ export default function HomeScreen() {
           <GradientDatePicker
             mode="time"
             value={new Date(checkInTime)}
-            onChange={d => dispatch(setCheckInTime(d.toISOString()))}
+            onChange={d => setCheckInTime(d.toISOString())}
           />
           {validationErrors.checkInTime && (
             <Text style={styles.errorText}>{validationErrors.checkInTime}</Text>
@@ -363,7 +419,7 @@ export default function HomeScreen() {
               <GradientDatePicker
                 mode="time"
                 value={new Date(dndStart)}
-                onChange={d => dispatch(setDndStart(d.toISOString()))}
+                onChange={d => setDndStart(d.toISOString())}
               />
             </View>
 
@@ -374,7 +430,7 @@ export default function HomeScreen() {
               <GradientDatePicker
                 mode="time"
                 value={new Date(dndEnd)}
-                onChange={d => dispatch(setDndEnd(d.toISOString()))}
+                onChange={d => setDndEnd(d.toISOString())}
               />
             </View>
           </View>
@@ -395,7 +451,7 @@ export default function HomeScreen() {
           style={{ width: scale(370), marginBottom: vs(20) }}
           label="Allow Notifications"
           value={allowNotifications}
-          onValueChange={v => dispatch(setAllowNotifications(v))}
+          onValueChange={v => setAllowNotifications(v)}
         />
 
         <PrimaryButton

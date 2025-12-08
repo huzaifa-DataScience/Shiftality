@@ -26,6 +26,7 @@ import BeliefsEditor from '../../components/BeliefsEditor';
 import ReminderTestSection from '../../components/ReminderTestSection';
 import { selectBeliefProfile } from '../../store/reducers/surveyReducer';
 import { useNavigation } from '@react-navigation/native';
+import { getProfile } from '../../lib/authService';
 
 import Toast from 'react-native-toast-message';
 import { logout } from '../../lib/authService';
@@ -40,41 +41,53 @@ export default function SettingScreen() {
   const onboarding = useSelector(selectHomeOnboarding);
   const beliefProfile = useSelector(selectBeliefProfile);
 
-  console.log('onboarding ==> ', onboarding);
-
   const [reflectionEnabled, setReflectionEnabled] = useState(true);
 
-  const [firstName, setFirstName] = useState(onboarding.firstName ?? '');
+  // Profile data from API
+  const [firstName, setFirstName] = useState('');
+  const [northStar, setNorthStar] = useState('');
+  const [shadowPath, setShadowPath] = useState('');
+  const [archetype, setArchetype] = useState('');
+  const [baselineIndex, setBaselineIndex] = useState<number | null>(null);
 
-  const [northStar, setNorthStar] = useState(
-    onboarding.northStar || 'Describe your highest vibe...',
-  );
+  // Load profile data on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const userProfile = await getProfile();
+        console.log('userProfile in setting ==> ', userProfile);
 
-  const [shadowPath, setShadowPath] = useState(
-    onboarding.shadowPath || 'Describe the patterns you want to transform...',
-  );
+        if (userProfile?.profile?.first_name) {
+          setFirstName(userProfile?.profile?.first_name);
+        }
+        if (userProfile?.profile?.highest_text) {
+          setNorthStar(userProfile.profile.highest_text);
+        }
+        if (userProfile?.profile?.lowest_text) {
+          setShadowPath(userProfile.profile.lowest_text);
+        }
+        if (userProfile?.profile?.archetype) {
+          setArchetype(userProfile.profile.archetype);
+        }
+        if (userProfile?.profile?.baseline_index) {
+          setBaselineIndex(userProfile.profile.baseline_index);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+    loadProfile();
+  }, []);
 
   const [themeVal, setThemeVal] = useState<string>('System');
   const [fontVal, setFontVal] = useState<string>('Normal');
   const [colorBlind, setColorBlind] = useState<boolean>(true);
   const [reminder, setReminder] = useState<boolean>(true);
 
-  useEffect(() => {
-    // Only update if we have a meaningful index
-    if (beliefProfile.overallIndex > 0) {
-      dispatch(setBaselineIndex(beliefProfile.overallIndex));
-      dispatch(setArchetype(beliefProfile.archetype));
-    }
-  }, [beliefProfile.overallIndex, beliefProfile.archetype, dispatch]);
-
-  console.log('baselineIndex', onboarding?.baselineIndex);
-  console.log('archetype', onboarding?.archetype);
-
-  const archetype = onboarding?.archetype || 'Balanced Explorer';
+  // Format baseline index for display
   const baselineIndexStr =
-    onboarding?.baselineIndex != null
-      ? `${Math.round(onboarding.baselineIndex)}/100`
-      : '—';
+    baselineIndex != null ? `${Math.round(baselineIndex)}/100` : '—';
+  const archeypeDisplay = archetype || 'Balanced Explorer';
 
   return (
     <View style={styles.root}>
@@ -128,9 +141,7 @@ export default function SettingScreen() {
           <View style={{ height: scale(20) }} />
           <GradientHintBox
             title="Your Belief Profile"
-            text={
-              'Based on your 30-item Shiftality Scan.\nYour archetype: Balanced Explorer'
-            }
+            text={`Based on your 30-item Shiftality Scan.\nYour archetype: ${archeypeDisplay}`}
             secondaryText={baselineIndexStr}
             footerActionLabel="Retake Shiftality Scan"
             footerIcon={require('../../assets/clear_choices.png')}

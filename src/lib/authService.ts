@@ -1,6 +1,6 @@
 // src/lib/authService.ts
 import { api } from './apiClient';
-import { clearAuthData } from './authStorage';
+import { clearAuthData, getAuthToken } from './authStorage';
 
 export interface LoginCredentials {
   email: string;
@@ -78,7 +78,7 @@ export async function login(
     // Handle specific error responses
     if (error.response?.data) {
       const authError = error.response.data as AuthError;
-      throw new Error(authError.msg || authError.error || 'Login failed');
+      throw new Error(authError.error || 'Login failed');
     }
     throw new Error(error.message || 'Network error. Please try again.');
   }
@@ -221,9 +221,7 @@ export async function updateProfile(
     // Handle specific error responses
     if (error.response?.data) {
       const authError = error.response.data as AuthError;
-      throw new Error(
-        authError.msg || authError.error || 'Profile update failed',
-      );
+      throw new Error(authError.error || 'Profile update failed');
     }
     throw new Error(error.message || 'Network error. Please try again.');
   }
@@ -301,6 +299,158 @@ export async function submitQuestionnaire(
         errorData.message ||
           errorData.error_description ||
           'Questionnaire submission failed',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+export interface GetProfileResponse {
+  id: string;
+  user_id: string;
+  email?: string;
+  first_name?: string;
+  timezone?: string;
+  user_timezone?: string;
+  journey_start_date?: string;
+  north_star?: string;
+  highest_text?: string;
+  shadow_path?: string;
+  lowest_text?: string;
+  check_in_time?: string;
+  preferred_checkin_time?: string;
+  dnd_start?: string;
+  dnd_end?: string;
+  quiet_hours_start?: string;
+  quiet_hours_end?: string;
+  allow_notifications?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  archetype?: string;
+  baseline_index?: number;
+  belief_scan_results?: any;
+  custom_empowering_beliefs?: string;
+  custom_shadow_beliefs?: string;
+  daily_capacity?: number;
+  is_onboarded?: boolean;
+  is_admin?: boolean;
+  reflection_enabled?: boolean;
+  theme?: string;
+  font_size?: string;
+  color_blind_mode?: boolean;
+  reminders_enabled?: boolean;
+}
+
+export async function getProfile(): Promise<GetProfileResponse> {
+  try {
+    // Get the stored auth token
+    const authToken = await getAuthToken();
+
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    console.log('🔐 [getProfile] Sending GET request with token and apikey');
+
+    // Send both token and apikey in payload
+    const payload = {
+      token: authToken,
+      apikey: SUPABASE_ANON_KEY,
+    };
+
+    const response = await api.get<GetProfileResponse>(
+      '/functions/v1/get-profile',
+      {
+        params: payload,
+      },
+    );
+
+    // Handle array response (return first item)
+    if (
+      response.data &&
+      Array.isArray(response.data) &&
+      response.data.length > 0
+    ) {
+      return response.data[0];
+    }
+
+    // Handle direct object response
+    if (response.data && typeof response.data === 'object') {
+      return response.data as GetProfileResponse;
+    }
+
+    throw new Error('Profile fetch failed: No data returned');
+  } catch (error: any) {
+    // Handle specific error responses
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      throw new Error(
+        errorData.message ||
+          errorData.error_description ||
+          'Profile fetch failed',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+/**
+ * Create a checkin record for today's shift
+ */
+export interface CheckinPayload {
+  id: string;
+  date: string; // "YYYY-MM-DD"
+  pos_yes: number;
+  neg_yes: number;
+  daily_score: number; // -10 .. +10
+  source: 'user' | 'demo';
+  created_at: string;
+}
+
+export interface CreateCheckinResponse {
+  success?: boolean;
+  message?: string;
+  data?: any;
+}
+
+export async function createCheckin(
+  checkin: CheckinPayload,
+): Promise<CreateCheckinResponse> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    console.log(
+      '🔐 [createCheckin] Sending POST request with checkin data:',
+      checkin,
+    );
+
+    // Send checkin data in request body with auth headers
+    const response = await api.post<CreateCheckinResponse>(
+      '/functions/v1/create-checkin',
+      checkin,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+      },
+    );
+
+    console.log(
+      '✅ [createCheckin] Checkin created successfully:',
+      response.data,
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ [createCheckin] Error creating checkin:', error);
+    // Handle specific error responses
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      throw new Error(
+        errorData.message ||
+          errorData.error_description ||
+          'Checkin creation failed',
       );
     }
     throw new Error(error.message || 'Network error. Please try again.');

@@ -6,12 +6,14 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 import { palette } from '../../theme';
 import GradientCardHome from '../../components/GradientCardHome';
@@ -31,6 +33,7 @@ import {
   clearAllCheckins,
   Checkin,
 } from '../../lib/dataClient';
+import { createCheckin } from '../../lib/authService';
 import {
   selectHomeOnboarding,
   setArchetype,
@@ -91,6 +94,7 @@ export default function DemoScreen() {
 
   const [days, setDays] = useState('7');
   const [mode, setMode] = useState<'All' | 'Empowering' | 'Shadow'>('All');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // current belief sets (from storage)
   const [empoweringBeliefs, setEmpoweringBeliefs] = useState<string[]>(
@@ -202,6 +206,8 @@ export default function DemoScreen() {
     const n = effectiveDays;
     if (n <= 0) return;
 
+    setIsGenerating(true);
+
     // how many YES per day based on mode
     const posPerDay =
       mode === 'All' || mode === 'Empowering' ? empoweringBeliefs.length : 0;
@@ -212,27 +218,63 @@ export default function DemoScreen() {
     const nowIso = new Date().toISOString();
     const generated: Checkin[] = [];
 
-    for (let i = 0; i < n; i++) {
-      let dailyScore = posPerDay - negPerDay;
-      if (dailyScore > 10) dailyScore = 10;
-      if (dailyScore < -10) dailyScore = -10;
+    try {
+      for (let i = 0; i < n; i++) {
+        let dailyScore = posPerDay - negPerDay;
+        if (dailyScore > 10) dailyScore = 10;
+        if (dailyScore < -10) dailyScore = -10;
 
-      generated.push({
-        id: `${currentDate}-${Date.now()}-${i}`,
-        date: currentDate,
-        pos_yes: posPerDay,
-        neg_yes: negPerDay,
-        daily_score: dailyScore,
-        source: 'demo', // 👈 mark as demo data
-        created_at: nowIso,
+        const checkin: Checkin = {
+          id: `${currentDate}-${Date.now()}-${i}`,
+          date: currentDate,
+          pos_yes: posPerDay,
+          neg_yes: negPerDay,
+          daily_score: dailyScore,
+          source: 'demo', // 👈 mark as demo data
+          created_at: nowIso,
+        };
+
+        generated.push(checkin);
+
+        // 🆕 Call API to create checkin on backend
+        try {
+          await createCheckin(checkin);
+          console.log(`✅ Demo checkin ${i + 1}/${n} created on backend`);
+        } catch (apiError) {
+          console.warn(
+            `⚠️ Failed to create demo checkin ${
+              i + 1
+            }/${n} on backend, continuing...`,
+            apiError,
+          );
+          // Continue with next even if API fails
+        }
+
+        currentDate = addDaysStr(currentDate, 1);
+      }
+
+      // Save all to local storage as well
+      await upsertCheckins(generated);
+      const updated = await getCheckins();
+      setCheckins(updated);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Demo Data Generated',
+        text2: `Created ${n} test days (source: demo)`,
       });
 
-      currentDate = addDaysStr(currentDate, 1);
+      console.log(`🎉 Generated ${n} demo checkins`);
+    } catch (error: any) {
+      console.error('❌ Error generating demo data:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Generation Failed',
+        text2: error.message || 'Failed to generate demo data',
+      });
+    } finally {
+      setIsGenerating(false);
     }
-
-    await upsertCheckins(generated);
-    const updated = await getCheckins();
-    setCheckins(updated);
 
     // @ts-ignore
     // navigation.navigate('Main', { screen: 'Search' });
@@ -261,13 +303,35 @@ export default function DemoScreen() {
       created_at: nowIso,
     };
 
-    await upsertCheckins([checkin]);
-    const updated = await getCheckins();
-    setCheckins(updated);
+    try {
+      console.log('🔒 [onTriggerDaily] Creating demo checkin:', checkin);
 
-    // Optionally bounce user back into main flow
-    // @ts-ignore
-    navigation.navigate('Main', { screen: 'Search' });
+      // 🆕 Call API to create checkin on backend
+      await createCheckin(checkin);
+      console.log('✅ [onTriggerDaily] Demo checkin created on backend');
+
+      // Save to local storage as well
+      await upsertCheckins([checkin]);
+      const updated = await getCheckins();
+      setCheckins(updated);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Daily Demo Shift Triggered',
+        text2: `Score: ${dailyScore} (source: demo)`,
+      });
+
+      // Optionally bounce user back into main flow
+      // @ts-ignore
+      navigation.navigate('Main', { screen: 'Search' });
+    } catch (error: any) {
+      console.error('❌ [onTriggerDaily] Error triggering daily shift:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Trigger Failed',
+        text2: error.message || 'Failed to trigger daily shift',
+      });
+    }
   };
 
   const onReset = async () => {
@@ -375,39 +439,42 @@ export default function DemoScreen() {
 
           <View style={{ height: vs(20) }} />
 
-          <PrimaryButton
-            textColor={palette.white}
-            style={{
-              width: '95%',
-              height: 'auto',
-              alignSelf: 'center',
-              textAlign: 'center',
-              color: palette.white,
-              fontSize: ms(14.5),
-              fontFamily: 'SourceSansPro-Regular',
-              fontWeight: '700',
-              opacity: 0.9,
-            }}
-            title={`Generate ${effectiveDays} Days`}
-            onPress={onGenerate}
-          />
+          {isGenerating ? (
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator size="large" color="#0AC4FF" />
+              <Text style={styles.loaderText}>Generating demo data...</Text>
+            </View>
+          ) : (
+            <>
+              <PrimaryButton
+                style={{
+                  width: '95%',
+                  height: 'auto',
+                  alignSelf: 'center',
+                  opacity: 0.9,
+                }}
+                title={`Generate ${effectiveDays} Days`}
+                onPress={onGenerate}
+              />
 
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={onTriggerDaily}
-            style={{ marginTop: vs(10) }}
-          >
-            <LinearGradient
-              colors={['#143f65ff', '#1C2A3A']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={[styles.cta, { opacity: 0.95 }]}
-            >
-              <Text style={[styles.ctaText, { color: palette.txtBlue }]}>
-                Trigger Daily Shift
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={onTriggerDaily}
+                style={{ marginTop: vs(10) }}
+              >
+                <LinearGradient
+                  colors={['#143f65ff', '#1C2A3A']}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={[styles.cta, { opacity: 0.95 }]}
+                >
+                  <Text style={[styles.ctaText, { color: palette.txtBlue }]}>
+                    Trigger Daily Shift
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </>
+          )}
 
           {/* Footer actions */}
           <View style={{ height: vs(20) }} />
@@ -528,5 +595,20 @@ const styles = StyleSheet.create({
     width: s(18),
     height: s(18),
     marginRight: s(10),
+  },
+  loaderContainer: {
+    width: '95%',
+    alignSelf: 'center',
+    paddingVertical: vs(30),
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: vs(12),
+  },
+  loaderText: {
+    color: palette.white,
+    fontSize: ms(14),
+    fontWeight: '600',
+    fontFamily: 'SourceSansPro-Regular',
+    marginTop: vs(8),
   },
 });

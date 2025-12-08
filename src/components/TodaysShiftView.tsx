@@ -23,11 +23,13 @@ import Svg, {
 } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 import GradientBoxWithButton from '../components/GradientBoxWithButton';
 import GradientHintBoxWithLikert from '../components/GradientHintBoxWithLikert';
 import { palette } from '../theme';
 import { Checkin, getCheckins } from '../lib/dataClient';
+import { createCheckin } from '../lib/authService';
 
 // ⚡ same keys as ProfileScreen
 const EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
@@ -176,11 +178,33 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
       created_at: new Date().toISOString(),
     };
 
-    // Wait for checkin to be saved before updating UI
-    await onCheckinUpdate(checkin);
-    // Hide detailed view and show completed view immediately after locking
-    // No need to re-check since we just saved it
-    setShowDetails(false);
+    try {
+      console.log('🔒 [handleLock] Locking today shift with checkin:', checkin);
+
+      // Call API to create checkin on backend
+      await createCheckin(checkin);
+      console.log('✅ [handleLock] Checkin saved to backend successfully');
+
+      // Wait for checkin to be saved before updating UI
+      await onCheckinUpdate(checkin);
+
+      // Hide detailed view and show completed view immediately after locking
+      setShowDetails(false);
+
+      // Show success toast
+      Toast.show({
+        type: 'success',
+        text1: "Today's Shift Locked",
+        text2: `Score: ${dailyScore}`,
+      });
+    } catch (error: any) {
+      console.error('❌ [handleLock] Error locking shift:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Failed to Lock Shift',
+        text2: error.message || 'Please try again',
+      });
+    }
   };
 
   const [w, setW] = useState(0);

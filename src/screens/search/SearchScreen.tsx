@@ -1,5 +1,5 @@
 // src/screens/SearchScreen.tsx
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import JournalModal from '../../components/JournalModal';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
 import { useSelector } from 'react-redux';
+import { getProfile } from '../../lib/authService';
 import {
   getCheckins,
   upsertCheckins,
@@ -38,11 +39,37 @@ export default function SearchScreen() {
   const [selected, setSelected] = useState<'map' | 'grid'>('grid');
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [denseSeries, setDenseSeries] = useState<DensePoint[]>([]);
+  console.log('denseSeries ==> ', denseSeries);
+  const [firstName, setFirstName] = useState('');
+  const [highestText, setHighestText] = useState('');
+  const [lowestText, setLowestText] = useState('');
 
   // ───────── Journal state ─────────
   const { journalEntries, setSelectedFilterDate, selectedFilterDate } =
     useJournals();
   const [journalModalVisible, setJournalModalVisible] = useState(false);
+
+  // ───────── Load profile first name ─────────
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const userProfile = await getProfile();
+        console.log('userProfile in search ==> ', userProfile);
+        if (userProfile?.profile?.first_name) {
+          setFirstName(userProfile?.profile?.first_name);
+        }
+        if (userProfile?.profile?.highest_text) {
+          setHighestText(userProfile?.profile?.highest_text);
+        }
+        if (userProfile?.profile?.lowest_text) {
+          setLowestText(userProfile?.profile?.lowest_text);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+    loadProfile();
+  }, []);
 
   // ───────── Load checkins + dense series ─────────
   useFocusEffect(
@@ -250,7 +277,9 @@ export default function SearchScreen() {
               onPress={() => navigation.navigate('setting')}
             />
           </View>
-          <Text style={styles.title}>Hey Huzaifa, ready to shift?</Text>
+          <Text style={styles.title}>
+            Hey {firstName || 'there'}, ready to shift?
+          </Text>
           <Text style={styles.subTitle}>
             Your daily reality shift journey continues
           </Text>
@@ -262,13 +291,13 @@ export default function SearchScreen() {
 
         <GradientHintBox
           title="Highest Vibration (North Star)"
-          text={onboarding?.northStar}
+          text={highestText}
           style={{ width: scale(330) }}
         />
         <View style={{ height: scale(20) }} />
         <GradientHintBox
           title="Shadow Path"
-          text={onboarding?.shadowPath}
+          text={lowestText}
           style={{ width: scale(330) }}
         />
         <View style={{ height: scale(20) }} />
