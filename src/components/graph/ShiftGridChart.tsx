@@ -400,13 +400,13 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
             >
               {maxCumulative > 0 && (
                 <Text style={styles.yLabelText}>
-                  +{maxCumulative.toFixed(0)}
+                  +{maxCumulative.toFixed(0) / 10}
                 </Text>
               )}
               <Text style={styles.yLabelText}>0</Text>
               {maxCumulative > 0 && (
                 <Text style={styles.yLabelText}>
-                  -{maxCumulative.toFixed(0)}
+                  -{maxCumulative.toFixed(0) / 10}
                 </Text>
               )}
             </View>

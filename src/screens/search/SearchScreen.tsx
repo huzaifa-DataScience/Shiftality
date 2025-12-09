@@ -23,9 +23,8 @@ import JournalModal from '../../components/JournalModal';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
 import { useSelector } from 'react-redux';
-import { getProfile } from '../../lib/authService';
+import { getCheckins, getProfile } from '../../lib/authService';
 import {
-  getCheckins,
   upsertCheckins,
   buildDenseSeries,
   Checkin,

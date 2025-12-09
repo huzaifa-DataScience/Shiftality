@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,8 @@ import Svg, {
 import LinearGradient from 'react-native-linear-gradient';
 import { palette } from '../theme';
 
+import { getCheckins, CheckinPayload } from '../lib/authService';
+
 type Props = {
   title?: string;
   text: string;
@@ -34,18 +36,72 @@ export default function GradientBoxWithButton({
   title,
   text,
   successText = 'Great job completing your check-in!',
-  scoreText = "Today's score: (+5) + (-5) = 0",
+  scoreText,
   onPressDetails,
   tickIcon,
 }: Props) {
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(45));
 
+  const [dynamicScoreText, setDynamicScoreText] = useState<string | undefined>(
+    scoreText,
+  );
+
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     setW(Math.round(width));
     setH(Math.max(vs(45), Math.round(height) || vs(45)));
   }, []);
+
+  // 🔹 Fetch checkins and compute TODAY's score text
+  useEffect(() => {
+    // If parent passed scoreText, don't override it
+    if (scoreText) {
+      setDynamicScoreText(scoreText);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadTodayScore = async () => {
+      try {
+        // you can also pass { start_date, end_date } if you want
+        const checkins: CheckinPayload[] = await getCheckins();
+
+        if (!isMounted) return;
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        // find today's checkin (by date)
+        const todayCheckin = checkins.find(c => c.date === todayStr);
+
+        if (!todayCheckin) {
+          setDynamicScoreText("You haven't checked in yet today.");
+          return;
+        }
+
+        const pos = todayCheckin.pos_yes ?? 0;
+        const neg = todayCheckin.neg_yes ?? 0;
+        const score = todayCheckin.daily_score ?? 0;
+
+        setDynamicScoreText(
+          `Today's score: (+${pos}) + (-${neg}) = ${score / 10}`,
+        );
+      } catch (err) {
+        console.log('[GradientBoxWithButton] getCheckins error:', err);
+        if (isMounted) {
+          setDynamicScoreText('Unable to load today’s score.');
+        }
+      }
+    };
+
+    loadTodayScore();
+    return () => {
+      isMounted = false;
+    };
+  }, [scoreText]);
+
+  const finalScoreText = dynamicScoreText ?? "Today's score: (+0) + (-0) = 0";
 
   return (
     <View style={[styles.wrap]} onLayout={onLayout}>
@@ -99,7 +155,7 @@ export default function GradientBoxWithButton({
           up today, and that matters.
         </Text>
 
-        <Text style={styles.scoreText}>{scoreText}</Text>
+        <Text style={styles.scoreText}>{finalScoreText}</Text>
 
         <TouchableOpacity
           activeOpacity={0.8}
@@ -168,7 +224,6 @@ const styles = StyleSheet.create({
     height: vs(38),
     justifyContent: 'center',
     alignItems: 'center',
-
     borderRadius: s(30),
   },
   ctaText: {

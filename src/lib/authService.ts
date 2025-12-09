@@ -524,3 +524,62 @@ export async function getCheckins(
     throw new Error(error.message || 'Network error. Please try again.');
   }
 }
+
+export interface ResetCheckinsResponse {
+  success?: boolean;
+  message?: string;
+  data?: any;
+  error?: string;
+}
+
+export async function resetCheckins(
+  userId: string,
+  isDemo?: boolean,
+): Promise<ResetCheckinsResponse> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    // Build body: always send user_id, only send is_demo if explicitly provided
+    const body: { user_id: string; is_demo?: boolean } = {
+      user_id: userId,
+    };
+    if (typeof isDemo === 'boolean') {
+      body.is_demo = isDemo;
+    }
+
+    console.log(
+      '🔐 [resetCheckins] POST /functions/v1/reset-checkins with body:',
+      body,
+    );
+
+    const response = await api.post<ResetCheckinsResponse>(
+      '/functions/v1/reset-checkins',
+      body,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    console.log('✅ [resetCheckins] success:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ [resetCheckins] Error:', error?.response || error);
+
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      throw new Error(
+        errorData.message ||
+          errorData.error_description ||
+          'Reset checkins failed',
+      );
+    }
+
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}

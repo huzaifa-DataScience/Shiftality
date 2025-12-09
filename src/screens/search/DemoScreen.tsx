@@ -33,7 +33,11 @@ import {
   clearAllCheckins,
   Checkin,
 } from '../../lib/dataClient';
-import { createCheckin } from '../../lib/authService';
+import {
+  createCheckin,
+  getProfile,
+  resetCheckins,
+} from '../../lib/authService';
 import {
   selectHomeOnboarding,
   setArchetype,
@@ -335,21 +339,70 @@ export default function DemoScreen() {
   };
 
   const onReset = async () => {
-    await clearDemoCheckins();
-    const updated = await getCheckins();
-    setCheckins(updated);
+    try {
+      // 1) Get profile so we have the user id
+      const userProfile = await getProfile();
+      const userId = userProfile?.profile?.id;
+      // 2) Call backend reset-checkins WITHOUT is_demo
+      await resetCheckins(userId, true);
 
-    // @ts-ignore
-    navigation.navigate('Main', { screen: 'Search' });
+      // 3) Clear local demo checkins so local + backend stay in sync
+      await clearDemoCheckins();
+
+      const updated = await getCheckins();
+      setCheckins(updated);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Demo data reset',
+        text2: 'Your demo checkins have been cleared.',
+      });
+
+      // 5) Go back to main Search dashboard
+      // @ts-ignore
+      navigation.navigate('Main', { screen: 'Search' });
+    } catch (error: any) {
+      console.error('❌ [DemoScreen:onReset] Error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Reset failed',
+        text2: error.message || 'Could not reset demo data.',
+      });
+    }
   };
 
   const onFreshStart = async () => {
-    await clearAllCheckins();
-    const updated = await getCheckins();
-    setCheckins(updated);
+    try {
+      // 1) Get profile so we have the user id
+      const userProfile = await getProfile();
+      const userId = userProfile?.profile?.id;
+      // 2) Call backend reset-checkins WITH is_demo = true
+      await resetCheckins(userId);
 
-    // @ts-ignore
-    navigation.navigate('Main', { screen: 'Search' });
+      // 3) Clear ALL local checkins (demo + real) to stay in sync
+      await clearAllCheckins();
+
+      // 4) Reload local checkins view (should be empty)
+      const updated = await getCheckins();
+      setCheckins(updated);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Fresh start',
+        text2: 'All checkins have been cleared. You have a clean slate.',
+      });
+
+      // 5) Go back to main Search dashboard
+      // @ts-ignore
+      navigation.navigate('Main', { screen: 'Search' });
+    } catch (error: any) {
+      console.error('❌ [DemoScreen:onFreshStart] Error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Fresh start failed',
+        text2: error.message || 'Could not clear all checkins.',
+      });
+    }
   };
 
   const timezone = onboarding?.timezone || 'UTC';

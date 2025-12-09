@@ -8,6 +8,7 @@ PODS:
   - hermes-engine (0.82.1):
     - hermes-engine/Pre-built (= 0.82.1)
   - hermes-engine/Pre-built (0.82.1)
+    - libwebp/webp
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion

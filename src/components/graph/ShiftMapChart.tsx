@@ -250,7 +250,7 @@ export default function ShiftMapChart({
     checkinsApi && checkinsApi.length
       ? checkinsApi[checkinsApi.length - 1].cumulative
       : 0;
-  const currentPosition = rawPosition;
+  const currentPosition = rawPosition / 10;
 
   const pointCount = data.length;
 
@@ -550,7 +550,7 @@ export default function ShiftMapChart({
 
         <View style={styles.footerBox}>
           <Text style={styles.footerText}>
-            Current Position: {currentPosition.toFixed(2)}
+            Current Position: {currentPosition?.toFixed(2)}
           </Text>
         </View>
       </View>
