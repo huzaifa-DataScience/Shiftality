@@ -44,6 +44,43 @@ export default function SearchScreen() {
   const [highestText, setHighestText] = useState('');
   const [lowestText, setLowestText] = useState('');
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [checkinsApi, setCheckinsApi] = useState<DensePoint[]>([]);
+
+  // 🆕 Fetch checkins from API and build denseSeries
+  useEffect(() => {
+    const fetchCheckinsData = async () => {
+      try {
+        setIsLoading(true);
+        // Get all checkins from API
+        const checkinsData = await getCheckins();
+
+        console.log(
+          `✅ [ShiftMapChart] Received ${checkinsData.length} checkins from API`,
+        );
+        const userProfile = await getProfile();
+        const start_date = userProfile?.profile?.journey_start_date;
+        // Build denseSeries from fetched checkins
+        const builtSeries = buildDenseSeries(start_date, checkinsData);
+        setCheckinsApi(builtSeries);
+        console.log(
+          `📊 [ShiftMapChart] Built denseSeries with ${builtSeries.length} days`,
+        );
+        setIsLoading(false);
+      } catch (error: any) {
+        console.error(
+          '❌ [ShiftMapChart] Error fetching checkins:',
+          error.message,
+        );
+        // Fallback to prop denseSeries if API fails
+        // setCheckins([]);
+      } finally {
+      }
+    };
+
+    fetchCheckinsData();
+  }, []);
+
   // ───────── Journal state ─────────
   const { journalEntries, setSelectedFilterDate, selectedFilterDate } =
     useJournals();
@@ -355,11 +392,12 @@ export default function SearchScreen() {
         <View style={styles.chartWrapper}>
           {selected === 'map' ? (
             <ShiftMapChart
-              denseSeries={denseSeries}
+              isLoading={isLoading}
+              checkinsApi={checkinsApi}
               onPointPress={handleMapPointPress}
             />
           ) : (
-            <ShiftGridChart denseSeries={denseSeries} />
+            <ShiftGridChart isLoading={isLoading} checkinsApi={checkinsApi} />
           )}
         </View>
       </ScrollView>

@@ -36,7 +36,8 @@ import { useJournals } from '../../contexts/JournalContext';
 import { getCheckins, getProfile } from '../../lib/authService';
 
 type Props = {
-  denseSeries: DensePoint[];
+  isLoading: boolean;
+  checkinsApi: checkinsApi[];
 };
 
 const CHART_HEIGHT = vs(200); // Fixed height like web version
@@ -56,49 +57,13 @@ const MONTHS = [
   'Dec',
 ];
 
-export default function ShiftGridChart({ denseSeries }: Props) {
+export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
   const { setSelectedFilterDate, clearSelectedFilterDate, selectedFilterDate } =
     useJournals();
   const [width, setWidth] = useState(0);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(false);
-  const [checkins, setCheckins] = useState<DensePoint[]>([]);
-
-  // 🆕 Fetch checkins from API and build denseSeries
-  useEffect(() => {
-    const fetchCheckinsData = async () => {
-      try {
-        setIsLoading(true);
-
-        // Get all checkins from API
-        const checkinsData = await getCheckins();
-
-        console.log(
-          `✅ [ShiftGridChart] Received ${checkinsData.length} checkins from API`,
-        );
-
-        // Build denseSeries from fetched checkins
-        const builtSeries = buildDenseSeries(checkinsData);
-        setCheckins(builtSeries);
-        console.log(
-          `📊 [ShiftGridChart] Built denseSeries with ${builtSeries.length} days`,
-        );
-      } catch (error: any) {
-        console.error(
-          '❌ [ShiftGridChart] Error fetching checkins:',
-          error.message,
-        );
-        // Fallback to prop denseSeries if API fails
-        setCheckins(denseSeries || []);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCheckinsData();
-  }, []);
 
   // Sync local selectedDate with context's selectedFilterDate
   useEffect(() => {
@@ -114,7 +79,7 @@ export default function ShiftGridChart({ denseSeries }: Props) {
 
   // Filter series based on selected date's month
   const series: DensePoint[] = useMemo(() => {
-    const allSeries = checkins ?? [];
+    const allSeries = checkinsApi ?? [];
 
     // If no date is selected, show all data
     if (!selectedFilterDate || !selectedDate) {
@@ -133,7 +98,7 @@ export default function ShiftGridChart({ denseSeries }: Props) {
         itemDate.getMonth() === selectedMonth
       );
     });
-  }, [checkins, selectedFilterDate, selectedDate]);
+  }, [checkinsApi, selectedFilterDate, selectedDate]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     setWidth(Math.round(e.nativeEvent.layout.width));

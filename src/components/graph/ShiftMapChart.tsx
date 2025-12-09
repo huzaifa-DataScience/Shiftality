@@ -36,8 +36,9 @@ import { useJournals } from '../../contexts/JournalContext';
 import { getCheckins, getProfile } from '../../lib/authService';
 
 type Props = {
-  denseSeries: DensePoint[];
+  checkinsApi: checkinsApi;
   onPointPress?: (isoDate: string) => void;
+  isLoading: boolean;
 };
 
 const MONTHS = [
@@ -74,7 +75,11 @@ const generateYAxisLabels = (): string[] => {
 };
 const Y_AXIS_LABELS = generateYAxisLabels();
 
-export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
+export default function ShiftMapChart({
+  isLoading,
+  checkinsApi,
+  onPointPress,
+}: Props) {
   const { setSelectedFilterDate, clearSelectedFilterDate, selectedFilterDate } =
     useJournals();
   const [w, setW] = useState(0);
@@ -85,41 +90,6 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(false);
-  const [checkins, setCheckins] = useState<DensePoint[]>(denseSeries || []);
-
-  // 🆕 Fetch checkins from API and build denseSeries
-  useEffect(() => {
-    const fetchCheckinsData = async () => {
-      try {
-        setIsLoading(true);
-        // Get all checkins from API
-        const checkinsData = await getCheckins();
-
-        console.log(
-          `✅ [ShiftMapChart] Received ${checkinsData.length} checkins from API`,
-        );
-
-        // Build denseSeries from fetched checkins
-        const builtSeries = buildDenseSeries(checkinsData);
-        setCheckins(builtSeries);
-        console.log(
-          `📊 [ShiftMapChart] Built denseSeries with ${builtSeries.length} days`,
-        );
-      } catch (error: any) {
-        console.error(
-          '❌ [ShiftMapChart] Error fetching checkins:',
-          error.message,
-        );
-        // Fallback to prop denseSeries if API fails
-        // setCheckins(denseSeries || []);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCheckinsData();
-  }, []);
 
   // Sync local selectedDate with context's selectedFilterDate
   useEffect(() => {
@@ -134,7 +104,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
         const monthKey = `${year}-${monthIdx}`;
 
         // Filter days for the selected month
-        const monthDays = checkins.filter(p => {
+        const monthDays = checkinsApi.filter(p => {
           const pd = new Date(p.date);
           return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
         });
@@ -149,7 +119,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
       setExpandedMonth(null);
       setMonthDaysData([]);
     }
-  }, [selectedFilterDate, checkins]);
+  }, [selectedFilterDate, checkinsApi]);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height, x } = e.nativeEvent.layout;
@@ -159,7 +129,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   }, []);
 
   const monthData = useMemo(() => {
-    if (!checkins || checkins.length === 0) return [];
+    if (!checkinsApi || checkinsApi.length === 0) return [];
 
     type MonthAgg = {
       label: string;
@@ -172,7 +142,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
 
     const byMonth = new Map<string, MonthAgg>();
 
-    checkins.forEach(point => {
+    checkinsApi.forEach(point => {
       const d = new Date(point.date);
       if (Number.isNaN(d.getTime())) return;
 
@@ -218,7 +188,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
         monthKey: m.monthKey,
         onPress: () => {
           if (m.hasCheckin) {
-            const monthDays = checkins.filter(p => {
+            const monthDays = checkinsApi.filter(p => {
               const pd = new Date(p.date);
               return `${pd.getFullYear()}-${pd.getMonth()}` === m.monthKey;
             });
@@ -228,7 +198,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
         },
       };
     });
-  }, [checkins]);
+  }, [checkinsApi]);
 
   const dayData = useMemo(() => {
     if (monthDaysData.length === 0) return [];
@@ -277,8 +247,10 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
   }, [data]);
 
   const rawPosition =
-    checkins && checkins.length ? checkins[checkins.length - 1].cumulative : 0;
-  const currentPosition = rawPosition; // Keep original value for display
+    checkinsApi && checkinsApi.length
+      ? checkinsApi[checkinsApi.length - 1].cumulative
+      : 0;
+  const currentPosition = rawPosition;
 
   const pointCount = data.length;
 
@@ -330,7 +302,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
           const monthKey = `${year}-${monthIdx}`;
 
           // Filter days for the selected month
-          const monthDays = checkins.filter(p => {
+          const monthDays = checkinsApi.filter(p => {
             const pd = new Date(p.date);
             return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
           });
@@ -353,7 +325,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
           const monthKey = `${year}-${monthIdx}`;
 
           // Filter days for the selected month
-          const monthDays = checkins.filter(p => {
+          const monthDays = checkinsApi.filter(p => {
             const pd = new Date(p.date);
             return `${pd.getFullYear()}-${pd.getMonth()}` === monthKey;
           });
@@ -365,7 +337,7 @@ export default function ShiftMapChart({ denseSeries, onPointPress }: Props) {
         }
       }
     },
-    [checkins, setSelectedFilterDate],
+    [checkinsApi, setSelectedFilterDate],
   );
 
   // Handle clear date
