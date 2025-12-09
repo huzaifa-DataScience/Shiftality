@@ -744,3 +744,197 @@ export async function deleteJournalEntry(
     throw new Error(error.message || 'Network error. Please try again.');
   }
 }
+
+// ===================== REMINDERS =====================
+
+export interface ApiReminder {
+  id: string;
+  label: string;
+  fire_at_iso: string;
+  pill_index: number;
+  is_demo?: boolean;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateReminderPayload {
+  label: string;
+  fire_at_iso: string; // ISO timestamp
+  pill_index: number;
+  is_demo: boolean;
+  is_active: boolean;
+}
+
+export interface CreateReminderResponse {
+  success?: boolean;
+  message?: string;
+  data?: ApiReminder | ApiReminder[];
+  reminder?: ApiReminder;
+}
+
+export async function createReminder(
+  payload: CreateReminderPayload,
+): Promise<ApiReminder> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    console.log('🔔 [createReminder] payload:', payload);
+
+    const res = await api.post<CreateReminderResponse>(
+      '/functions/v1/create-reminder',
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    const body = res.data;
+    let reminder: ApiReminder | undefined;
+
+    if (!body) {
+      throw new Error('No response body from create-reminder');
+    }
+
+    if (Array.isArray(body.data)) {
+      reminder = body.data[0];
+    } else if (body.data) {
+      reminder = body.data as ApiReminder;
+    } else if (body.reminder) {
+      reminder = body.reminder;
+    } else if ((body as any).id && (body as any).label) {
+      // function might just return the reminder object
+      reminder = body as any as ApiReminder;
+    }
+
+    if (!reminder) {
+      throw new Error('No reminder object returned from create-reminder');
+    }
+
+    console.log('✅ [createReminder] created:', reminder);
+    return reminder;
+  } catch (error: any) {
+    console.error('❌ [createReminder] error:', error?.response || error);
+
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Reminder creation failed',
+      );
+    }
+
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+export interface GetRemindersResponse {
+  success?: boolean;
+  message?: string;
+  reminders?: ApiReminder[];
+  data?: ApiReminder[];
+}
+
+export async function getReminders(): Promise<ApiReminder[]> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    console.log('🔐 [getReminders] Fetching reminders...');
+
+    const res = await api.get<GetRemindersResponse>(
+      '/functions/v1/get-reminders',
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+      },
+    );
+
+    let reminders: ApiReminder[] = [];
+
+    if (Array.isArray(res.data)) {
+      reminders = res.data as ApiReminder[];
+    } else if (res.data?.reminders) {
+      reminders = res.data.reminders;
+    } else if (res.data?.data) {
+      reminders = res.data.data;
+    }
+
+    console.log(
+      `✅ [getReminders] Retrieved ${reminders.length} reminders`,
+      reminders,
+    );
+
+    return reminders;
+  } catch (error: any) {
+    console.error('❌ [getReminders] error:', error?.response || error);
+
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Failed to fetch reminders',
+      );
+    }
+
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+// ===================== DELETE REMINDER =====================
+
+export interface DeleteReminderResponse {
+  success?: boolean;
+  message?: string;
+  data?: any;
+  error?: string;
+}
+
+export async function deleteReminder(
+  reminderId: string,
+): Promise<DeleteReminderResponse> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    const payload = {
+      reminder_id: reminderId,
+    };
+
+    console.log('🗑 [deleteReminder] payload:', payload);
+
+    const res = await api.post<DeleteReminderResponse>(
+      '/functions/v1/delete-reminder',
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    console.log('✅ [deleteReminder] response:', res.data);
+    return res.data;
+  } catch (error: any) {
+    console.error('❌ [deleteReminder] error:', error?.response || error);
+
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Reminder delete failed',
+      );
+    }
+
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}

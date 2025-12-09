@@ -25,7 +25,6 @@ import PrimaryButton from './PrimaryButton';
 import ReminderPills from './ReminderPills';
 import AppImage from './AppImage';
 
-import { REMINDER_STORAGE_KEY } from '../lib/reminderStore';
 import {
   requestReminderPermission,
   scheduleDemoSequence,
@@ -33,12 +32,14 @@ import {
   cancelAllReminderNotifications,
 } from '../lib/localNotifications';
 import GradientInput from './GradientInput';
-import { useNavigation } from '@react-navigation/native';
-import { useDispatch } from 'react-redux';
-import { clearProfile } from '../store/reducers/profileReducer';
-import { logout } from '../lib/authService';
-import Toast from 'react-native-toast-message';
+import {
+  createReminder,
+  getReminders,
+  ApiReminder,
+  deleteReminder,
+} from '../lib/authService';
 
+// Local view model for reminders in the UI
 type StoredReminder = {
   id: string;
   pillIndex: number;
@@ -48,7 +49,7 @@ type StoredReminder = {
   enabled: boolean;
 };
 
-// NEW: global toggle key
+// Global toggle key (still local)
 const REMINDER_GLOBAL_ENABLED_KEY = 'shift_reminders_global_enabled_v1';
 
 // keep only time component (fixes iOS timepicker issue)
@@ -64,6 +65,19 @@ type ReminderTestSectionProps = {
   noteText?: string;
 };
 
+// Map API reminder object → local UI shape
+function mapApiReminderToStored(api: ApiReminder): StoredReminder {
+  return {
+    id: api.id,
+    pillIndex: api.pill_index,
+    title: api.label,
+    // backend has only label; we reuse it for description in UI
+    description: api.label,
+    time: api.fire_at_iso,
+    enabled: api.is_active ?? true,
+  };
+}
+
 const ReminderTestSection: React.FC<ReminderTestSectionProps> = ({
   cardStyle,
   title = 'Test Reminders',
@@ -74,17 +88,15 @@ prompted by your device. Demo reminders
 will show "(Demo)" in the title to distinguish
 them from real reminders.`,
 }) => {
-  const dispatch = useDispatch();
-  const navigation = useNavigation();
   const notificationOutline = require('../assets/notificationOutlineRed.png');
 
-  // reminders & selection
+  // reminders & selection (fetched from backend)
   const [reminders, setReminders] = useState<StoredReminder[]>([]);
-  console.log('🚀 ~ reminders:', reminders);
   const [selectedPillIndex, setSelectedPillIndex] = useState<number | null>(0);
 
-  // NEW: global on/off state
+  // global on/off state (local only)
   const [globalEnabled, setGlobalEnabled] = useState<boolean>(true);
+
   // modal state
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -99,31 +111,29 @@ them from real reminders.`,
   const [titleError, setTitleError] = useState<string | null>(null);
   const [descError, setDescError] = useState<string | null>(null);
 
-  // ───────────────── LOAD REMINDERS + GLOBAL FLAG ─────────────────
+  // ───────────── LOAD REMINDERS FROM API + GLOBAL FLAG ─────────────
   useEffect(() => {
     const load = async () => {
+      // 1) Load reminders from backend
       try {
-        const rawRem = await AsyncStorage.getItem(REMINDER_STORAGE_KEY);
-        if (rawRem) {
-          const list: StoredReminder[] = JSON.parse(rawRem);
-          if (Array.isArray(list)) {
-            setReminders(list);
-            const firstEnabled = list.find(r => r.enabled);
-            if (firstEnabled) {
-              setSelectedPillIndex(firstEnabled.pillIndex);
-            }
-          }
+        const apiReminders = await getReminders();
+        const mapped = apiReminders.map(mapApiReminderToStored);
+        setReminders(mapped);
+
+        const firstEnabled = mapped.find(r => r.enabled);
+        if (firstEnabled) {
+          setSelectedPillIndex(firstEnabled.pillIndex);
         }
       } catch (e) {
-        console.log('ReminderTestSection: error parsing reminders', e);
+        console.log('ReminderTestSection: error loading reminders from API', e);
       }
 
+      // 2) Load global enabled flag from local storage
       try {
         const rawFlag = await AsyncStorage.getItem(REMINDER_GLOBAL_ENABLED_KEY);
         if (rawFlag != null) {
           setGlobalEnabled(JSON.parse(rawFlag));
         } else {
-          // default ON
           setGlobalEnabled(true);
         }
       } catch (e) {
@@ -143,11 +153,6 @@ them from real reminders.`,
 
   const findReminderByIndex = (pillIndex: number) =>
     reminders.find(r => r.pillIndex === pillIndex);
-
-  const saveRemindersToStorage = async (next: StoredReminder[]) => {
-    setReminders(next);
-    await AsyncStorage.setItem(REMINDER_STORAGE_KEY, JSON.stringify(next));
-  };
 
   const saveGlobalEnabled = async (value: boolean) => {
     setGlobalEnabled(value);
@@ -183,10 +188,8 @@ them from real reminders.`,
         setReminderTime(makeTimeOnly(date));
       }
       setShowTimePicker(false);
-    } else {
-      if (date) {
-        setReminderTime(makeTimeOnly(date));
-      }
+    } else if (date) {
+      setReminderTime(makeTimeOnly(date));
     }
   };
 
@@ -200,7 +203,7 @@ them from real reminders.`,
     return fire;
   };
 
-  // ───────────────── SAVE SINGLE REMINDER ─────────────────
+  // ───────────────── SAVE / CREATE REMINDER ─────────────────
   const onSaveReminder = async () => {
     if (editingIndex === null) {
       setReminderModalVisible(false);
@@ -223,25 +226,39 @@ them from real reminders.`,
     }
     if (hasError) return;
 
-    const newItem: StoredReminder = {
-      id: `reminder_${pillIndex}`,
-      pillIndex,
-      title: trimmedTitle,
-      description: trimmedDesc,
-      time: reminderTime.toISOString(),
-      enabled: true,
-    };
-
-    const others = reminders.filter(r => r.pillIndex !== pillIndex);
-    const next = [...others, newItem];
-
     try {
-      await saveRemindersToStorage(next);
+      const fireAt = computeNextFireAt(reminderTime);
 
-      // 🔥 Only schedule if global is enabled
+      // 1) Create reminder in backend
+      await createReminder({
+        label: trimmedTitle,
+        fire_at_iso: fireAt.toISOString(),
+        pill_index: pillIndex,
+        is_demo: false,
+        is_active: globalEnabled,
+      });
+
+      // 2) 🔄 Refresh reminders from backend so UI is always in sync
+      const apiReminders = await getReminders();
+      const mapped = apiReminders.map(mapApiReminderToStored);
+
+      // Preserve local description for this pill (backend only knows label)
+      const updated = mapped.map(r => {
+        if (r.pillIndex === pillIndex) {
+          return {
+            ...r,
+            description: trimmedDesc,
+          };
+        }
+        return r;
+      });
+
+      setReminders(updated);
+      setSelectedPillIndex(pillIndex);
+
+      // 3) Schedule OS-level notification only if global is enabled
       if (globalEnabled) {
         await requestReminderPermission();
-        const fireAt = computeNextFireAt(reminderTime);
         await scheduleReminderNotification({
           fireAt,
           pillIndex,
@@ -254,17 +271,28 @@ them from real reminders.`,
           'Your reminder is saved, but it will not fire until you enable reminders again.',
         );
       }
-    } catch (e) {
-      console.log('ReminderTestSection: error saving/scheduling', e);
+    } catch (e: any) {
+      console.log('ReminderTestSection: error creating reminder', e);
+      Alert.alert(
+        'Error',
+        e?.message || 'Failed to save reminder. Please try again.',
+      );
     } finally {
       setReminderModalVisible(false);
       setShowTimePicker(false);
     }
   };
 
-  // ───────────────── DELETE SINGLE REMINDER ─────────────────
+  // ───────────────── DELETE SINGLE REMINDER (API + UI) ─────────────────
   const onDeleteReminder = () => {
     if (editingIndex === null) return;
+
+    const existing = findReminderByIndex(editingIndex);
+    if (!existing) {
+      setReminderModalVisible(false);
+      setShowTimePicker(false);
+      return;
+    }
 
     Alert.alert(
       'Delete Reminder',
@@ -275,20 +303,26 @@ them from real reminders.`,
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            const next = reminders.filter(r => r.pillIndex !== editingIndex);
-
             try {
-              await saveRemindersToStorage(next);
-            } catch (e) {
+              // 1) Delete on backend
+              await deleteReminder(existing.id);
+
+              // 2) Update local state
+              setReminders(prev => prev.filter(r => r.id !== existing.id));
+
+              if (selectedPillIndex === editingIndex) {
+                setSelectedPillIndex(null);
+              }
+            } catch (e: any) {
               console.log('ReminderTestSection: error deleting reminder', e);
+              Alert.alert(
+                'Error',
+                e?.message || 'Failed to delete reminder. Please try again.',
+              );
+            } finally {
+              setReminderModalVisible(false);
+              setShowTimePicker(false);
             }
-
-            if (selectedPillIndex === editingIndex) {
-              setSelectedPillIndex(null);
-            }
-
-            setReminderModalVisible(false);
-            setShowTimePicker(false);
           },
         },
       ],
@@ -324,14 +358,17 @@ them from real reminders.`,
     try {
       await saveGlobalEnabled(true);
 
-      // schedule all enabled reminders
+      // schedule all enabled reminders currently in state
       if (reminders.length > 0) {
         await requestReminderPermission();
 
         for (const r of reminders) {
           if (!r.enabled) continue;
 
-          const fireAt = computeNextFireAt(makeTimeOnly(new Date(r.time)));
+          const fireAt = computeNextFireAt(
+            makeTimeOnly(new Date(r.time ?? new Date())),
+          );
+
           try {
             await scheduleReminderNotification({
               fireAt,
@@ -398,7 +435,7 @@ them from real reminders.`,
         <View style={{ height: scale(15) }} />
         <GradientHintBox text="Toggle reminders globally using the bell icon. When disabled, reminders are stored but will not fire." />
 
-        {/* Test Notification Permission (you might still want this even if disabled) */}
+        {/* Test Notification Permission */}
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={async () => {
@@ -435,7 +472,6 @@ them from real reminders.`,
 
         {/* Pills */}
         <ReminderPills
-          // show which slots have configured reminders (regardless of global toggle)
           activeIndices={reminders.filter(r => r.enabled).map(r => r.pillIndex)}
           onPressPill={index => openReminderEditor(index)}
         />
