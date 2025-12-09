@@ -133,14 +133,19 @@ export default function SearchScreen() {
     const updated = await getCheckins();
     setCheckins(updated);
 
-    if (onboarding?.journeyStartDate) {
-      const series = buildDenseSeries(onboarding.journeyStartDate, updated);
+    const userProfile = await getProfile();
+
+    if (userProfile?.profile?.journey_start_date) {
+      const series = buildDenseSeries(
+        userProfile?.profile?.journey_start_date,
+        updated,
+      );
       setDenseSeries(series);
     }
   };
 
   const { shiftPct, avgScore, statusLabel } = useMemo(() => {
-    if (!denseSeries || denseSeries.length === 0) {
+    if (!checkinsApi || checkinsApi.length === 0) {
       return {
         shiftPct: 0,
         avgScore: 0,
@@ -151,11 +156,11 @@ export default function SearchScreen() {
     const windowSize = 30;
     const todayStr = new Date().toISOString().slice(0, 10);
 
-    let endIndex = denseSeries.findIndex(d => d.date === todayStr);
+    let endIndex = checkinsApi.findIndex(d => d.date === todayStr);
 
     if (endIndex === -1) {
       let lastBeforeOrEqual = -1;
-      denseSeries.forEach((d, idx) => {
+      checkinsApi.forEach((d, idx) => {
         if (d.date <= todayStr) {
           lastBeforeOrEqual = idx;
         }
@@ -164,12 +169,12 @@ export default function SearchScreen() {
       if (lastBeforeOrEqual !== -1) {
         endIndex = lastBeforeOrEqual;
       } else {
-        endIndex = denseSeries.length - 1;
+        endIndex = checkinsApi.length - 1;
       }
     }
 
     const startIndex = Math.max(0, endIndex - windowSize + 1);
-    const lastWindow = denseSeries.slice(startIndex, endIndex + 1);
+    const lastWindow = checkinsApi.slice(startIndex, endIndex + 1);
 
     if (lastWindow.length === 0) {
       return {
@@ -201,8 +206,8 @@ export default function SearchScreen() {
       avgScore: avg,
       statusLabel: status,
     };
-  }, [denseSeries]);
-
+  }, [checkinsApi]);
+  console.log('shiftPct', shiftPct);
   const checkinCount = checkins.length;
 
   const positiveTotal = useMemo(
@@ -353,7 +358,7 @@ export default function SearchScreen() {
         <GradientCardHome>
           <Text style={styles.title}>Shift Likelihood</Text>
           <Text style={styles.subTitle}>
-            Based on your last 30 days. Avg score {avgScore.toFixed(1)}
+            Based on your last 30 days. Avg score {avgScore.toFixed(1) / 10}
           </Text>
           <View style={styles.gaugeContainer}>
             <TripleRingGauge
