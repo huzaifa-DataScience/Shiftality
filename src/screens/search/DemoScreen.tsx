@@ -111,6 +111,9 @@ export default function DemoScreen() {
   // all stored checkins
   const [checkins, setCheckins] = useState<Checkin[]>([]);
 
+  // 🔹 Profile from backend (getProfile)
+  const [profile, setProfile] = useState<any | null>(null);
+
   const handleDaysChange = (value: string) => {
     // strip non-digits
     const numeric = value.replace(/[^0-9]/g, '');
@@ -125,7 +128,8 @@ export default function DemoScreen() {
     const clamped = clampDays(numeric);
     setDays(String(clamped));
   };
-  // ───────────────── LOAD BELIEFS + CHECKINS ─────────────────
+
+  // ───────────────── LOAD BELIEFS + CHECKINS + PROFILE ─────────────────
   useEffect(() => {
     const load = async () => {
       try {
@@ -150,10 +154,21 @@ export default function DemoScreen() {
       } catch (e) {
         console.log('DemoScreen: error loading checkins', e);
       }
+
+      // 🔹 Load profile from backend for DebugInfoCard
+      try {
+        const res: any = await getProfile();
+        // handle shape: { success, profile } OR direct object
+        const backendProfile = res?.profile ?? res;
+        setProfile(backendProfile);
+      } catch (e) {
+        console.log('DemoScreen: error loading profile', e);
+      }
     };
 
     load();
   }, []);
+
   useEffect(() => {
     // Only update if we have a meaningful index
     if (beliefProfile.overallIndex > 0) {
@@ -165,26 +180,54 @@ export default function DemoScreen() {
   console.log('baselineIndex', onboarding?.baselineIndex);
   console.log('archetype', onboarding?.archetype);
 
-  const archetype = onboarding?.archetype || 'Balanced Explorer';
+  // ───────────────── PROFILE-DRIVEN VALUES (for DebugInfoCard) ─────────────────
+  const profileTimezone =
+    profile?.user_timezone || profile?.timezone || undefined;
+
+  const profileJourneyStart =
+    typeof profile?.journey_start_date === 'string'
+      ? profile.journey_start_date.slice(0, 10)
+      : undefined;
+
+  const profileArchetype = profile?.archetype as string | undefined;
+
+  const profileBaselineIndexStr =
+    typeof profile?.baseline_index === 'number'
+      ? `${Math.round(profile.baseline_index)}/100`
+      : undefined;
+
+  const timezone = profileTimezone || onboarding?.timezone || 'UTC';
+
+  const journeyStart =
+    profileJourneyStart ||
+    (onboarding?.journeyStartDate
+      ? onboarding.journeyStartDate.slice(0, 10)
+      : '—');
+
+  const archetype = profileArchetype || 'Balanced Explorer';
+
   const baselineIndexStr =
-    onboarding?.baselineIndex != null
+    profileBaselineIndexStr ||
+    (onboarding?.baselineIndex != null
       ? `${Math.round(onboarding.baselineIndex)}/100`
-      : '—';
+      : '—');
 
   // ───────────────── DERIVED VALUES ─────────────────
   const effectiveDays = useMemo(() => clampDays(days), [days]);
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  const anchorDate = useMemo(() => {
-    if (!checkins.length) return todayStr;
+  const anchorDate =
+    profile?.anchorDate ||
+    useMemo(() => {
+      if (!checkins.length) return todayStr;
 
-    // latest by date
-    const latest = checkins.reduce(
-      (max, c) => (c.date > max ? c.date : max),
-      checkins[0].date,
-    );
-    return addDaysStr(latest, 1);
-  }, [checkins, todayStr]);
+      // latest by date
+      const latest = checkins.reduce(
+        (max, c) => (c.date > max ? c.date : max),
+        checkins[0].date,
+      );
+      return addDaysStr(latest, 1);
+    }, [checkins, todayStr]);
 
   // For the line: “YYYY-MM-DD Will generate N days starting from …”
   const anchorLine = useMemo(() => {
@@ -194,14 +237,19 @@ export default function DemoScreen() {
   const generationModes = ['All', 'Empowering', 'Shadow'];
 
   // aggregated stats from checkins (for DebugInfoCard)
-  const totalCheckins = checkins.length;
+  const totalCheckins = profile?.totalCheckins || checkins.length;
 
   const latestCheckinDate =
-    totalCheckins > 0 ? checkins[totalCheckins - 1].date : '—';
+    profile?.latest_checkin_date ||
+    (totalCheckins > 0 ? checkins[totalCheckins - 1].date : '—');
 
-  const positiveTotal = checkins.reduce((sum, c) => sum + (c.pos_yes || 0), 0);
+  const positiveTotal =
+    profile?.custom_empowering_beliefs ||
+    checkins.reduce((sum, c) => sum + (c.pos_yes || 0), 0);
 
-  const shadowTotal = checkins.reduce((sum, c) => sum + (c.neg_yes || 0), 0);
+  const shadowTotal =
+    profile?.custom_shadow_beliefs ||
+    checkins.reduce((sum, c) => sum + (c.neg_yes || 0), 0);
 
   const last10Dates = checkins.slice(-10).map(c => c.date);
 
@@ -279,9 +327,6 @@ export default function DemoScreen() {
     } finally {
       setIsGenerating(false);
     }
-
-    // @ts-ignore
-    // navigation.navigate('Main', { screen: 'Search' });
   };
 
   const onTriggerDaily = async () => {
@@ -341,9 +386,9 @@ export default function DemoScreen() {
   const onReset = async () => {
     try {
       // 1) Get profile so we have the user id
-      const userProfile = await getProfile();
-      const userId = userProfile?.profile?.id;
-      // 2) Call backend reset-checkins WITHOUT is_demo
+      const userProfile: any = await getProfile();
+      const userId = userProfile?.profile?.id || userProfile?.id;
+      // 2) Call backend reset-checkins WITH is_demo = true
       await resetCheckins(userId, true);
 
       // 3) Clear local demo checkins so local + backend stay in sync
@@ -374,9 +419,9 @@ export default function DemoScreen() {
   const onFreshStart = async () => {
     try {
       // 1) Get profile so we have the user id
-      const userProfile = await getProfile();
-      const userId = userProfile?.profile?.id;
-      // 2) Call backend reset-checkins WITH is_demo = true
+      const userProfile: any = await getProfile();
+      const userId = userProfile?.profile?.id || userProfile?.id;
+      // 2) Call backend reset-checkins WITHOUT is_demo
       await resetCheckins(userId);
 
       // 3) Clear ALL local checkins (demo + real) to stay in sync
@@ -404,9 +449,6 @@ export default function DemoScreen() {
       });
     }
   };
-
-  const timezone = onboarding?.timezone || 'UTC';
-  const journeyStart = onboarding?.journeyStartDate?.slice(0, 10) || '—';
 
   return (
     <View style={styles.root}>
@@ -557,7 +599,7 @@ export default function DemoScreen() {
 
         <View style={{ height: scale(20) }} />
 
-        {/* ───────── Debug Info (live from dataClient) ───────── */}
+        {/* ───────── Debug Info (now using getProfile data) ───────── */}
         <DebugInfoCard
           timezone={timezone}
           journeyStart={journeyStart}
