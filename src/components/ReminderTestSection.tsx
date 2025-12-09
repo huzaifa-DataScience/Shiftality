@@ -37,6 +37,7 @@ import {
   getReminders,
   ApiReminder,
   deleteReminder,
+  updateReminder,
 } from '../lib/authService';
 
 // Local view model for reminders in the UI
@@ -203,7 +204,7 @@ them from real reminders.`,
     return fire;
   };
 
-  // ───────────────── SAVE / CREATE REMINDER ─────────────────
+  // ───────────────── SAVE / CREATE / UPDATE REMINDER ─────────────────
   const onSaveReminder = async () => {
     if (editingIndex === null) {
       setReminderModalVisible(false);
@@ -228,17 +229,29 @@ them from real reminders.`,
 
     try {
       const fireAt = computeNextFireAt(reminderTime);
+      const existing = findReminderByIndex(pillIndex);
 
-      // 1) Create reminder in backend
-      await createReminder({
-        label: trimmedTitle,
-        fire_at_iso: fireAt.toISOString(),
-        pill_index: pillIndex,
-        is_demo: false,
-        is_active: globalEnabled,
-      });
+      if (existing) {
+        // 🔁 UPDATE existing reminder
+        await updateReminder(existing.id, {
+          label: trimmedTitle,
+          fire_at_iso: fireAt.toISOString(),
+          pill_index: pillIndex,
+          is_demo: false,
+          is_active: globalEnabled,
+        });
+      } else {
+        // 🆕 CREATE new reminder
+        await createReminder({
+          label: trimmedTitle,
+          fire_at_iso: fireAt.toISOString(),
+          pill_index: pillIndex,
+          is_demo: false,
+          is_active: globalEnabled,
+        });
+      }
 
-      // 2) 🔄 Refresh reminders from backend so UI is always in sync
+      // 🔄 Refresh reminders from backend so UI is always in sync
       const apiReminders = await getReminders();
       const mapped = apiReminders.map(mapApiReminderToStored);
 
@@ -256,7 +269,7 @@ them from real reminders.`,
       setReminders(updated);
       setSelectedPillIndex(pillIndex);
 
-      // 3) Schedule OS-level notification only if global is enabled
+      // 🔔 Schedule OS-level notification only if global is enabled
       if (globalEnabled) {
         await requestReminderPermission();
         await scheduleReminderNotification({
@@ -272,7 +285,7 @@ them from real reminders.`,
         );
       }
     } catch (e: any) {
-      console.log('ReminderTestSection: error creating reminder', e);
+      console.log('ReminderTestSection: error creating/updating reminder', e);
       Alert.alert(
         'Error',
         e?.message || 'Failed to save reminder. Please try again.',
@@ -401,6 +414,9 @@ them from real reminders.`,
       enableAllReminders();
     }
   };
+
+  const isEditingExisting =
+    editingIndex !== null && !!findReminderByIndex(editingIndex);
 
   // ───────────────── RENDER ─────────────────
   return (
@@ -627,7 +643,9 @@ them from real reminders.`,
                 style={[styles.modalButton, { backgroundColor: '#00BFFF' }]}
                 onPress={onSaveReminder}
               >
-                <Text style={styles.modalButtonText}>Save</Text>
+                <Text style={styles.modalButtonText}>
+                  {isEditingExisting ? 'Update' : 'Save'}
+                </Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>

@@ -938,3 +938,57 @@ export async function deleteReminder(
     throw new Error(error.message || 'Network error. Please try again.');
   }
 }
+// 🔹 Update Reminder
+
+export interface UpdateReminderPayload {
+  id: string;
+  label?: string;
+  fire_at_iso?: string;
+  pill_index?: number;
+  is_demo?: boolean;
+  is_active?: boolean;
+}
+
+export async function updateReminder(
+  id: string,
+  payload: Omit<UpdateReminderPayload, 'id'>,
+): Promise<ApiReminder> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    const body: UpdateReminderPayload = {
+      id,
+      ...payload,
+    };
+
+    const res = await api.post<ApiReminder | { data?: ApiReminder }>(
+      `/functions/v1/update-reminder?id=${id}`,
+      body,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    // Some edge functions wrap result in { data: ... }
+    if ((res.data as any)?.data) {
+      return (res.data as any).data as ApiReminder;
+    }
+
+    return res.data as ApiReminder;
+  } catch (error: any) {
+    console.error('❌ [updateReminder] Error updating reminder:', error);
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Reminder update failed',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
