@@ -583,3 +583,164 @@ export async function resetCheckins(
     throw new Error(error.message || 'Network error. Please try again.');
   }
 }
+
+// src/lib/authService.ts
+
+export interface CreateJournalEntryPayload {
+  content: string;
+  entry_date: string; // "YYYY-MM-DD"
+  mood?: number | null;
+  tags?: string[];
+}
+
+export interface CreateJournalEntryResponse {
+  success?: boolean;
+  message?: string;
+  data?: any;
+}
+
+export async function createJournalEntry(
+  payload: CreateJournalEntryPayload,
+): Promise<CreateJournalEntryResponse> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    console.log('📝 [createJournalEntry] payload:', payload);
+
+    const res = await api.post<CreateJournalEntryResponse>(
+      '/functions/v1/create-journal-entry',
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+      },
+    );
+
+    console.log('✅ [createJournalEntry] response:', res.data);
+    return res.data;
+  } catch (error: any) {
+    console.error('❌ [createJournalEntry] error:', error);
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Journal creation failed',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+// src/lib/authService.ts
+
+export interface ApiJournalEntry {
+  id: string;
+  content: string;
+  entry_date: string; // "YYYY-MM-DD"
+  mood?: number | null;
+  tags?: string[] | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface GetJournalsResponse {
+  success?: boolean;
+  message?: string;
+  journals?: ApiJournalEntry[];
+  data?: ApiJournalEntry[]; // in case function just returns array in `data`
+}
+
+// 🔹 Fetch all journals for current user (no params)
+export async function getJournals(): Promise<ApiJournalEntry[]> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    console.log('🔐 [getJournals] Fetching journals...');
+
+    const res = await api.get<GetJournalsResponse>(
+      '/functions/v1/get-journals',
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+      },
+    );
+
+    // Handle different shapes: { journals: [...] } or { data: [...] } or raw array
+    let journals: ApiJournalEntry[] = [];
+
+    if (Array.isArray(res.data)) {
+      journals = res.data as ApiJournalEntry[];
+    } else if (res.data?.journals) {
+      journals = res.data.journals;
+    } else if (res.data?.data) {
+      journals = res.data.data;
+    }
+
+    console.log(
+      `✅ [getJournals] Retrieved ${journals.length} journal entries`,
+    );
+
+    return journals;
+  } catch (error: any) {
+    console.error('❌ [getJournals] Error fetching journals:', error);
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Failed to fetch journals',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+export interface DeleteJournalResponse {
+  success?: boolean;
+  message?: string;
+}
+
+export async function deleteJournalEntry(
+  journalId: string,
+  entryDate: string,
+): Promise<DeleteJournalResponse> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    const payload = {
+      journal_id: journalId,
+      entry_date: entryDate, // "YYYY-MM-DD"
+    };
+
+    const res = await api.post<DeleteJournalResponse>(
+      '/functions/v1/delete-journal',
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+      },
+    );
+
+    return res.data;
+  } catch (error: any) {
+    console.error('❌ [deleteJournalEntry] Error deleting journal:', error);
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      throw new Error(
+        errorData.message ||
+          errorData.error_description ||
+          'Journal delete failed',
+      );
+    }
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}

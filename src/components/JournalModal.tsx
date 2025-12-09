@@ -28,6 +28,7 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
   const { journalEntries, addJournal, deleteJournal, selectedFilterDate } =
     useJournals();
   console.log('🚀 ~ JournalModal ~ journalEntries:', journalEntries);
+
   const [isAddingJournal, setIsAddingJournal] = useState(false);
 
   const [journalTitle, setJournalTitle] = useState('');
@@ -86,27 +87,46 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
   };
 
   const handleSaveJournal = async () => {
-    if (!journalTitle.trim()) {
+    const title = journalTitle.trim();
+    const desc = journalDesc.trim();
+
+    if (!title) {
       setJournalError('Title is required');
       return;
     }
-    if (!journalDesc.trim()) {
+    if (!desc) {
       setJournalError('Description is required');
       return;
     }
 
-    await addJournal({
-      title: journalTitle.trim(),
-      description: journalDesc.trim(),
-      date: journalDate.toISOString().split('T')[0],
-      time: `${journalTime.getHours().toString().padStart(2, '0')}:${journalTime
+    try {
+      setJournalError(null);
+
+      const isoDate = journalDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const timeStr = `${journalTime
+        .getHours()
+        .toString()
+        .padStart(2, '0')}:${journalTime
         .getMinutes()
         .toString()
-        .padStart(2, '0')}`,
-    });
+        .padStart(2, '0')}`; // HH:mm
 
-    setIsAddingJournal(false);
-    setJournalError(null);
+      // Use context so it calls API + reloads from backend
+      await addJournal({
+        title,
+        description: desc,
+        date: isoDate,
+        time: timeStr,
+      });
+
+      // go back to list view
+      setIsAddingJournal(false);
+      setJournalTitle('');
+      setJournalDesc('');
+    } catch (err: any) {
+      console.error('[JournalModal] save error:', err);
+      setJournalError(err.message || 'Failed to save journal entry');
+    }
   };
 
   const handleDeleteJournal = async (id: string) => {
