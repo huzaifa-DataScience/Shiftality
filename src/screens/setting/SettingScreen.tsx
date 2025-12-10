@@ -92,7 +92,7 @@ export default function SettingScreen() {
   return (
     <View style={styles.root}>
       <ScrollView
-        style={{ backgroundColor: palette.darkBlue, marginVertical: scale(50) }}
+        style={{ backgroundColor: palette.darkBlue, marginVertical: scale(20) }}
         showsVerticalScrollIndicator={false}
       >
         <GradientCardHome style={{ width: scale(330) }}>
