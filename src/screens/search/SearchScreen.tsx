@@ -142,6 +142,10 @@ export default function SearchScreen() {
       );
       setDenseSeries(series);
     }
+
+    const start_date = userProfile?.profile?.journey_start_date;
+    const apiSeries = buildDenseSeries(start_date, updated);
+    setCheckinsApi(apiSeries);
   };
 
   const { shiftPct, avgScore, statusLabel } = useMemo(() => {

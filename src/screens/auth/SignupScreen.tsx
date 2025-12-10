@@ -105,7 +105,7 @@ export default function SignUpScreen() {
       Toast.show({
         type: 'success',
         text1: 'Account Created',
-        text2: 'Your account has been created successfully!',
+        text2: 'Please check your email for verification.',
       });
 
       // Navigate to login screen after a short delay

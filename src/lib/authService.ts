@@ -78,7 +78,7 @@ export async function login(
     // Handle specific error responses
     if (error.response?.data) {
       const authError = error.response.data as AuthError;
-      throw new Error(authError.error || 'Login failed');
+      throw new Error(authError.msg || authError.error || 'Login failed');
     }
     throw new Error(error.message || 'Network error. Please try again.');
   }
