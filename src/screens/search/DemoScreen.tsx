@@ -459,7 +459,7 @@ export default function DemoScreen() {
       <ScrollView
         style={{
           backgroundColor: palette.darkBlue,
-          paddingVertical: scale(50),
+          marginVertical: scale(20),
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -472,11 +472,7 @@ export default function DemoScreen() {
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{
-              left: 0,
-              top: 0,
-              width: 44,
               height: 44,
-              alignItems: 'center',
               justifyContent: 'center',
             }}
             hitSlop={12}
@@ -489,7 +485,7 @@ export default function DemoScreen() {
                 fontFamily: 'SourceSansPro-Regular',
               }}
             >
-              ‹ Back to Dashboard
+              {'< Back'}
             </Text>
           </TouchableOpacity>
           <Text style={styles.h1}>Demo (for testing)</Text>

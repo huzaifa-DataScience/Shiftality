@@ -40,6 +40,7 @@ import { useJournals } from '../../contexts/JournalContext';
 import { Rect, Stop } from 'react-native-svg';
 import Svg, { Defs } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
+import GradientCardLockshift from '../../components/GradientCardLockshift';
 
 export default function SearchScreen(props: any) {
   const anchorDay = props?.route?.params?.anchorDate;
@@ -310,7 +311,7 @@ export default function SearchScreen(props: any) {
         style={{ backgroundColor: palette.darkBlue, marginVertical: scale(30) }}
         showsVerticalScrollIndicator={false}
       >
-        <GradientCardHome style={{ width: scale(330) }}>
+        <GradientCardLockshift style={{ width: scale(330) }}>
           <View
             style={{
               flexDirection: 'row',
@@ -364,7 +365,7 @@ export default function SearchScreen(props: any) {
               onCheckinUpdate={handleCheckinUpdate}
             />
           )}
-        </GradientCardHome>
+        </GradientCardLockshift>
 
         <View style={{ height: scale(20) }} />
 
