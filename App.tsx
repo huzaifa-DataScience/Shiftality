@@ -13,12 +13,13 @@ import { Provider } from 'react-redux';
 import store from './src/store/store';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from './src/lib/toastConfig.tsx';
+import { navigationRef } from './src/lib/navigationRef';
 
 function NavigationWithTheme() {
   const scheme = useColorScheme();
   return (
     // <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <RootNavigator />
     </NavigationContainer>
   );

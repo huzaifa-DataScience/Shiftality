@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { palette } from '../../theme';
 import { ms, s, scale, vs } from 'react-native-size-matters';
@@ -20,7 +21,12 @@ import ShiftMapChart from '../../components/graph/ShiftMapChart';
 import TodaysShiftView from '../../components/TodaysShiftView';
 import JournalModal from '../../components/JournalModal';
 
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import {
+  RouteProp,
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { selectHomeOnboarding } from '../../store/reducers/homeOnboardingReducer';
 import { useSelector } from 'react-redux';
 import { getCheckins, getProfile } from '../../lib/authService';
@@ -31,8 +37,12 @@ import {
   DensePoint,
 } from '../../lib/dataClient';
 import { useJournals } from '../../contexts/JournalContext';
+import { Rect, Stop } from 'react-native-svg';
+import Svg, { Defs } from 'react-native-svg';
+import LinearGradient from 'react-native-linear-gradient';
 
-export default function SearchScreen() {
+export default function SearchScreen(props: any) {
+  const anchorDay = props?.route?.params?.anchorDate;
   const navigation = useNavigation();
   const onboarding = useSelector(selectHomeOnboarding);
   const [selected, setSelected] = useState<'map' | 'grid'>('grid');
@@ -329,7 +339,31 @@ export default function SearchScreen() {
             Your daily reality shift journey continues
           </Text>
           <View style={{ height: scale(10) }} />
-          <TodaysShiftView onCheckinUpdate={handleCheckinUpdate} />
+          {isLoading ? (
+            <View
+              style={{
+                width: scale(280),
+                borderRadius: s(18),
+                shadowColor: '#000',
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 6,
+                padding: scale(10),
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: scale(280),
+              }}
+            >
+              <ActivityIndicator size="large" color={palette.white} />
+            </View>
+          ) : (
+            <TodaysShiftView
+              checkins={checkins}
+              anchorDay={anchorDay}
+              onCheckinUpdate={handleCheckinUpdate}
+            />
+          )}
         </GradientCardHome>
 
         <View style={{ height: scale(20) }} />

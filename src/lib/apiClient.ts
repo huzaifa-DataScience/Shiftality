@@ -7,11 +7,34 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearAuthData } from './authStorage';
+import { resetToAuth } from './navigationRef';
+import store from '../store/store';
+import { clearProfile } from '../store/reducers/profileReducer';
 
 // Supabase configuration - hardcoded values
 const SUPABASE_URL = 'https://rorytwozdwlsqwkrcpku.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+// Handle 401 Unauthorized - clear auth and navigate to login
+async function handleUnauthorized() {
+  try {
+    // Clear auth data from storage
+    await clearAuthData();
+
+    // Clear Redux profile state
+    store.dispatch(clearProfile());
+
+    // Wait a bit for Redux state to update and RootNavigator to switch to Auth stack
+    setTimeout(() => {
+      // Navigate to Login screen within Auth stack
+      resetToAuth();
+    }, 100);
+  } catch (error) {
+    console.error('Error handling unauthorized:', error);
+  }
+}
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -64,7 +87,9 @@ apiClient.interceptors.response.use(
 
       switch (status) {
         case 401:
-          console.error('Unauthorized - Check your API key');
+          console.error('Unauthorized - Session expired, logging out');
+          // Clear auth data and navigate to login
+          handleUnauthorized();
           break;
         case 403:
           console.error('Forbidden - Access denied');

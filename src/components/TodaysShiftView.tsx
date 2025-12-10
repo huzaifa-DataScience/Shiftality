@@ -56,9 +56,16 @@ const DEFAULT_SHADOW_BELIEFS: string[] = [
 
 type Props = {
   onCheckinUpdate: (checkin: Checkin) => void;
+  anchorDay: string;
+  checkins: Checkin[];
 };
 
-export default function TodaysShiftView({ onCheckinUpdate }: Props) {
+export default function TodaysShiftView({
+  checkins,
+  anchorDay,
+  onCheckinUpdate,
+}: Props) {
+  console.log('🚀 ~ anchorDay:', anchorDay);
   const [showDetails, setShowDetails] = useState(true); // Default to true (show detailed view)
 
   // beliefs loaded from storage
@@ -109,12 +116,17 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
   const checkTodaysShift = useCallback(async () => {
     try {
       const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-      const checkins = await getCheckins();
+      console.log('🚀 ~ checkTodaysShift ~ today:', today);
       const todaysCheckin = checkins.find(c => c.date === today);
+      console.log('🚀 ~ checkTodaysShift ~ todaysCheckin:', todaysCheckin);
 
       // If there's a checkin for today, hide detailed view (show completed view)
       // If no checkin, show detailed view
-      setShowDetails(!todaysCheckin);
+      if (anchorDay) {
+        setShowDetails(true);
+      } else {
+        setShowDetails(!todaysCheckin);
+      }
     } catch (e) {
       console.log("Error checking today's shift", e);
       // On error, default to showing detailed view
@@ -126,14 +138,14 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
   useEffect(() => {
     loadBeliefsFromStorage();
     checkTodaysShift();
-  }, [loadBeliefsFromStorage, checkTodaysShift]);
+  }, [loadBeliefsFromStorage, checkTodaysShift, checkins]);
 
   // Reload whenever the screen gains focus
   useFocusEffect(
     useCallback(() => {
       loadBeliefsFromStorage();
       checkTodaysShift();
-    }, [loadBeliefsFromStorage, checkTodaysShift]),
+    }, [loadBeliefsFromStorage, checkTodaysShift, checkins]),
   );
 
   const countYes = (list: string[]) =>
@@ -170,7 +182,7 @@ export default function TodaysShiftView({ onCheckinUpdate }: Props) {
 
     const checkin: Checkin = {
       id: `${today}-${Date.now()}`,
-      date: today,
+      date: anchorDay ? anchorDay : today,
       pos_yes: empoweringYes,
       neg_yes: shadowYes,
       daily_score: dailyScore,

@@ -331,56 +331,60 @@ export default function DemoScreen() {
 
   const onTriggerDaily = async () => {
     // One-day version of onGenerate, using the next anchorDate
-    const posPerDay =
-      mode === 'All' || mode === 'Empowering' ? empoweringBeliefs.length : 0;
-    const negPerDay =
-      mode === 'All' || mode === 'Shadow' ? shadowBeliefs.length : 0;
+    // const posPerDay =
+    //   mode === 'All' || mode === 'Empowering' ? empoweringBeliefs.length : 0;
+    // const negPerDay =
+    //   mode === 'All' || mode === 'Shadow' ? shadowBeliefs.length : 0;
 
-    let dailyScore = posPerDay - negPerDay;
-    if (dailyScore > 10) dailyScore = 10;
-    if (dailyScore < -10) dailyScore = -10;
+    // let dailyScore = posPerDay - negPerDay;
+    // if (dailyScore > 10) dailyScore = 10;
+    // if (dailyScore < -10) dailyScore = -10;
 
-    const nowIso = new Date().toISOString();
+    // const nowIso = new Date().toISOString();
 
-    const checkin: Checkin = {
-      id: `${anchorDate}-${Date.now()}-trigger`,
-      date: anchorDate,
-      pos_yes: posPerDay,
-      neg_yes: negPerDay,
-      daily_score: dailyScore,
-      source: 'demo',
-      created_at: nowIso,
-    };
+    // const checkin: Checkin = {
+    //   id: `${anchorDate}-${Date.now()}-trigger`,
+    //   date: anchorDate,
+    //   pos_yes: posPerDay,
+    //   neg_yes: negPerDay,
+    //   daily_score: dailyScore,
+    //   source: 'demo',
+    //   created_at: nowIso,
+    // };
 
-    try {
-      console.log('🔒 [onTriggerDaily] Creating demo checkin:', checkin);
+    // try {
+    //   console.log('🔒 [onTriggerDaily] Creating demo checkin:', checkin);
 
-      // 🆕 Call API to create checkin on backend
-      await createCheckin(checkin);
-      console.log('✅ [onTriggerDaily] Demo checkin created on backend');
+    //   // 🆕 Call API to create checkin on backend
+    //   await createCheckin(checkin);
+    //   console.log('✅ [onTriggerDaily] Demo checkin created on backend');
 
-      // Save to local storage as well
-      await upsertCheckins([checkin]);
-      const updated = await getCheckins();
-      setCheckins(updated);
+    //   // Save to local storage as well
+    //   await upsertCheckins([checkin]);
+    //   const updated = await getCheckins();
+    //   setCheckins(updated);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Daily Demo Shift Triggered',
-        text2: `Score: ${dailyScore} (source: demo)`,
-      });
+    //   Toast.show({
+    //     type: 'success',
+    //     text1: 'Daily Demo Shift Triggered',
+    //     text2: `Score: ${dailyScore} (source: demo)`,
+    //   });
 
-      // Optionally bounce user back into main flow
-      // @ts-ignore
-      navigation.navigate('Main', { screen: 'Search' });
-    } catch (error: any) {
-      console.error('❌ [onTriggerDaily] Error triggering daily shift:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Trigger Failed',
-        text2: error.message || 'Failed to trigger daily shift',
-      });
-    }
+    //   // Optionally bounce user back into main flow
+    //   // @ts-ignore
+    //   navigation.navigate('Main', { screen: 'Search' });
+    // } catch (error: any) {
+    //   console.error('❌ [onTriggerDaily] Error triggering daily shift:', error);
+    //   Toast.show({
+    //     type: 'error',
+    //     text1: 'Trigger Failed',
+    //     text2: error.message || 'Failed to trigger daily shift',
+    //   });
+    // }
+    navigation.navigate('Main', {
+      screen: 'Search',
+      params: { anchorDate: anchorDate },
+    });
   };
 
   const onReset = async () => {
