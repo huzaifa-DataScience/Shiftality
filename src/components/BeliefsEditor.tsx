@@ -14,21 +14,23 @@ import { ms, s, scale, vs } from 'react-native-size-matters';
 import { palette } from '../theme';
 import GradientCardHome from './GradientCardHome';
 import GradientHintBox from './GradientHintBox';
-import { getBeliefs } from '../lib/authService';
+import {
+  getBeliefs,
+  createBeliefQuestion,
+  updateBeliefQuestion,
+  deleteBeliefQuestion,
+  type ApiBeliefQuestion,
+} from '../lib/authService';
 
 const DEFAULT_EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
 const DEFAULT_SHADOW_STORAGE_KEY = 'profile_shadow_beliefs_v1';
 
-// Keeping types for future flexibility, but we won't use static defaults now
 type BeliefsEditorProps = {
   empoweringStorageKey?: string; // legacy, unused
   shadowStorageKey?: string; // legacy, unused
-
-  defaultEmpoweringBeliefs?: string[]; // not used for now
-  defaultShadowBeliefs?: string[]; // not used for now
-
+  defaultEmpoweringBeliefs?: string[];
+  defaultShadowBeliefs?: string[];
   cardStyle?: StyleProp<ViewStyle>;
-
   empoweringTitle?: string;
   shadowTitle?: string;
   empoweringAddLabel?: string;
@@ -42,7 +44,6 @@ const ensureStartsWithIBelieve = (raw: string): string => {
 
   const lower = trimmed.toLowerCase();
 
-  // if user already wrote "Today, I believed ..." or variations, don't touch it
   if (
     lower.startsWith('today, i believed') ||
     lower.startsWith('today i believed') ||
@@ -52,23 +53,22 @@ const ensureStartsWithIBelieve = (raw: string): string => {
     return trimmed;
   }
 
-  // otherwise prefix it with "Today, I believed"
   return `Today, I believed ${trimmed}`;
 };
 
 const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
-  empoweringStorageKey = DEFAULT_EMPOWERING_STORAGE_KEY, // unused, legacy
-  shadowStorageKey = DEFAULT_SHADOW_STORAGE_KEY, // unused, legacy
-  defaultEmpoweringBeliefs, // unused (for now)
-  defaultShadowBeliefs, // unused (for now)
+  empoweringStorageKey = DEFAULT_EMPOWERING_STORAGE_KEY,
+  shadowStorageKey = DEFAULT_SHADOW_STORAGE_KEY,
+  defaultEmpoweringBeliefs,
+  defaultShadowBeliefs,
   cardStyle,
   empoweringTitle = 'Empowering Beliefs (YES = +1)',
   shadowTitle = 'Shadow Beliefs (YES = -1)',
   empoweringAddLabel = '+ Add Empowering Belief',
   shadowAddLabel = '+ Add Shadow Belief',
 }) => {
-  const [beliefs, setBeliefs] = useState<string[]>([]);
-  const [shadowBeliefs, setShadowBeliefs] = useState<string[]>([]);
+  const [beliefs, setBeliefs] = useState<ApiBeliefQuestion[]>([]);
+  const [shadowBeliefs, setShadowBeliefs] = useState<ApiBeliefQuestion[]>([]);
 
   // Empowering editing
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -82,7 +82,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
   const [shadowDraftText, setShadowDraftText] = useState('');
   const [isAddingNewShadowBelief, setIsAddingNewShadowBelief] = useState(false);
 
-  // ------- LOAD FROM API ONCE (NO STATIC FALLBACK) -------
+  // ------- LOAD FROM API ONCE -------
   useEffect(() => {
     (async () => {
       try {
@@ -90,15 +90,11 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
           getBeliefs('empowering'),
           getBeliefs('shadow'),
         ]);
-        console.log('empoweringFromApi:', empoweringFromApi);
-        console.log('shadowFromApi:', shadowFromApi);
 
-        // If API returns nothing, we just show empty lists
         setBeliefs(Array.isArray(empoweringFromApi) ? empoweringFromApi : []);
         setShadowBeliefs(Array.isArray(shadowFromApi) ? shadowFromApi : []);
       } catch (e) {
         console.log('[BeliefsEditor] Error fetching beliefs from API:', e);
-        // No static defaults: just show nothing if it fails
         setBeliefs([]);
         setShadowBeliefs([]);
       }
@@ -107,25 +103,32 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
   // ------- EMPOWERING BELIEFS HANDLERS -------
   const handleAddBelief = () => {
-    const next = [...beliefs, ''];
+    const temp: ApiBeliefQuestion = {
+      id: `temp-${Date.now()}`,
+      type: 'empowering',
+      text: '',
+    };
+    const next = [...beliefs, temp];
     setBeliefs(next);
 
     const newIndex = next.length - 1;
     setEditingIndex(newIndex);
-    setDraftText('Today, I believed '); // Pre-fill with prefix
+    setDraftText('Today, I believed ');
     setIsAddingNewBelief(true);
   };
 
   const handleEditBelief = (index: number) => {
     setEditingIndex(index);
-    setDraftText(beliefs[index] ?? '');
+    setDraftText(beliefs[index]?.text ?? '');
     setIsAddingNewBelief(false);
   };
 
-  const handleSaveBelief = () => {
+  const handleSaveBelief = async () => {
     if (editingIndex === null) return;
 
+    const current = beliefs[editingIndex];
     const trimmed = draftText.trim();
+
     if (!trimmed) {
       if (isAddingNewBelief) {
         const next = [...beliefs];
@@ -133,14 +136,42 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
         setBeliefs(next);
       }
     } else {
-      // enforce "Today, I believed ..." only for newly added beliefs
       const finalText = isAddingNewBelief
         ? ensureStartsWithIBelieve(trimmed)
         : trimmed;
 
-      const updated = [...beliefs];
-      updated[editingIndex] = finalText;
-      setBeliefs(updated);
+      // Optimistic local update
+      const updatedItem: ApiBeliefQuestion = {
+        ...current,
+        type: 'empowering',
+        text: finalText,
+      };
+      const updatedList = [...beliefs];
+      updatedList[editingIndex] = updatedItem;
+      setBeliefs(updatedList);
+
+      try {
+        if (isAddingNewBelief) {
+          await createBeliefQuestion({
+            type: 'empowering',
+            text: finalText,
+            order: updatedList.length,
+            is_active: true,
+          });
+        } else if (current?.id && !current.id.startsWith('temp-')) {
+          await updateBeliefQuestion(current.id, {
+            type: 'empowering',
+            text: finalText,
+            order: current.order_index ?? editingIndex + 1,
+            is_active: current.is_active ?? true,
+          });
+        }
+
+        const fresh = await getBeliefs('empowering');
+        setBeliefs(fresh);
+      } catch (err) {
+        console.log('[BeliefsEditor] Error saving empowering belief:', err);
+      }
     }
 
     setEditingIndex(null);
@@ -163,7 +194,10 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
     }
   };
 
-  const handleDeleteBelief = (index: number) => {
+  const handleDeleteBelief = async (index: number) => {
+    const belief = beliefs[index];
+
+    // Optimistic local remove
     const next = beliefs.filter((_, i) => i !== index);
     setBeliefs(next);
 
@@ -172,19 +206,47 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
       setDraftText('');
       setIsAddingNewBelief(false);
     }
+
+    // Call backend only for real IDs (not temp)
+    if (belief?.id && !belief.id.startsWith('temp-')) {
+      try {
+        await deleteBeliefQuestion(belief.id);
+        const fresh = await getBeliefs('empowering');
+        setBeliefs(fresh);
+      } catch (err) {
+        console.log('[BeliefsEditor] Error deleting empowering belief:', err);
+      }
+    }
   };
 
   // ------- SHADOW BELIEFS HANDLERS -------
+  const handleAddShadowBelief = () => {
+    const temp: ApiBeliefQuestion = {
+      id: `temp-${Date.now()}`,
+      type: 'shadow',
+      text: '',
+    };
+    const next = [...shadowBeliefs, temp];
+    setShadowBeliefs(next);
+
+    const newIndex = next.length - 1;
+    setShadowEditingIndex(newIndex);
+    setShadowDraftText('Today, I believed ');
+    setIsAddingNewShadowBelief(true);
+  };
+
   const handleEditShadowBelief = (index: number) => {
     setShadowEditingIndex(index);
-    setShadowDraftText(shadowBeliefs[index] ?? '');
+    setShadowDraftText(shadowBeliefs[index]?.text ?? '');
     setIsAddingNewShadowBelief(false);
   };
 
-  const handleSaveShadowBelief = () => {
+  const handleSaveShadowBelief = async () => {
     if (shadowEditingIndex === null) return;
 
+    const current = shadowBeliefs[shadowEditingIndex];
     const trimmed = shadowDraftText.trim();
+
     if (!trimmed) {
       if (isAddingNewShadowBelief) {
         const next = [...shadowBeliefs];
@@ -196,24 +258,42 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
         ? ensureStartsWithIBelieve(trimmed)
         : trimmed;
 
-      const updated = [...shadowBeliefs];
-      updated[shadowEditingIndex] = finalText;
-      setShadowBeliefs(updated);
+      const updatedItem: ApiBeliefQuestion = {
+        ...current,
+        type: 'shadow',
+        text: finalText,
+      };
+      const updatedList = [...shadowBeliefs];
+      updatedList[shadowEditingIndex] = updatedItem;
+      setShadowBeliefs(updatedList);
+
+      try {
+        if (isAddingNewShadowBelief) {
+          await createBeliefQuestion({
+            type: 'shadow',
+            text: finalText,
+            order: updatedList.length,
+            is_active: true,
+          });
+        } else if (current?.id && !current.id.startsWith('temp-')) {
+          await updateBeliefQuestion(current.id, {
+            type: 'shadow',
+            text: finalText,
+            order: current.order_index ?? shadowEditingIndex + 1,
+            is_active: current.is_active ?? true,
+          });
+        }
+
+        const fresh = await getBeliefs('shadow');
+        setShadowBeliefs(fresh);
+      } catch (err) {
+        console.log('[BeliefsEditor] Error saving shadow belief:', err);
+      }
     }
 
     setShadowEditingIndex(null);
     setShadowDraftText('');
     setIsAddingNewShadowBelief(false);
-  };
-
-  const handleAddShadowBelief = () => {
-    const next = [...shadowBeliefs, ''];
-    setShadowBeliefs(next);
-
-    const newIndex = next.length - 1;
-    setShadowEditingIndex(newIndex);
-    setShadowDraftText('Today, I believed ');
-    setIsAddingNewShadowBelief(true);
   };
 
   const handleBlurShadowBelief = (index: number) => {
@@ -231,7 +311,9 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
     }
   };
 
-  const handleDeleteShadowBelief = (index: number) => {
+  const handleDeleteShadowBelief = async (index: number) => {
+    const belief = shadowBeliefs[index];
+
     const next = shadowBeliefs.filter((_, i) => i !== index);
     setShadowBeliefs(next);
 
@@ -240,19 +322,23 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
       setShadowDraftText('');
       setIsAddingNewShadowBelief(false);
     }
+
+    if (belief?.id && !belief.id.startsWith('temp-')) {
+      try {
+        await deleteBeliefQuestion(belief.id);
+        const fresh = await getBeliefs('shadow');
+        setShadowBeliefs(fresh);
+      } catch (err) {
+        console.log('[BeliefsEditor] Error deleting shadow belief:', err);
+      }
+    }
   };
 
   return (
     <>
       {/* Empowering beliefs */}
       <GradientCardHome
-        style={[
-          {
-            width: scale(330),
-            marginVertical: scale(20),
-          },
-          cardStyle,
-        ]}
+        style={[{ width: scale(330), marginVertical: scale(20) }, cardStyle]}
       >
         <Text style={styles.sectionTitle}>{empoweringTitle}</Text>
         <View style={{ height: scale(10) }} />
@@ -261,11 +347,10 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
           const isEditing = editingIndex === idx;
 
           return (
-            <React.Fragment key={idx}>
+            <React.Fragment key={belief.id ?? idx}>
               <GradientHintBox
-                text={!isEditing ? belief : undefined}
-                // 🔹 Show "Recommended" on ALL beliefs when not editing
-                showRecommendedChip={!isEditing}
+                text={!isEditing ? belief.text : undefined}
+                showRecommendedChip={!isEditing} // recommended on all
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditBelief(idx)}
@@ -308,13 +393,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
       {/* Shadow beliefs */}
       <GradientCardHome
-        style={[
-          {
-            width: scale(330),
-            marginVertical: scale(20),
-          },
-          cardStyle,
-        ]}
+        style={[{ width: scale(330), marginVertical: scale(20) }, cardStyle]}
       >
         <Text style={styles.sectionTitle}>{shadowTitle}</Text>
         <View style={{ height: scale(10) }} />
@@ -323,10 +402,9 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
           const isEditing = shadowEditingIndex === idx;
 
           return (
-            <React.Fragment key={idx}>
+            <React.Fragment key={belief.id ?? idx}>
               <GradientHintBox
-                text={!isEditing ? belief : undefined}
-                // 🔹 Show "Recommended" on ALL beliefs when not editing
+                text={!isEditing ? belief.text : undefined}
                 showRecommendedChip={!isEditing}
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}

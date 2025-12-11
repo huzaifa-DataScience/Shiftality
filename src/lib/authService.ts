@@ -999,7 +999,7 @@ export type BeliefType = 'empowering' | 'shadow';
 
 export interface ApiBeliefQuestion {
   id?: string;
-  type?: string;
+  type?: BeliefType | string;
   text?: string;
   order_index?: number;
   is_active?: boolean;
@@ -1007,7 +1007,9 @@ export interface ApiBeliefQuestion {
   updated_at?: string;
 }
 
-export async function getBeliefs(type: BeliefType): Promise<string[]> {
+export async function getBeliefs(
+  type: BeliefType,
+): Promise<ApiBeliefQuestion[]> {
   try {
     const authToken = await getAuthToken();
     const SUPABASE_ANON_KEY =
@@ -1030,8 +1032,7 @@ export async function getBeliefs(type: BeliefType): Promise<string[]> {
 
     const body = res.data;
 
-    // ✅ This matches what your screenshot shows
-    let items: ApiBeliefQuestion[] =
+    const items: ApiBeliefQuestion[] =
       (Array.isArray(body?.belief_questions) && body.belief_questions) ||
       (Array.isArray(body?.data) && body.data) ||
       [];
@@ -1040,11 +1041,7 @@ export async function getBeliefs(type: BeliefType): Promise<string[]> {
       `[getBeliefs] type="${type}" – received ${items.length} belief_questions`,
     );
 
-    const beliefs = items
-      .map(item => item.text || '')
-      .filter(t => typeof t === 'string' && t.trim().length > 0);
-
-    return beliefs;
+    return items;
   } catch (error: any) {
     console.error(
       '❌ [getBeliefs] Error fetching beliefs:',
@@ -1055,6 +1052,215 @@ export async function getBeliefs(type: BeliefType): Promise<string[]> {
       const err = error.response.data;
       throw new Error(
         err.message || err.error_description || 'Failed to fetch beliefs',
+      );
+    }
+
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+export interface CreateBeliefQuestionPayload {
+  type: BeliefType; // "empowering" | "shadow"
+  text: string;
+  order?: number;
+  is_active?: boolean;
+}
+
+export interface CreateBeliefQuestionResponse {
+  success?: boolean;
+  message?: string;
+  belief_question?: ApiBeliefQuestion;
+  data?: ApiBeliefQuestion | ApiBeliefQuestion[];
+}
+
+/**
+ * POST /functions/v1/create-belief-question
+ */
+export async function createBeliefQuestion(
+  payload: CreateBeliefQuestionPayload,
+): Promise<ApiBeliefQuestion> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    console.log('🧠 [createBeliefQuestion] payload:', payload);
+
+    const res = await api.post<CreateBeliefQuestionResponse>(
+      '/functions/v1/create-belief-question',
+      {
+        type: payload.type,
+        text: payload.text,
+        order: payload.order,
+        is_active: payload.is_active ?? true,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    const body = res.data;
+    let belief: ApiBeliefQuestion | undefined;
+
+    if (body?.belief_question) {
+      belief = body.belief_question;
+    } else if (Array.isArray(body?.data)) {
+      belief = body.data[0];
+    } else if (body?.data && typeof body.data === 'object') {
+      belief = body.data as ApiBeliefQuestion;
+    } else if (body && (body as any).text) {
+      belief = body as any as ApiBeliefQuestion;
+    }
+
+    if (!belief) {
+      throw new Error(
+        'No belief_question returned from create-belief-question',
+      );
+    }
+
+    console.log('✅ [createBeliefQuestion] created:', belief);
+    return belief;
+  } catch (error: any) {
+    console.error('❌ [createBeliefQuestion] Error:', error?.response || error);
+
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Create belief failed',
+      );
+    }
+
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+// ---------- UPDATE BELIEF QUESTION ----------
+
+export interface UpdateBeliefQuestionPayload {
+  type?: BeliefType;
+  text?: string;
+  order?: number;
+  is_active?: boolean;
+}
+
+export interface UpdateBeliefQuestionResponse {
+  success?: boolean;
+  message?: string;
+  belief_question?: ApiBeliefQuestion;
+  data?: ApiBeliefQuestion | ApiBeliefQuestion[];
+}
+
+/**
+ * PATCH /functions/v1/update-belief-question?id=<id>
+ */
+export async function updateBeliefQuestion(
+  id: string,
+  payload: UpdateBeliefQuestionPayload,
+): Promise<ApiBeliefQuestion> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    console.log('🧠 [updateBeliefQuestion] id:', id, 'payload:', payload);
+
+    const res = await api.patch<UpdateBeliefQuestionResponse>(
+      `/functions/v1/update-belief-question?id=${id}`,
+      {
+        type: payload.type,
+        text: payload.text,
+        order: payload.order,
+        is_active: payload.is_active,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    const body = res.data;
+    let belief: ApiBeliefQuestion | undefined;
+
+    if (body?.belief_question) {
+      belief = body.belief_question;
+    } else if (Array.isArray(body?.data)) {
+      belief = body.data[0];
+    } else if (body?.data && typeof body.data === 'object') {
+      belief = body.data as ApiBeliefQuestion;
+    } else if (body && (body as any).text) {
+      belief = body as any as ApiBeliefQuestion;
+    }
+
+    if (!belief) {
+      throw new Error(
+        'No belief_question returned from update-belief-question',
+      );
+    }
+
+    console.log('✅ [updateBeliefQuestion] updated:', belief);
+    return belief;
+  } catch (error: any) {
+    console.error('❌ [updateBeliefQuestion] Error:', error?.response || error);
+
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Update belief failed',
+      );
+    }
+
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}
+
+export interface DeleteBeliefQuestionResponse {
+  success?: boolean;
+  message?: string;
+  data?: any;
+  error?: string;
+}
+
+/**
+ * DELETE /functions/v1/delete-belief-question?id=<id>
+ */
+export async function deleteBeliefQuestion(
+  id: string,
+): Promise<DeleteBeliefQuestionResponse> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    console.log('🗑 [deleteBeliefQuestion] id:', id);
+
+    const res = await api.delete<DeleteBeliefQuestionResponse>(
+      `/functions/v1/delete-belief-question`,
+      {
+        params: { id }, // matches your curl ?id=...
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          apikey: SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    console.log('✅ [deleteBeliefQuestion] response:', res.data);
+    return res.data;
+  } catch (error: any) {
+    console.error('❌ [deleteBeliefQuestion] Error:', error?.response || error);
+
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Delete belief failed',
       );
     }
 
