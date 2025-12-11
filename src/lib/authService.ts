@@ -992,3 +992,72 @@ export async function updateReminder(
     throw new Error(error.message || 'Network error. Please try again.');
   }
 }
+
+// ===================== BELIEFS =====================
+
+export type BeliefType = 'empowering' | 'shadow';
+
+export interface ApiBeliefQuestion {
+  id?: string;
+  type?: string;
+  text?: string;
+  order_index?: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function getBeliefs(type: BeliefType): Promise<string[]> {
+  try {
+    const authToken = await getAuthToken();
+    const SUPABASE_ANON_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+
+    const endpoint = `/functions/v1/get-belief-questions?type=${type}`;
+
+    console.log('🔐 [getBeliefs] GET', endpoint);
+
+    const res = await api.get<{
+      success?: boolean;
+      belief_questions?: ApiBeliefQuestion[];
+      data?: ApiBeliefQuestion[];
+    }>(endpoint, {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        apikey: SUPABASE_ANON_KEY,
+      },
+    });
+
+    const body = res.data;
+
+    // ✅ This matches what your screenshot shows
+    let items: ApiBeliefQuestion[] =
+      (Array.isArray(body?.belief_questions) && body.belief_questions) ||
+      (Array.isArray(body?.data) && body.data) ||
+      [];
+
+    console.log(
+      `[getBeliefs] type="${type}" – received ${items.length} belief_questions`,
+    );
+
+    const beliefs = items
+      .map(item => item.text || '')
+      .filter(t => typeof t === 'string' && t.trim().length > 0);
+
+    return beliefs;
+  } catch (error: any) {
+    console.error(
+      '❌ [getBeliefs] Error fetching beliefs:',
+      error?.response || error,
+    );
+
+    if (error.response?.data) {
+      const err = error.response.data;
+      throw new Error(
+        err.message || err.error_description || 'Failed to fetch beliefs',
+      );
+    }
+
+    throw new Error(error.message || 'Network error. Please try again.');
+  }
+}

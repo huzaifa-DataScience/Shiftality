@@ -9,60 +9,26 @@ import {
   ViewStyle,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 
 import { palette } from '../theme';
 import GradientCardHome from './GradientCardHome';
 import GradientHintBox from './GradientHintBox';
+import { getBeliefs } from '../lib/authService';
 
 const DEFAULT_EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
 const DEFAULT_SHADOW_STORAGE_KEY = 'profile_shadow_beliefs_v1';
 
-const DEFAULT_BELIEFS: string[] = [
-  'Today, I believed Opportunities show up when I show up.',
-  'Today, I believed Small choices can shift my energy.',
-  'Today, I believed A low moment doesn’t define the day.',
-  'Today, I believed Reaching out first is safe for me.',
-  'Today, I believed I keep promises to future me.',
-  'Today, I believed I am enough as I grow.',
-  'Today, I believed Challenges are feedback, not failure.',
-  'Today, I believed I bounce back when things go wrong.',
-];
-
-const DEFAULT_SHADOW_BELIEFS: string[] = [
-  'Today, I believed Money is scarce and hard for me to get.',
-  'Today, I believed I’ll be misunderstood or rejected.',
-  'Today, I believed Change isn’t really available to me.',
-  'Today, I believed Stress is who I am.',
-];
-
+// Keeping types for future flexibility, but we won't use static defaults now
 type BeliefsEditorProps = {
-  /**
-   * Optional override for AsyncStorage key for empowering beliefs.
-   * Defaults to "profile_empowering_beliefs_v1"
-   */
-  empoweringStorageKey?: string;
-  /**
-   * Optional override for AsyncStorage key for shadow beliefs.
-   * Defaults to "profile_shadow_beliefs_v1"
-   */
-  shadowStorageKey?: string;
+  empoweringStorageKey?: string; // legacy, unused
+  shadowStorageKey?: string; // legacy, unused
 
-  /**
-   * Optional defaults if you want different initial sets in some screen.
-   */
-  defaultEmpoweringBeliefs?: string[];
-  defaultShadowBeliefs?: string[];
+  defaultEmpoweringBeliefs?: string[]; // not used for now
+  defaultShadowBeliefs?: string[]; // not used for now
 
-  /**
-   * Card-level style override (applied to both cards).
-   */
   cardStyle?: StyleProp<ViewStyle>;
 
-  /**
-   * Section titles / labels
-   */
   empoweringTitle?: string;
   shadowTitle?: string;
   empoweringAddLabel?: string;
@@ -91,22 +57,18 @@ const ensureStartsWithIBelieve = (raw: string): string => {
 };
 
 const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
-  empoweringStorageKey = DEFAULT_EMPOWERING_STORAGE_KEY,
-  shadowStorageKey = DEFAULT_SHADOW_STORAGE_KEY,
-  defaultEmpoweringBeliefs = DEFAULT_BELIEFS,
-  defaultShadowBeliefs = DEFAULT_SHADOW_BELIEFS,
+  empoweringStorageKey = DEFAULT_EMPOWERING_STORAGE_KEY, // unused, legacy
+  shadowStorageKey = DEFAULT_SHADOW_STORAGE_KEY, // unused, legacy
+  defaultEmpoweringBeliefs, // unused (for now)
+  defaultShadowBeliefs, // unused (for now)
   cardStyle,
   empoweringTitle = 'Empowering Beliefs (YES = +1)',
   shadowTitle = 'Shadow Beliefs (YES = -1)',
   empoweringAddLabel = '+ Add Empowering Belief',
   shadowAddLabel = '+ Add Shadow Belief',
 }) => {
-  const [beliefs, setBeliefs] = useState<string[]>(defaultEmpoweringBeliefs);
-  console.log('🚀 ~ beliefs:', beliefs);
-  const [shadowBeliefs, setShadowBeliefs] =
-    useState<string[]>(defaultShadowBeliefs);
-
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [beliefs, setBeliefs] = useState<string[]>([]);
+  const [shadowBeliefs, setShadowBeliefs] = useState<string[]>([]);
 
   // Empowering editing
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -120,67 +82,28 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
   const [shadowDraftText, setShadowDraftText] = useState('');
   const [isAddingNewShadowBelief, setIsAddingNewShadowBelief] = useState(false);
 
-  // ------- LOAD FROM LOCAL STORAGE ONCE -------
+  // ------- LOAD FROM API ONCE (NO STATIC FALLBACK) -------
   useEffect(() => {
     (async () => {
       try {
-        const storedEmpowering = await AsyncStorage.getItem(
-          empoweringStorageKey,
-        );
-        const storedShadow = await AsyncStorage.getItem(shadowStorageKey);
+        const [empoweringFromApi, shadowFromApi] = await Promise.all([
+          getBeliefs('empowering'),
+          getBeliefs('shadow'),
+        ]);
+        console.log('empoweringFromApi:', empoweringFromApi);
+        console.log('shadowFromApi:', shadowFromApi);
 
-        if (storedEmpowering) {
-          const parsed = JSON.parse(storedEmpowering);
-          if (Array.isArray(parsed)) {
-            setBeliefs(parsed);
-          }
-        }
-
-        if (storedShadow) {
-          const parsed = JSON.parse(storedShadow);
-          if (Array.isArray(parsed)) {
-            setShadowBeliefs(parsed);
-          }
-        }
+        // If API returns nothing, we just show empty lists
+        setBeliefs(Array.isArray(empoweringFromApi) ? empoweringFromApi : []);
+        setShadowBeliefs(Array.isArray(shadowFromApi) ? shadowFromApi : []);
       } catch (e) {
-        console.log('Error loading beliefs from storage', e);
-      } finally {
-        setIsHydrated(true);
+        console.log('[BeliefsEditor] Error fetching beliefs from API:', e);
+        // No static defaults: just show nothing if it fails
+        setBeliefs([]);
+        setShadowBeliefs([]);
       }
     })();
-  }, [empoweringStorageKey, shadowStorageKey]);
-
-  // ------- SAVE EMPOWERING TO STORAGE WHEN CHANGED -------
-  useEffect(() => {
-    if (!isHydrated) return;
-
-    (async () => {
-      try {
-        await AsyncStorage.setItem(
-          empoweringStorageKey,
-          JSON.stringify(beliefs),
-        );
-      } catch (e) {
-        console.log('Error saving empowering beliefs', e);
-      }
-    })();
-  }, [beliefs, isHydrated, empoweringStorageKey]);
-
-  // ------- SAVE SHADOW TO STORAGE WHEN CHANGED -------
-  useEffect(() => {
-    if (!isHydrated) return;
-
-    (async () => {
-      try {
-        await AsyncStorage.setItem(
-          shadowStorageKey,
-          JSON.stringify(shadowBeliefs),
-        );
-      } catch (e) {
-        console.log('Error saving shadow beliefs', e);
-      }
-    })();
-  }, [shadowBeliefs, isHydrated, shadowStorageKey]);
+  }, []);
 
   // ------- EMPOWERING BELIEFS HANDLERS -------
   const handleAddBelief = () => {
@@ -210,7 +133,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
         setBeliefs(next);
       }
     } else {
-      // ⬇️ enforce "I believe ..." only for newly added beliefs
+      // enforce "Today, I believed ..." only for newly added beliefs
       const finalText = isAddingNewBelief
         ? ensureStartsWithIBelieve(trimmed)
         : trimmed;
@@ -240,6 +163,17 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
     }
   };
 
+  const handleDeleteBelief = (index: number) => {
+    const next = beliefs.filter((_, i) => i !== index);
+    setBeliefs(next);
+
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      setDraftText('');
+      setIsAddingNewBelief(false);
+    }
+  };
+
   // ------- SHADOW BELIEFS HANDLERS -------
   const handleEditShadowBelief = (index: number) => {
     setShadowEditingIndex(index);
@@ -258,7 +192,6 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
         setShadowBeliefs(next);
       }
     } else {
-      // ⬇️ enforce "I believe ..." only for newly added shadow beliefs
       const finalText = isAddingNewShadowBelief
         ? ensureStartsWithIBelieve(trimmed)
         : trimmed;
@@ -279,7 +212,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
     const newIndex = next.length - 1;
     setShadowEditingIndex(newIndex);
-    setShadowDraftText('Today, I believed '); // Pre-fill with prefix
+    setShadowDraftText('Today, I believed ');
     setIsAddingNewShadowBelief(true);
   };
 
@@ -297,17 +230,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
       setIsAddingNewShadowBelief(false);
     }
   };
-  const handleDeleteBelief = (index: number) => {
-    const next = beliefs.filter((_, i) => i !== index);
-    setBeliefs(next);
 
-    // reset editing state if we just deleted the one being edited
-    if (editingIndex === index) {
-      setEditingIndex(null);
-      setDraftText('');
-      setIsAddingNewBelief(false);
-    }
-  };
   const handleDeleteShadowBelief = (index: number) => {
     const next = shadowBeliefs.filter((_, i) => i !== index);
     setShadowBeliefs(next);
@@ -336,13 +259,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
         {beliefs.map((belief, idx) => {
           const isEditing = editingIndex === idx;
-          const isRecommended = DEFAULT_BELIEFS.includes(belief);
 
           return (
             <React.Fragment key={idx}>
               <GradientHintBox
                 text={!isEditing ? belief : undefined}
-                showRecommendedChip={isRecommended && !isEditing}
+                // 🔹 Show "Recommended" on ALL beliefs when not editing
+                showRecommendedChip={!isEditing}
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditBelief(idx)}
@@ -398,13 +321,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
         {shadowBeliefs.map((belief, idx) => {
           const isEditing = shadowEditingIndex === idx;
-          const isRecommended = DEFAULT_SHADOW_BELIEFS.includes(belief); // 👈 only defaults
 
           return (
             <React.Fragment key={idx}>
               <GradientHintBox
                 text={!isEditing ? belief : undefined}
-                showRecommendedChip={isRecommended && !isEditing} // 👈 changed
+                // 🔹 Show "Recommended" on ALL beliefs when not editing
+                showRecommendedChip={!isEditing}
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditShadowBelief(idx)}
