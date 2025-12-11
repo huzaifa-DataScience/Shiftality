@@ -22,14 +22,7 @@ import {
   type ApiBeliefQuestion,
 } from '../lib/authService';
 
-const DEFAULT_EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
-const DEFAULT_SHADOW_STORAGE_KEY = 'profile_shadow_beliefs_v1';
-
 type BeliefsEditorProps = {
-  empoweringStorageKey?: string; // legacy, unused
-  shadowStorageKey?: string; // legacy, unused
-  defaultEmpoweringBeliefs?: string[];
-  defaultShadowBeliefs?: string[];
   cardStyle?: StyleProp<ViewStyle>;
   empoweringTitle?: string;
   shadowTitle?: string;
@@ -57,10 +50,6 @@ const ensureStartsWithIBelieve = (raw: string): string => {
 };
 
 const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
-  empoweringStorageKey = DEFAULT_EMPOWERING_STORAGE_KEY,
-  shadowStorageKey = DEFAULT_SHADOW_STORAGE_KEY,
-  defaultEmpoweringBeliefs,
-  defaultShadowBeliefs,
   cardStyle,
   empoweringTitle = 'Empowering Beliefs (YES = +1)',
   shadowTitle = 'Shadow Beliefs (YES = -1)',
@@ -207,7 +196,6 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
       setIsAddingNewBelief(false);
     }
 
-    // Call backend only for real IDs (not temp)
     if (belief?.id && !belief.id.startsWith('temp-')) {
       try {
         await deleteBeliefQuestion(belief.id);
@@ -350,7 +338,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
             <React.Fragment key={belief.id ?? idx}>
               <GradientHintBox
                 text={!isEditing ? belief.text : undefined}
-                showRecommendedChip={!isEditing} // recommended on all
+                showRecommendedChip={!isEditing} // Recommended on all
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditBelief(idx)}
