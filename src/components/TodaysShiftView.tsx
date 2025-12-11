@@ -21,38 +21,14 @@ import Svg, {
   Stop,
   LinearGradient as SvgGrad,
 } from 'react-native-svg';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 
 import GradientBoxWithButton from '../components/GradientBoxWithButton';
 import GradientHintBoxWithLikert from '../components/GradientHintBoxWithLikert';
 import { palette } from '../theme';
-import { Checkin, getCheckins } from '../lib/dataClient';
-import { createCheckin } from '../lib/authService';
-
-// ⚡ same keys as ProfileScreen
-const EMPOWERING_STORAGE_KEY = 'profile_empowering_beliefs_v1';
-const SHADOW_STORAGE_KEY = 'profile_shadow_beliefs_v1';
-
-// ⚡ same defaults as ProfileScreen (full sentences)
-const DEFAULT_EMPOWERING_BELIEFS: string[] = [
-  'Today, I believed Opportunities show up when I show up.',
-  'Today, I believed Small choices can shift my energy.',
-  'Today, I believed A low moment doesn’t define the day.',
-  'Today, I believed Reaching out first is safe for me.',
-  'Today, I believed I keep promises to future me.',
-  'Today, I believed I am enough as I grow.',
-  'Today, I believed Challenges are feedback, not failure.',
-  'Today, I believed I bounce back when things go wrong.',
-];
-
-const DEFAULT_SHADOW_BELIEFS: string[] = [
-  'Today, I believed Money is scarce and hard for me to get.',
-  'Today, I believed I’ll be misunderstood or rejected.',
-  'Today, I believed Change isn’t really available to me.',
-  'Today, I believed Stress is who I am.',
-];
+import { Checkin } from '../lib/dataClient';
+import { createCheckin, getBeliefs } from '../lib/authService';
 
 type Props = {
   onCheckinUpdate: (checkin: Checkin) => void;
@@ -68,52 +44,53 @@ export default function TodaysShiftView({
   console.log('🚀 ~ anchorDay:', anchorDay);
   const [showDetails, setShowDetails] = useState(true); // Default to true (show detailed view)
 
-  // beliefs loaded from storage
-  const [empoweringBeliefs, setEmpoweringBeliefs] = useState<string[]>(
-    DEFAULT_EMPOWERING_BELIEFS,
-  );
-  const [shadowBeliefs, setShadowBeliefs] = useState<string[]>(
-    DEFAULT_SHADOW_BELIEFS,
-  );
-  const [hydrated, setHydrated] = useState(false);
+  // beliefs loaded from API
+  const [empoweringBeliefs, setEmpoweringBeliefs] = useState<string[]>([]);
+  const [shadowBeliefs, setShadowBeliefs] = useState<string[]>([]);
 
   // State to track selections (yes/no/null)
   const [responses, setResponses] = useState<
     Record<string, 'yes' | 'no' | null>
   >({});
 
-  // ───────────────── LOAD FROM STORAGE (reusable) ─────────────────
-  const loadBeliefsFromStorage = useCallback(async () => {
+  // ───────────────── LOAD BELIEFS FROM API ─────────────────
+  const loadBeliefsFromApi = useCallback(async () => {
     try {
-      const storedEmp = await AsyncStorage.getItem(EMPOWERING_STORAGE_KEY);
-      const storedShadow = await AsyncStorage.getItem(SHADOW_STORAGE_KEY);
+      const [emp, shadow] = await Promise.all([
+        getBeliefs('empowering'),
+        getBeliefs('shadow'),
+      ]);
 
-      if (storedEmp) {
-        const parsed = JSON.parse(storedEmp);
-        if (Array.isArray(parsed)) {
-          setEmpoweringBeliefs(parsed);
-        }
-      } else {
-        setEmpoweringBeliefs(DEFAULT_EMPOWERING_BELIEFS);
-      }
+      const empTexts = Array.isArray(emp)
+        ? emp
+            .map((b: any) => b?.text || '')
+            .filter((t: string) => t && t.trim().length > 0)
+        : [];
 
-      if (storedShadow) {
-        const parsed = JSON.parse(storedShadow);
-        if (Array.isArray(parsed)) {
-          setShadowBeliefs(parsed);
-        }
-      } else {
-        setShadowBeliefs(DEFAULT_SHADOW_BELIEFS);
-      }
+      const shadowTexts = Array.isArray(shadow)
+        ? shadow
+            .map((b: any) => b?.text || '')
+            .filter((t: string) => t && t.trim().length > 0)
+        : [];
+
+      setEmpoweringBeliefs(empTexts);
+      setShadowBeliefs(shadowTexts);
+
+      console.log(
+        '[TodaysShiftView] Loaded beliefs from API',
+        empTexts.length,
+        shadowTexts.length,
+      );
     } catch (e) {
-      console.log('Error loading shift beliefs from storage', e);
-    } finally {
-      setHydrated(true);
+      console.log('[TodaysShiftView] Error loading beliefs from API', e);
+      // Fallback: if API fails, show nothing (or you could keep last state)
+      setEmpoweringBeliefs([]);
+      setShadowBeliefs([]);
     }
   }, []);
 
   // Check if today's shift is locked
-  const checkTodaysShift = useCallback(async () => {
+  const checkTodaysShift = useCallback(() => {
     try {
       const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
       console.log('🚀 ~ checkTodaysShift ~ today:', today);
@@ -132,20 +109,20 @@ export default function TodaysShiftView({
       // On error, default to showing detailed view
       setShowDetails(true);
     }
-  }, []);
+  }, [checkins, anchorDay]);
 
   // Initial mount
   useEffect(() => {
-    loadBeliefsFromStorage();
+    loadBeliefsFromApi();
     checkTodaysShift();
-  }, [loadBeliefsFromStorage, checkTodaysShift, checkins]);
+  }, [loadBeliefsFromApi, checkTodaysShift, checkins]);
 
   // Reload whenever the screen gains focus
   useFocusEffect(
     useCallback(() => {
-      loadBeliefsFromStorage();
+      loadBeliefsFromApi();
       checkTodaysShift();
-    }, [loadBeliefsFromStorage, checkTodaysShift, checkins]),
+    }, [loadBeliefsFromApi, checkTodaysShift]),
   );
 
   const countYes = (list: string[]) =>
@@ -197,7 +174,7 @@ export default function TodaysShiftView({
       await createCheckin(checkin);
       console.log('✅ [handleLock] Checkin saved to backend successfully');
 
-      // Wait for checkin to be saved before updating UI
+      // Inform parent
       await onCheckinUpdate(checkin);
 
       // Hide detailed view and show completed view immediately after locking
