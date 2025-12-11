@@ -141,11 +141,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
       try {
         if (isAddingNewBelief) {
+          // 🔹 new user-created belief → explicitly mark as not recommended
           await createBeliefQuestion({
             type: 'empowering',
             text: finalText,
             order: updatedList.length,
             is_active: true,
+            isRecommended: false,
           });
         } else if (current?.id && !current.id.startsWith('temp-')) {
           await updateBeliefQuestion(current.id, {
@@ -153,6 +155,8 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
             text: finalText,
             order: current.order_index ?? editingIndex + 1,
             is_active: current.is_active ?? true,
+            // keep whatever backend already has for isRecommended
+            isRecommended: current.isRecommended ?? false,
           });
         }
 
@@ -257,11 +261,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
       try {
         if (isAddingNewShadowBelief) {
+          // 🔹 user-created shadow → not recommended
           await createBeliefQuestion({
             type: 'shadow',
             text: finalText,
             order: updatedList.length,
             is_active: true,
+            isRecommended: false,
           });
         } else if (current?.id && !current.id.startsWith('temp-')) {
           await updateBeliefQuestion(current.id, {
@@ -269,6 +275,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
             text: finalText,
             order: current.order_index ?? shadowEditingIndex + 1,
             is_active: current.is_active ?? true,
+            isRecommended: current.isRecommended ?? false,
           });
         }
 
@@ -333,12 +340,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
         {beliefs.map((belief, idx) => {
           const isEditing = editingIndex === idx;
+          const showRecommended = belief.isRecommended && !isEditing; // 🔹 only when isRecommended = true
 
           return (
             <React.Fragment key={belief.id ?? idx}>
               <GradientHintBox
                 text={!isEditing ? belief.text : undefined}
-                showRecommendedChip={!isEditing} // Recommended on all
+                showRecommendedChip={showRecommended}
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditBelief(idx)}
@@ -388,12 +396,13 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
         {shadowBeliefs.map((belief, idx) => {
           const isEditing = shadowEditingIndex === idx;
+          const showRecommended = belief.isRecommended && !isEditing; // 🔹 same logic
 
           return (
             <React.Fragment key={belief.id ?? idx}>
               <GradientHintBox
                 text={!isEditing ? belief.text : undefined}
-                showRecommendedChip={!isEditing}
+                showRecommendedChip={showRecommended}
                 showEditButton={!isEditing}
                 editIcon={require('../assets/edit.png')}
                 onPressEdit={() => handleEditShadowBelief(idx)}
