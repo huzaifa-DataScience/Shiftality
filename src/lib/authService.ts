@@ -1005,6 +1005,7 @@ export interface ApiBeliefQuestion {
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
+  isRecommended?: boolean;
 }
 
 export async function getBeliefs(
@@ -1064,6 +1065,7 @@ export interface CreateBeliefQuestionPayload {
   text: string;
   order?: number;
   is_active?: boolean;
+  isRecommended?: boolean;
 }
 
 export interface CreateBeliefQuestionResponse {
@@ -1086,14 +1088,21 @@ export async function createBeliefQuestion(
 
     console.log('🧠 [createBeliefQuestion] payload:', payload);
 
+    // 🔹 Build body and only attach isRecommended if provided
+    const bodyToSend: any = {
+      type: payload.type,
+      text: payload.text,
+      order: payload.order,
+      is_active: payload.is_active ?? true,
+    };
+
+    if (typeof payload.isRecommended === 'boolean') {
+      bodyToSend.isRecommended = payload.isRecommended;
+    }
+
     const res = await api.post<CreateBeliefQuestionResponse>(
       '/functions/v1/create-belief-question',
-      {
-        type: payload.type,
-        text: payload.text,
-        order: payload.order,
-        is_active: payload.is_active ?? true,
-      },
+      bodyToSend,
       {
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -1145,6 +1154,7 @@ export interface UpdateBeliefQuestionPayload {
   text?: string;
   order?: number;
   is_active?: boolean;
+  isRecommended?: boolean;
 }
 
 export interface UpdateBeliefQuestionResponse {
