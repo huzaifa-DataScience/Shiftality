@@ -17,6 +17,7 @@ import {
   scale,
 } from 'react-native-size-matters';
 import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
+import { useFontSize } from '../../theme/FontSizeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientBackground from '../../components/GradientBackground';
 import Stepper from '../../components/survey/Stepper';
@@ -40,6 +41,7 @@ export default function FinanceSurveyScreen() {
 
   const theme = useAppTheme();
   const { themeMode } = useThemeMode();
+  const { scaledFontSize } = useFontSize();
   const isDark = themeMode === 'dark';
   const navigation = useNavigation<RootNav>();
   const dispatch = useDispatch();
@@ -223,11 +225,22 @@ export default function FinanceSurveyScreen() {
           >
             <View style={{ alignItems: 'center' }}>
               <Stepper total={totalSteps} current={step + 1} />
-              <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
+              <Text
+                style={[
+                  styles.headerTitle,
+                  { color: theme.colors.text, fontSize: scaledFontSize(28) },
+                ]}
+              >
                 {current.title}
               </Text>
               <Text
-                style={[styles.headerSub, { color: theme.colors.textMuted }]}
+                style={[
+                  styles.headerSub,
+                  {
+                    color: theme.colors.textMuted,
+                    fontSize: scaledFontSize(18),
+                  },
+                ]}
               >
                 {current.subtitle}
               </Text>
@@ -261,7 +274,12 @@ export default function FinanceSurveyScreen() {
               end={{ x: 1, y: 0.5 }}
               style={[styles.cta, step === 0 && { opacity: 0.6 }]}
             >
-              <Text style={[styles.ctaTextMuted, { color: theme.colors.text }]}>
+              <Text
+                style={[
+                  styles.ctaTextMuted,
+                  { color: theme.colors.text, fontSize: scaledFontSize(14.5) },
+                ]}
+              >
                 Back
               </Text>
             </LinearGradient>

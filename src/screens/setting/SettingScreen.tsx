@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
+import { useFontSize } from '../../theme/FontSizeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 import GradientHintBox from '../../components/GradientHintBox';
@@ -39,6 +40,7 @@ const fontSizeOptions = ['Small', 'Normal', 'Large'];
 export default function SettingScreen() {
   const theme = useAppTheme();
   const { themeMode, setThemeMode } = useThemeMode();
+  const { fontSize, setFontSize, scaledFontSize } = useFontSize();
   const isDark = themeMode === 'dark';
   const dispatch = useDispatch();
   const navigation = useNavigation();
@@ -87,7 +89,6 @@ export default function SettingScreen() {
   const [themeVal, setThemeVal] = useState<string>(
     themeMode === 'dark' ? 'Dark' : 'Light',
   );
-  const [fontVal, setFontVal] = useState<string>('Normal');
   const [colorBlind, setColorBlind] = useState<boolean>(true);
   const [reminder, setReminder] = useState<boolean>(true);
 
@@ -109,6 +110,13 @@ export default function SettingScreen() {
     }
   };
 
+  // Handle font size change
+  const handleFontSizeChange = (value: string) => {
+    if (value === 'Small' || value === 'Normal' || value === 'Large') {
+      setFontSize(value);
+    }
+  };
+
   // Format baseline index for display
   const baselineIndexStr =
     baselineIndex != null ? `${Math.round(baselineIndex)}/100` : '—';
@@ -126,10 +134,20 @@ export default function SettingScreen() {
         showsVerticalScrollIndicator={false}
       >
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>
+          <Text
+            style={[
+              styles.title,
+              { color: theme.colors.text, fontSize: scaledFontSize(18) },
+            ]}
+          >
             Settings
           </Text>
-          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
+          <Text
+            style={[
+              styles.subTitle,
+              { color: theme.colors.textMuted, fontSize: scaledFontSize(16) },
+            ]}
+          >
             Customize your shiftality experience
           </Text>
           <View style={{ height: scale(10) }} />
@@ -187,10 +205,20 @@ export default function SettingScreen() {
 
         {/* Daily Belief Set intro card */}
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>
+          <Text
+            style={[
+              styles.title,
+              { color: theme.colors.text, fontSize: scaledFontSize(18) },
+            ]}
+          >
             Daily Belief Set
           </Text>
-          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
+          <Text
+            style={[
+              styles.subTitle,
+              { color: theme.colors.textMuted, fontSize: scaledFontSize(16) },
+            ]}
+          >
             {'Manage your empowering and shadow\nbeliefs for daily tracking'}
           </Text>
         </GradientCardHome>
@@ -222,15 +250,30 @@ export default function SettingScreen() {
         <View style={{ height: scale(20) }} />
 
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>
+          <Text
+            style={[
+              styles.title,
+              { color: theme.colors.text, fontSize: scaledFontSize(18) },
+            ]}
+          >
             Appearance
           </Text>
-          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
+          <Text
+            style={[
+              styles.subTitle,
+              { color: theme.colors.textMuted, fontSize: scaledFontSize(16) },
+            ]}
+          >
             Customize the look and feel of your app
           </Text>
 
           {/* Theme */}
-          <Text style={[styles.label, { color: theme.colors.text }]}>
+          <Text
+            style={[
+              styles.label,
+              { color: theme.colors.text, fontSize: scaledFontSize(14) },
+            ]}
+          >
             Theme
           </Text>
           <GradientSelect
@@ -245,15 +288,19 @@ export default function SettingScreen() {
           <Text
             style={[
               styles.label,
-              { marginTop: s(18), color: theme.colors.text },
+              {
+                marginTop: s(18),
+                color: theme.colors.text,
+                fontSize: scaledFontSize(14),
+              },
             ]}
           >
             Font size
           </Text>
           <GradientSelect
-            value={fontVal}
+            value={fontSize}
             options={fontSizeOptions}
-            onChange={setFontVal}
+            onChange={handleFontSizeChange}
             sheetTitle="Select Font Size"
             containerStyle={{ marginTop: s(8) }}
           />
@@ -267,7 +314,7 @@ export default function SettingScreen() {
               alignItems: 'center',
             }}
           >
-            <Text style={[styles.sectionHeading, { color: theme.colors.text }]}>
+            <Text style={[styles.sectionHeading, { color: theme.colors.text, fontSize: scaledFontSize(16) }]}>
               Color-blind Mode
             </Text>
             <View style={styles.switchRow}>
@@ -285,7 +332,7 @@ export default function SettingScreen() {
               />
             </View>
           </View>
-          <Text style={[styles.helper, { color: theme.colors.textMuted }]}>
+          <Text style={[styles.helper, { color: theme.colors.textMuted, fontSize: scaledFontSize(16) }]}>
             Use blue/orange instead of green/red colors
           </Text> */}
         </GradientCardHome>
@@ -293,10 +340,20 @@ export default function SettingScreen() {
         <View style={{ height: scale(20) }} />
 
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>
+          <Text
+            style={[
+              styles.title,
+              { color: theme.colors.text, fontSize: scaledFontSize(18) },
+            ]}
+          >
             Export All Data
           </Text>
-          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
+          <Text
+            style={[
+              styles.subTitle,
+              { color: theme.colors.textMuted, fontSize: scaledFontSize(16) },
+            ]}
+          >
             Downloads a JSON file with your profile, Shiftality Scan results,
             check-ins, and reflections
           </Text>
@@ -312,7 +369,12 @@ export default function SettingScreen() {
               end={{ x: 1, y: 0.5 }}
               style={styles.cta}
             >
-              <Text style={[styles.ctaText, { color: theme.colors.text }]}>
+              <Text
+                style={[
+                  styles.ctaText,
+                  { color: theme.colors.text, fontSize: scaledFontSize(18) },
+                ]}
+              >
                 Export Data
               </Text>
             </LinearGradient>
@@ -320,10 +382,20 @@ export default function SettingScreen() {
         </GradientCardHome>
         <View style={{ height: scale(20) }} />
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>
+          <Text
+            style={[
+              styles.title,
+              { color: theme.colors.text, fontSize: scaledFontSize(18) },
+            ]}
+          >
             Reminders
           </Text>
-          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
+          <Text
+            style={[
+              styles.subTitle,
+              { color: theme.colors.textMuted, fontSize: scaledFontSize(16) },
+            ]}
+          >
             Test reminder notifications and system functionality
           </Text>
           <View
@@ -334,7 +406,12 @@ export default function SettingScreen() {
               alignItems: 'center',
             }}
           >
-            <Text style={[styles.title, { color: theme.colors.text }]}>
+            <Text
+              style={[
+                styles.title,
+                { color: theme.colors.text, fontSize: scaledFontSize(18) },
+              ]}
+            >
               Enable Reminders
             </Text>
             <Switch
@@ -348,7 +425,12 @@ export default function SettingScreen() {
               ios_backgroundColor={isDark ? '#243447' : '#E5E7EB'}
             />
           </View>
-          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
+          <Text
+            style={[
+              styles.subTitle,
+              { color: theme.colors.textMuted, fontSize: scaledFontSize(16) },
+            ]}
+          >
             Get notified if you haven't completed your daily check-in
           </Text>
         </GradientCardHome>

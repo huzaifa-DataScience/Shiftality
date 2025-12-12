@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { useFontSize } from '../../theme/FontSizeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientInput from '../../components/GradientInput';
 import GradientTimezoneSelect from '../../components/GradientTImeZoneSelect';
@@ -35,6 +36,7 @@ export default function HomeScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const user = useSelector(selectUser);
   const theme = useAppTheme();
+  const { scaledFontSize } = useFontSize();
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<{
@@ -303,18 +305,34 @@ export default function HomeScreen() {
         <View style={styles.root}>
           <GradientCardHome style={{ marginTop: vs(50), width: scale(330) }}>
             <View style={{ alignItems: 'center' }}>
-              <Text style={[styles.title, { color: theme.colors.text }]}>
+              <Text
+                style={[
+                  styles.title,
+                  { color: theme.colors.text, fontSize: scaledFontSize(26) },
+                ]}
+              >
                 Welcome to Shiftality
               </Text>
               <Text
-                style={[styles.subtitle, { color: theme.colors.textMuted }]}
+                style={[
+                  styles.subtitle,
+                  {
+                    color: theme.colors.textMuted,
+                    fontSize: scaledFontSize(14),
+                  },
+                ]}
               >
                 {"Let's set up your personalized reality\nshift journey"}
               </Text>
             </View>
 
             {/* Name */}
-            <Text style={[styles.label, { color: theme.colors.text }]}>
+            <Text
+              style={[
+                styles.label,
+                { color: theme.colors.text, fontSize: scaledFontSize(14) },
+              ]}
+            >
               First Name
             </Text>
             <GradientInput
@@ -326,7 +344,12 @@ export default function HomeScreen() {
             {validationErrors.firstName && (
               <Text style={styles.errorText}>{validationErrors.firstName}</Text>
             )}
-            <Text style={[styles.helper, { color: theme.colors.textMuted }]}>
+            <Text
+              style={[
+                styles.helper,
+                { color: theme.colors.textMuted, fontSize: scaledFontSize(12) },
+              ]}
+            >
               2–20 Characters
             </Text>
 
@@ -334,7 +357,11 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.label,
-                { marginTop: vs(18), color: theme.colors.text },
+                {
+                  marginTop: vs(18),
+                  color: theme.colors.text,
+                  fontSize: scaledFontSize(14),
+                },
               ]}
             >
               Time Zone
@@ -351,7 +378,11 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.label,
-                { marginTop: vs(18), color: theme.colors.text },
+                {
+                  marginTop: vs(18),
+                  color: theme.colors.text,
+                  fontSize: scaledFontSize(14),
+                },
               ]}
             >
               Journey Start Date *
@@ -361,7 +392,12 @@ export default function HomeScreen() {
               onChange={d => setJourneyStartDate(d.toISOString())} // Date -> string
               minimumDate={new Date()}
             />
-            <Text style={[styles.helper, { color: theme.colors.textMuted }]}>
+            <Text
+              style={[
+                styles.helper,
+                { color: theme.colors.textMuted, fontSize: scaledFontSize(12) },
+              ]}
+            >
               Cannot be in the past
             </Text>
             {validationErrors.journeyStartDate && (
@@ -376,7 +412,12 @@ export default function HomeScreen() {
             style={{ marginVertical: vs(20), width: scale(330) }}
           >
             <View style={{ alignItems: 'center', marginBottom: s(10) }}>
-              <Text style={[styles.Sectitle, { color: theme.colors.text }]}>
+              <Text
+                style={[
+                  styles.Sectitle,
+                  { color: theme.colors.text, fontSize: scaledFontSize(22) },
+                ]}
+              >
                 {'Your 1-Year North Star (Highest\nVibration Goal) *'}
               </Text>
             </View>
@@ -399,7 +440,12 @@ export default function HomeScreen() {
             )}
 
             <View style={{ alignItems: 'center', marginVertical: s(15) }}>
-              <Text style={[styles.Sectitle, { color: theme.colors.text }]}>
+              <Text
+                style={[
+                  styles.Sectitle,
+                  { color: theme.colors.text, fontSize: scaledFontSize(22) },
+                ]}
+              >
                 {"Your 1-Year Shadow Path (What\nYou're Shifting Away From) *"}
               </Text>
             </View>
@@ -424,11 +470,21 @@ export default function HomeScreen() {
 
           {/* CARD 3: Preferred Check-in Time */}
           <GradientCardHome style={{ marginBottom: vs(20), width: scale(330) }}>
-            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
+            <Text
+              style={[
+                styles.cardTitle,
+                { color: theme.colors.text, fontSize: scaledFontSize(22) },
+              ]}
+            >
               Preferred Check-in Time *
             </Text>
 
-            <Text style={[styles.cardSub, { color: theme.colors.textMuted }]}>
+            <Text
+              style={[
+                styles.cardSub,
+                { color: theme.colors.textMuted, fontSize: scaledFontSize(14) },
+              ]}
+            >
               Choose a time when your day is winding down and you can
               self-reflect without distractions. This is your moment to honestly
               assess your beliefs and track your reality shift progress.
@@ -449,7 +505,12 @@ export default function HomeScreen() {
             {/* DND row */}
             <View style={styles.row2}>
               <View style={styles.col}>
-                <Text style={[styles.smallLabel, { color: theme.colors.text }]}>
+                <Text
+                  style={[
+                    styles.smallLabel,
+                    { color: theme.colors.text, fontSize: scaledFontSize(14) },
+                  ]}
+                >
                   Do Not Disturb Start
                 </Text>
                 <GradientDatePicker
@@ -460,7 +521,12 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.col}>
-                <Text style={[styles.smallLabel, { color: theme.colors.text }]}>
+                <Text
+                  style={[
+                    styles.smallLabel,
+                    { color: theme.colors.text, fontSize: scaledFontSize(14) },
+                  ]}
+                >
                   Do Not Disturb End
                 </Text>
                 <GradientDatePicker
@@ -484,7 +550,10 @@ export default function HomeScreen() {
           </GradientCardHome>
 
           <GradientToggleRow
-            style={{ width: scale(370), marginBottom: vs(20) }}
+            style={{
+              width: scale(325),
+              marginBottom: vs(20),
+            }}
             label="Allow Notifications"
             value={allowNotifications}
             onValueChange={v => setAllowNotifications(v)}

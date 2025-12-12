@@ -1,5 +1,6 @@
 import React from 'react';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
+import { FontSizeProvider } from './src/theme/FontSizeProvider';
 import RootNavigator from './src/navigation/RootNavigator';
 import {
   NavigationContainer,
@@ -70,7 +71,9 @@ export default function App() {
     <SafeAreaProvider>
       <Provider store={store}>
         <ThemeProvider>
-          <AppContent />
+          <FontSizeProvider>
+            <AppContent />
+          </FontSizeProvider>
         </ThemeProvider>
       </Provider>
     </SafeAreaProvider>
