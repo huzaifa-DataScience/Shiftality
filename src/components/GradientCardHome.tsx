@@ -23,7 +23,13 @@ const GradientCardHome: React.FC<Props> = ({
 
   if (isDark) {
     return (
-      <View style={[styles.stack, { backgroundColor: theme.colors.cardBackground }, style]}>
+      <View
+        style={[
+          styles.stack,
+          { backgroundColor: theme.colors.cardBackground },
+          style,
+        ]}
+      >
         {/* Soft diagonal gradient: bright bottom-right, darker mid, subtle fade to top-left */}
         <LinearGradient
           pointerEvents="none"

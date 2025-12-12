@@ -18,7 +18,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 import GradientCardHome from './GradientCardHome';
 import GradientHintBox from './GradientHintBox';
 import PrimaryButton from './PrimaryButton';
@@ -89,6 +89,9 @@ prompted by your device. Demo reminders
 will show "(Demo)" in the title to distinguish
 them from real reminders.`,
 }) => {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const notificationOutline = require('../assets/notificationOutlineRed.png');
 
   // reminders & selection (fetched from backend)
@@ -422,8 +425,12 @@ them from real reminders.`,
   return (
     <>
       <GradientCardHome style={[{ width: scale(330) }, cardStyle]}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subTitle}>{subtitle}</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>
+          {title}
+        </Text>
+        <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
+          {subtitle}
+        </Text>
         <View style={{ height: scale(10) }} />
         <View
           style={{
@@ -432,7 +439,12 @@ them from real reminders.`,
             alignItems: 'center',
           }}
         >
-          <Text style={[styles.title, { marginBottom: scale(0) }]}>
+          <Text
+            style={[
+              styles.title,
+              { marginBottom: scale(0), color: theme.colors.text },
+            ]}
+          >
             {globalEnabled ? 'Enabled' : 'Disabled'}
           </Text>
 
@@ -473,12 +485,12 @@ them from real reminders.`,
           style={{ marginTop: vs(10) }}
         >
           <LinearGradient
-            colors={['#143f65ff', '#1C2A3A']}
+            colors={theme.colors.cardGradient}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={[styles.cta, { opacity: 0.95 }]}
           >
-            <Text style={[styles.ctaText, { color: palette.txtBlue }]}>
+            <Text style={[styles.ctaText, { color: theme.colors.text }]}>
               Test Notification Permission
             </Text>
           </LinearGradient>
@@ -496,13 +508,10 @@ them from real reminders.`,
 
         {/* Full demo sequence */}
         <PrimaryButton
-          textColor={palette.white}
           style={{
             width: '100%',
             height: 'auto',
             alignSelf: 'center',
-            textAlign: 'center',
-            color: palette.white,
             fontSize: ms(14.5),
             fontFamily: 'SourceSansPro-Regular',
             fontWeight: '700',
@@ -558,11 +567,14 @@ them from real reminders.`,
           {/* Prevent tap-through so modal does not close when user taps card */}
           <TouchableOpacity
             activeOpacity={1}
-            style={styles.modalCard}
+            style={[
+              styles.modalCard,
+              { backgroundColor: theme.colors.background },
+            ]}
             onPress={() => {}}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
                 {editingIndex !== null
                   ? `Set Reminder ${editingIndex + 1}`
                   : 'Set Reminder'}
@@ -576,7 +588,9 @@ them from real reminders.`,
             </View>
 
             {/* Title */}
-            <Text style={styles.label}>Title</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>
+              Title
+            </Text>
             <GradientInput
               value={reminderTitle}
               onChangeText={text => {
@@ -590,7 +604,9 @@ them from real reminders.`,
             ) : null}
 
             {/* Description */}
-            <Text style={styles.label}>Description</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>
+              Description
+            </Text>
             <GradientInput
               value={reminderDesc}
               onChangeText={text => {
@@ -605,13 +621,20 @@ them from real reminders.`,
             ) : null}
 
             {/* Time */}
-            <Text style={styles.label}>Time (every day)</Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>
+              Time (every day)
+            </Text>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setShowTimePicker(true)}
-              style={styles.timePickerButton}
+              style={[
+                styles.timePickerButton,
+                { borderColor: theme.colors.border },
+              ]}
             >
-              <Text style={styles.timePickerText}>
+              <Text
+                style={[styles.timePickerText, { color: theme.colors.text }]}
+              >
                 {formatTime(reminderTime)}
               </Text>
             </TouchableOpacity>
@@ -620,7 +643,7 @@ them from real reminders.`,
               <DateTimePicker
                 value={reminderTime}
                 mode="time"
-                themeVariant="dark"
+                themeVariant={isDark ? 'dark' : 'light'}
                 is24Hour={false}
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={onTimeChange}
@@ -630,20 +653,35 @@ them from real reminders.`,
             {/* Buttons */}
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
+                style={[
+                  styles.modalButton,
+                  { backgroundColor: theme.colors.background },
+                ]}
                 onPress={() => {
                   setReminderModalVisible(false);
                   setShowTimePicker(false);
                 }}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text
+                  style={[styles.modalButtonText, { color: theme.colors.text }]}
+                >
+                  Cancel
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#00BFFF' }]}
+                style={[
+                  styles.modalButton,
+                  { backgroundColor: theme.colors.primary },
+                ]}
                 onPress={onSaveReminder}
               >
-                <Text style={styles.modalButtonText}>
+                <Text
+                  style={[
+                    styles.modalButtonText,
+                    { color: theme.colors.onPrimary },
+                  ]}
+                >
                   {isEditingExisting ? 'Update' : 'Save'}
                 </Text>
               </TouchableOpacity>
@@ -661,14 +699,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: scale(18),
     fontWeight: '800',
-    color: palette.white,
     marginBottom: scale(10),
     fontFamily: 'SourceSansPro-Regular',
   },
   subTitle: {
     fontSize: scale(16),
     fontWeight: '500',
-    color: palette.white,
     lineHeight: scale(20),
     fontFamily: 'SourceSansPro-Regular',
   },
@@ -680,7 +716,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ctaText: {
-    color: '#0E2440',
     fontSize: ms(15),
     fontWeight: '800',
     fontFamily: 'SourceSansPro-Regular',
@@ -701,17 +736,14 @@ const styles = StyleSheet.create({
     borderRadius: s(18),
     paddingVertical: vs(16),
     paddingHorizontal: s(16),
-    backgroundColor: '#101725',
   },
   modalTitle: {
-    color: palette.white,
     fontSize: ms(16),
     fontWeight: '800',
     marginBottom: vs(12),
     fontFamily: 'SourceSansPro-Regular',
   },
   label: {
-    color: palette.white,
     fontWeight: '800',
     fontSize: ms(14),
     marginBottom: vs(8),
@@ -721,13 +753,11 @@ const styles = StyleSheet.create({
   timePickerButton: {
     borderRadius: s(12),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
     paddingVertical: vs(10),
     paddingHorizontal: s(12),
     marginTop: vs(4),
   },
   timePickerText: {
-    color: palette.white,
     fontSize: ms(14),
     fontFamily: 'SourceSansPro-Regular',
   },
@@ -743,7 +773,6 @@ const styles = StyleSheet.create({
     marginLeft: s(10),
   },
   modalButtonText: {
-    color: palette.white,
     fontSize: ms(14),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',

@@ -498,7 +498,7 @@ export default function ShiftMapChart({
                 display="inline"
                 onChange={onDatePickerChange}
                 style={{
-                  backgroundColor: isDark ? theme.colors.card : '#FFFFFF',
+                  backgroundColor: isDark ? theme.colors.background : '#FFFFFF',
                 }}
                 themeVariant={isDark ? 'dark' : 'light'}
               />

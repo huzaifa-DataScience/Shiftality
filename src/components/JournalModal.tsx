@@ -15,7 +15,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { ms, s, scale, vs } from 'react-native-size-matters';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 import GradientInput from './GradientInput';
 import { useJournals } from '../contexts/JournalContext';
 
@@ -25,6 +25,9 @@ type JournalModalProps = {
 };
 
 export default function JournalModal({ visible, onClose }: JournalModalProps) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const { journalEntries, addJournal, deleteJournal, selectedFilterDate } =
     useJournals();
   console.log('🚀 ~ JournalModal ~ journalEntries:', journalEntries);
@@ -188,15 +191,22 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
           <Pressable style={styles.modalBackdrop} onPress={closeModal} />
 
           {/* Bottom sheet */}
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
+          <View
+            style={[
+              styles.modalCard,
+              { backgroundColor: theme.colors.background },
+            ]}
+          >
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
               {isAddingJournal ? 'Add Journal Entry' : 'Journal'}
             </Text>
 
             {/* Show filter info if date is filtered */}
             {!isAddingJournal && selectedFilterDate && (
               <View style={{ marginBottom: vs(6) }}>
-                <Text style={styles.filterInfo}>
+                <Text
+                  style={[styles.filterInfo, { color: theme.colors.textMuted }]}
+                >
                   Showing entries for {formatFilterDate(selectedFilterDate)}
                 </Text>
               </View>
@@ -205,7 +215,12 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
             {!isAddingJournal && (
               <>
                 {visibleJournals.length === 0 ? (
-                  <Text style={styles.emptyText}>
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      { color: theme.colors.textMuted },
+                    ]}
+                  >
                     {selectedFilterDate
                       ? 'No journal entries for this date yet.'
                       : 'No journal entries yet. Start by adding your first one.'}
@@ -218,19 +233,43 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
                     keyboardShouldPersistTaps="handled"
                   >
                     {visibleJournals.map(entry => (
-                      <View key={entry.id} style={styles.journalItem}>
+                      <View
+                        key={entry.id}
+                        style={[
+                          styles.journalItem,
+                          {
+                            backgroundColor: isDark
+                              ? '#141D2C'
+                              : 'rgba(255, 255, 255, 0.6)',
+                            borderColor: theme.colors.border,
+                          },
+                        ]}
+                      >
                         <View style={styles.journalHeaderRow}>
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.journalItemTitle}>
+                            <Text
+                              style={[
+                                styles.journalItemTitle,
+                                { color: theme.colors.text },
+                              ]}
+                            >
                               {entry.title}
                             </Text>
-                            <Text style={styles.journalItemMeta}>
+                            <Text
+                              style={[
+                                styles.journalItemMeta,
+                                { color: theme.colors.textMuted },
+                              ]}
+                            >
                               {entry.date} · {entry.time}
                             </Text>
                           </View>
 
                           <TouchableOpacity
-                            style={styles.deleteBadge}
+                            style={[
+                              styles.deleteBadge,
+                              { borderColor: '#FF6B6B' },
+                            ]}
                             activeOpacity={0.8}
                             onPress={() => handleDeleteJournal(entry.id)}
                           >
@@ -238,7 +277,13 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
                           </TouchableOpacity>
                         </View>
 
-                        <Text style={styles.journalItemDesc} numberOfLines={3}>
+                        <Text
+                          style={[
+                            styles.journalItemDesc,
+                            { color: theme.colors.text },
+                          ]}
+                          numberOfLines={3}
+                        >
                           {entry.description}
                         </Text>
                       </View>
@@ -247,21 +292,39 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
                 )}
 
                 <TouchableOpacity
-                  style={styles.addJournalBtn}
+                  style={[
+                    styles.addJournalBtn,
+                    { borderColor: theme.colors.primary },
+                  ]}
                   activeOpacity={0.9}
                   onPress={handleStartAddJournal}
                 >
-                  <Text style={styles.addJournalBtnText}>
+                  <Text
+                    style={[
+                      styles.addJournalBtnText,
+                      { color: theme.colors.primary },
+                    ]}
+                  >
                     + Add New Journal
                   </Text>
                 </TouchableOpacity>
 
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
+                    style={[
+                      styles.modalButton,
+                      { backgroundColor: theme.colors.card },
+                    ]}
                     onPress={closeModal}
                   >
-                    <Text style={styles.modalButtonText}>Close</Text>
+                    <Text
+                      style={[
+                        styles.modalButtonText,
+                        { color: theme.colors.text },
+                      ]}
+                    >
+                      Close
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -269,7 +332,9 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
 
             {isAddingJournal && (
               <>
-                <Text style={styles.modalLabel}>Title</Text>
+                <Text style={[styles.modalLabel, { color: theme.colors.text }]}>
+                  Title
+                </Text>
                 <GradientInput
                   value={journalTitle}
                   onChangeText={(t: string) => {
@@ -279,7 +344,9 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
                   placeholder="Give your journal a title"
                 />
 
-                <Text style={styles.modalLabel}>Description</Text>
+                <Text style={[styles.modalLabel, { color: theme.colors.text }]}>
+                  Description
+                </Text>
                 <GradientInput
                   value={journalDesc}
                   onChangeText={(t: string) => {
@@ -288,30 +355,54 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
                   }}
                   placeholder="What happened today? How do you feel?"
                   multiline
-                  inputStyle={{ minHeight: vs(80) }}
+                  style={{ minHeight: vs(80) }}
                 />
 
                 <View style={styles.rowBetween}>
                   <View style={{ flex: 1, marginRight: s(6) }}>
-                    <Text style={styles.modalLabel}>Date</Text>
+                    <Text
+                      style={[styles.modalLabel, { color: theme.colors.text }]}
+                    >
+                      Date
+                    </Text>
                     <TouchableOpacity
-                      style={styles.pickerButton}
+                      style={[
+                        styles.pickerButton,
+                        { borderColor: theme.colors.border },
+                      ]}
                       onPress={() => setShowDatePicker(true)}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.pickerButtonText}>
+                      <Text
+                        style={[
+                          styles.pickerButtonText,
+                          { color: theme.colors.text },
+                        ]}
+                      >
                         {formatDate(journalDate)}
                       </Text>
                     </TouchableOpacity>
                   </View>
                   <View style={{ flex: 1, marginLeft: s(6) }}>
-                    <Text style={styles.modalLabel}>Time</Text>
+                    <Text
+                      style={[styles.modalLabel, { color: theme.colors.text }]}
+                    >
+                      Time
+                    </Text>
                     <TouchableOpacity
-                      style={styles.pickerButton}
+                      style={[
+                        styles.pickerButton,
+                        { borderColor: theme.colors.border },
+                      ]}
                       onPress={() => setShowTimePicker(true)}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.pickerButtonText}>
+                      <Text
+                        style={[
+                          styles.pickerButtonText,
+                          { color: theme.colors.text },
+                        ]}
+                      >
                         {formatTime(journalTime)}
                       </Text>
                     </TouchableOpacity>
@@ -322,7 +413,7 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
                   <DateTimePicker
                     value={journalDate}
                     mode="date"
-                    themeVariant="dark"
+                    themeVariant={isDark ? 'dark' : 'light'}
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onChange={onChangeDate}
                   />
@@ -333,7 +424,7 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
                     value={journalTime}
                     mode="time"
                     is24Hour={false}
-                    themeVariant="dark"
+                    themeVariant={isDark ? 'dark' : 'light'}
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onChange={onChangeTime}
                   />
@@ -345,19 +436,39 @@ export default function JournalModal({ visible, onClose }: JournalModalProps) {
 
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#2b3950' }]}
+                    style={[
+                      styles.modalButton,
+                      { backgroundColor: theme.colors.card },
+                    ]}
                     onPress={() => {
                       setIsAddingJournal(false);
                       setJournalError(null);
                     }}
                   >
-                    <Text style={styles.modalButtonText}>Cancel</Text>
+                    <Text
+                      style={[
+                        styles.modalButtonText,
+                        { color: theme.colors.text },
+                      ]}
+                    >
+                      Cancel
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: '#00BFFF' }]}
+                    style={[
+                      styles.modalButton,
+                      { backgroundColor: theme.colors.primary },
+                    ]}
                     onPress={handleSaveJournal}
                   >
-                    <Text style={styles.modalButtonText}>Save</Text>
+                    <Text
+                      style={[
+                        styles.modalButtonText,
+                        { color: theme.colors.onPrimary },
+                      ]}
+                    >
+                      Save
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -379,7 +490,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalCard: {
-    backgroundColor: '#101725',
     paddingHorizontal: s(16),
     paddingTop: vs(14),
     paddingBottom: vs(24),
@@ -388,20 +498,17 @@ const styles = StyleSheet.create({
     maxHeight: vs(520),
   },
   modalTitle: {
-    color: palette.white,
     fontSize: ms(18),
     fontWeight: '800',
     marginBottom: vs(10),
     fontFamily: 'SourceSansPro-Regular',
   },
   emptyText: {
-    color: 'rgba(255,255,255,0.8)',
     fontSize: ms(14),
     marginTop: vs(8),
     fontFamily: 'SourceSansPro-Regular',
   },
   filterInfo: {
-    color: 'rgba(255,255,255,0.8)',
     fontSize: ms(12),
     fontFamily: 'SourceSansPro-Regular',
   },
@@ -413,13 +520,11 @@ const styles = StyleSheet.create({
     paddingBottom: vs(8),
   },
   journalItem: {
-    backgroundColor: '#141D2C',
     borderRadius: s(14),
     paddingVertical: vs(10),
     paddingHorizontal: s(12),
     marginBottom: vs(10),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -431,19 +536,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   journalItemTitle: {
-    color: palette.white,
     fontSize: ms(15),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
   },
   journalItemMeta: {
-    color: 'rgba(255,255,255,0.7)',
     fontSize: ms(12),
     marginTop: vs(4),
     fontFamily: 'SourceSansPro-Regular',
   },
   journalItemDesc: {
-    color: 'rgba(255,255,255,0.92)',
     fontSize: ms(13),
     marginTop: vs(6),
     lineHeight: ms(18),
@@ -469,12 +571,10 @@ const styles = StyleSheet.create({
     paddingVertical: vs(10),
     borderRadius: s(20),
     borderWidth: 1,
-    borderColor: '#00BFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   addJournalBtnText: {
-    color: '#00BFFF',
     fontSize: ms(14.5),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
@@ -491,13 +591,11 @@ const styles = StyleSheet.create({
     marginLeft: s(8),
   },
   modalButtonText: {
-    color: palette.white,
     fontSize: ms(14),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
   },
   modalLabel: {
-    color: palette.white,
     fontSize: ms(14),
     fontWeight: '700',
     marginTop: vs(10),
@@ -511,12 +609,10 @@ const styles = StyleSheet.create({
   pickerButton: {
     borderRadius: s(12),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
     paddingVertical: vs(10),
     paddingHorizontal: s(10),
   },
   pickerButtonText: {
-    color: palette.white,
     fontSize: ms(14),
     fontFamily: 'SourceSansPro-Regular',
   },

@@ -8,7 +8,7 @@ import {
   Switch,
   TouchableOpacity,
 } from 'react-native';
-import { palette } from '../../theme';
+import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 import GradientHintBox from '../../components/GradientHintBox';
@@ -16,6 +16,7 @@ import GradientHintBoxVibe from '../../components/GradientHintBoxVibe';
 import PrimaryButton from '../../components/PrimaryButton';
 import GradientSelect from '../../components/GradientSelect';
 import LinearGradient from 'react-native-linear-gradient';
+import GradientBackground from '../../components/GradientBackground';
 import {
   selectHomeOnboarding,
   setArchetype,
@@ -36,6 +37,9 @@ const themeOptions = ['System', 'Light', 'Dark'];
 const fontSizeOptions = ['Small', 'Normal', 'Large'];
 
 export default function SettingScreen() {
+  const theme = useAppTheme();
+  const { themeMode, setThemeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const onboarding = useSelector(selectHomeOnboarding);
@@ -79,10 +83,31 @@ export default function SettingScreen() {
     loadProfile();
   }, []);
 
-  const [themeVal, setThemeVal] = useState<string>('System');
+  // Sync themeVal with current theme mode
+  const [themeVal, setThemeVal] = useState<string>(
+    themeMode === 'dark' ? 'Dark' : 'Light',
+  );
   const [fontVal, setFontVal] = useState<string>('Normal');
   const [colorBlind, setColorBlind] = useState<boolean>(true);
   const [reminder, setReminder] = useState<boolean>(true);
+
+  // Update themeVal when themeMode changes
+  useEffect(() => {
+    setThemeVal(themeMode === 'dark' ? 'Dark' : 'Light');
+  }, [themeMode]);
+
+  // Handle theme change
+  const handleThemeChange = (value: string) => {
+    setThemeVal(value);
+    if (value === 'Light') {
+      setThemeMode('light');
+    } else if (value === 'Dark') {
+      setThemeMode('dark');
+    } else if (value === 'System') {
+      // For System, default to dark (or you can implement system detection)
+      setThemeMode('dark');
+    }
+  };
 
   // Format baseline index for display
   const baselineIndexStr =
@@ -90,14 +115,21 @@ export default function SettingScreen() {
   const archeypeDisplay = archetype || 'Balanced Explorer';
 
   return (
-    <View style={styles.root}>
+    <GradientBackground>
       <ScrollView
-        style={{ backgroundColor: palette.darkBlue, marginVertical: scale(20) }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          alignItems: 'center',
+          paddingTop: scale(20),
+          paddingBottom: scale(20),
+        }}
         showsVerticalScrollIndicator={false}
       >
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={styles.title}>Settings</Text>
-          <Text style={styles.subTitle}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Settings
+          </Text>
+          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
             Customize your shiftality experience
           </Text>
           <View style={{ height: scale(10) }} />
@@ -146,7 +178,7 @@ export default function SettingScreen() {
             footerActionLabel="Retake Shiftality Scan"
             footerIcon={require('../../assets/clear_choices.png')}
             onPressFooterAction={() => {
-              navigation.navigate('Main', { screen: 'Search' });
+              (navigation as any).navigate('Main', { screen: 'Search' });
             }}
           />
         </GradientCardHome>
@@ -155,8 +187,10 @@ export default function SettingScreen() {
 
         {/* Daily Belief Set intro card */}
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={styles.title}>Daily Belief Set</Text>
-          <Text style={styles.subTitle}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Daily Belief Set
+          </Text>
+          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
             {'Manage your empowering and shadow\nbeliefs for daily tracking'}
           </Text>
         </GradientCardHome>
@@ -181,30 +215,41 @@ export default function SettingScreen() {
           showSwitch
           switchValue={reflectionEnabled}
           onToggleSwitch={setReflectionEnabled}
-          switchTrackOn="#50B9FF"
-          switchTrackOff="#2E3A49"
+          switchTrackOn={isDark ? '#50B9FF' : theme.colors.primary}
+          switchTrackOff={isDark ? '#2E3A49' : '#E5E7EB'}
           switchThumb="#FFFFFF"
         />
         <View style={{ height: scale(20) }} />
 
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={styles.title}>Appearance</Text>
-          <Text style={styles.subTitle}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Appearance
+          </Text>
+          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
             Customize the look and feel of your app
           </Text>
 
           {/* Theme */}
-          <Text style={styles.label}>Theme</Text>
+          <Text style={[styles.label, { color: theme.colors.text }]}>
+            Theme
+          </Text>
           <GradientSelect
             value={themeVal}
             options={themeOptions}
-            onChange={setThemeVal}
+            onChange={handleThemeChange}
             sheetTitle="Select Theme"
             containerStyle={{ marginTop: s(8) }}
           />
 
           {/* Font size */}
-          <Text style={[styles.label, { marginTop: s(18) }]}>Font size</Text>
+          <Text
+            style={[
+              styles.label,
+              { marginTop: s(18), color: theme.colors.text },
+            ]}
+          >
+            Font size
+          </Text>
           <GradientSelect
             value={fontVal}
             options={fontSizeOptions}
@@ -214,7 +259,7 @@ export default function SettingScreen() {
           />
 
           {/* Color-blind Mode */}
-          <View
+          {/* <View
             style={{
               marginTop: s(20),
               flexDirection: 'row',
@@ -222,27 +267,36 @@ export default function SettingScreen() {
               alignItems: 'center',
             }}
           >
-            <Text style={styles.sectionHeading}>Color-blind Mode</Text>
+            <Text style={[styles.sectionHeading, { color: theme.colors.text }]}>
+              Color-blind Mode
+            </Text>
             <View style={styles.switchRow}>
               <Switch
                 value={colorBlind}
                 onValueChange={setColorBlind}
-                trackColor={{ false: '#243447', true: '#62C1FF' }}
-                thumbColor={colorBlind ? '#FFFFFF' : '#B0C6DB'}
-                ios_backgroundColor="#243447"
+                trackColor={{
+                  false: isDark ? '#243447' : '#E5E7EB',
+                  true: isDark ? '#62C1FF' : theme.colors.primary,
+                }}
+                thumbColor={
+                  colorBlind ? '#FFFFFF' : isDark ? '#B0C6DB' : '#9CA3AF'
+                }
+                ios_backgroundColor={isDark ? '#243447' : '#E5E7EB'}
               />
             </View>
           </View>
-          <Text style={styles.helper}>
+          <Text style={[styles.helper, { color: theme.colors.textMuted }]}>
             Use blue/orange instead of green/red colors
-          </Text>
+          </Text> */}
         </GradientCardHome>
 
         <View style={{ height: scale(20) }} />
 
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={styles.title}>Export All Data</Text>
-          <Text style={styles.subTitle}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Export All Data
+          </Text>
+          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
             Downloads a JSON file with your profile, Shiftality Scan results,
             check-ins, and reflections
           </Text>
@@ -253,19 +307,23 @@ export default function SettingScreen() {
             style={{ marginTop: vs(12) }}
           >
             <LinearGradient
-              colors={['#143f65ff', '#1C2A3A']}
+              colors={theme.colors.cardGradient}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={styles.cta}
             >
-              <Text style={styles.ctaText}>Export Data</Text>
+              <Text style={[styles.ctaText, { color: theme.colors.text }]}>
+                Export Data
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
         </GradientCardHome>
         <View style={{ height: scale(20) }} />
         <GradientCardHome style={{ width: scale(330) }}>
-          <Text style={styles.title}>Reminders</Text>
-          <Text style={styles.subTitle}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Reminders
+          </Text>
+          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
             Test reminder notifications and system functionality
           </Text>
           <View
@@ -276,16 +334,21 @@ export default function SettingScreen() {
               alignItems: 'center',
             }}
           >
-            <Text style={styles.title}>Enable Reminders</Text>
+            <Text style={[styles.title, { color: theme.colors.text }]}>
+              Enable Reminders
+            </Text>
             <Switch
               value={reminder}
               onValueChange={setReminder}
-              trackColor={{ false: '#243447', true: '#62C1FF' }}
-              thumbColor={colorBlind ? '#FFFFFF' : '#B0C6DB'}
-              ios_backgroundColor="#243447"
+              trackColor={{
+                false: isDark ? '#243447' : '#E5E7EB',
+                true: isDark ? '#62C1FF' : theme.colors.primary,
+              }}
+              thumbColor={reminder ? '#FFFFFF' : isDark ? '#B0C6DB' : '#9CA3AF'}
+              ios_backgroundColor={isDark ? '#243447' : '#E5E7EB'}
             />
           </View>
-          <Text style={styles.subTitle}>
+          <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
             Get notified if you haven't completed your daily check-in
           </Text>
         </GradientCardHome>
@@ -294,18 +357,13 @@ export default function SettingScreen() {
 
         {/* Shared Reminder Test component (same as DemoScreen) */}
         <ReminderTestSection cardStyle={{ width: scale(330) }} />
+        <View style={{ height: scale(20) }} />
         <PrimaryButton
-          textColor={palette.white}
           style={{
             width: '50%',
             height: 'auto',
+            // marginTop: scale(20),
             alignSelf: 'center',
-            textAlign: 'center',
-            color: palette.white,
-            fontSize: ms(14.5),
-            fontFamily: 'SourceSansPro-Regular',
-            fontWeight: '700',
-            opacity: 0.9,
           }}
           title="Logout"
           onPress={async () => {
@@ -336,38 +394,29 @@ export default function SettingScreen() {
         />
         <View style={{ height: scale(40) }} />
       </ScrollView>
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: palette.darkBlue,
-  },
   title: {
     fontSize: scale(18),
     fontWeight: '800',
-    color: palette.white,
     marginBottom: scale(10),
     fontFamily: 'SourceSansPro-Regular',
   },
   subTitle: {
     fontSize: scale(16),
     fontWeight: '500',
-    color: palette.white,
     lineHeight: scale(20),
     fontFamily: 'SourceSansPro-Regular',
   },
   label: {
-    color: palette.white,
     fontSize: s(14),
     fontWeight: '800',
     fontFamily: 'SourceSansPro-Regular',
   },
   sectionHeading: {
-    color: palette.white,
     fontSize: s(16),
     fontWeight: '800',
     marginBottom: s(10),
@@ -378,8 +427,6 @@ const styles = StyleSheet.create({
     marginBottom: s(8),
   },
   helper: {
-    color: palette.white,
-    opacity: 0.9,
     fontSize: s(16),
     lineHeight: s(24),
     fontFamily: 'SourceSansPro-Regular',
@@ -392,7 +439,6 @@ const styles = StyleSheet.create({
     borderRadius: s(30),
   },
   ctaText: {
-    color: palette.txtBlue,
     fontSize: ms(18),
     fontWeight: '700',
     opacity: 0.9,

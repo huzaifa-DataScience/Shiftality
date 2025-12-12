@@ -12,13 +12,15 @@ export default function ThemeToggleButton() {
       style={[
         styles.button,
         {
-          backgroundColor: theme.colors.card,
+          backgroundColor: theme.colors.background,
           borderColor: theme.colors.border,
         },
       ]}
       onPress={toggleTheme}
       activeOpacity={0.7}
-      accessibilityLabel={`Switch to ${themeMode === 'dark' ? 'light' : 'dark'} mode`}
+      accessibilityLabel={`Switch to ${
+        themeMode === 'dark' ? 'light' : 'dark'
+      } mode`}
       accessibilityRole="button"
     >
       <View style={styles.iconContainer}>
@@ -56,4 +58,3 @@ const styles = StyleSheet.create({
     fontSize: ms(24),
   },
 });
-

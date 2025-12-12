@@ -8,7 +8,7 @@ import {
 } from 'react-native-size-matters';
 import GradientCardHome from '../../components/GradientCardHome';
 import LikertPill, { LikertValue } from './LikertPill';
-import { palette } from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 type Props = {
   question: string;
@@ -23,6 +23,7 @@ export default function LikertCard({
   onChange,
   cardWidth = scale(330),
 }: Props) {
+  const theme = useAppTheme();
   const PAD_H = s(16);
   const GAP = s(10);
   const SLOT3 = Math.floor((cardWidth - PAD_H * 2 - GAP * 2) / 3);
@@ -30,7 +31,7 @@ export default function LikertCard({
 
   return (
     <GradientCardHome style={{ width: cardWidth, marginBottom: vs(14) }}>
-      <Text style={styles.question}>{question}</Text>
+      <Text style={[styles.question, { color: theme.colors.text }]}>{question}</Text>
 
       <View style={[styles.row, { columnGap: GAP }]}>
         <LikertPill
@@ -73,7 +74,6 @@ export default function LikertCard({
 
 const styles = StyleSheet.create({
   question: {
-    color: palette.white,
     fontSize: ms(16),
     fontWeight: '700',
     marginBottom: vs(12),

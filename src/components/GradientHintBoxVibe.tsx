@@ -18,7 +18,7 @@ import Svg, {
   Rect,
   Stop,
 } from 'react-native-svg';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 type Field = {
   /** Label above the textarea */
@@ -47,6 +47,9 @@ export default function GradientHintBoxVibe({
   description,
   fields,
 }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(80));
 
@@ -68,11 +71,18 @@ export default function GradientHintBoxVibe({
           viewBox={`0 0 ${w} ${h}`}
         >
           <Defs>
-            <SvgGrad id="outerGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor="#0AC4FF" />
-              <Stop offset="0.52" stopColor="#0AC4FF" />
-              <Stop offset="1" stopColor="#1a4258ff" />
-            </SvgGrad>
+            {isDark ? (
+              <SvgGrad id="outerGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="#0AC4FF" />
+                <Stop offset="0.52" stopColor="#0AC4FF" />
+                <Stop offset="1" stopColor="#1a4258ff" />
+              </SvgGrad>
+            ) : (
+              <SvgGrad id="outerGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={theme.colors.border} />
+                <Stop offset="1" stopColor={theme.colors.border} />
+              </SvgGrad>
+            )}
           </Defs>
           <Rect
             x={1}
@@ -81,19 +91,19 @@ export default function GradientHintBoxVibe({
             height={h - 2}
             rx={s(12)}
             ry={s(12)}
-            fill="transparent"
-            stroke="url(#outerGrad)"
+            fill={isDark ? "transparent" : "rgba(255, 255, 255, 0.6)"}
+            stroke={isDark ? "url(#outerGrad)" : theme.colors.border}
             strokeWidth={1}
           />
         </Svg>
       )}
 
       <View style={styles.inner}>
-        <Text style={styles.title}>{title}</Text>
-        {!!description && <Text style={styles.desc}>{description}</Text>}
+        <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
+        {!!description && <Text style={[styles.desc, { color: theme.colors.textMuted }]}>{description}</Text>}
 
         {fields.map((f, idx) => (
-          <FieldBlock key={idx} {...f} />
+          <FieldBlock key={idx} {...f} theme={theme} isDark={isDark} />
         ))}
       </View>
     </View>
@@ -108,22 +118,26 @@ function FieldBlock({
   placeholder,
   maxLength = 500,
   helper,
-}: Field) {
+  theme,
+  isDark,
+}: Field & { theme: any; isDark: boolean }) {
   const count = useMemo(() => value?.length ?? 0, [value]);
 
   return (
     <View style={{ marginTop: vs(12) }}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, { color: theme.colors.text }]}>{label}</Text>
 
       <GradientTextarea
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         maxLength={maxLength}
+        theme={theme}
+        isDark={isDark}
       />
 
       {!!helper && (
-        <Text style={styles.helper}>
+        <Text style={[styles.helper, { color: theme.colors.textMuted }]}>
           {helper} {count}/{maxLength}
         </Text>
       )}
@@ -131,17 +145,21 @@ function FieldBlock({
   );
 }
 
-/** Textarea with rounded gradient outline (matches the card’s style) */
+/** Textarea with rounded gradient outline (matches the card's style) */
 function GradientTextarea({
   value,
   onChangeText,
   placeholder,
   maxLength,
+  theme,
+  isDark,
 }: {
   value: string;
   onChangeText: (t: string) => void;
   placeholder?: string;
   maxLength?: number;
+  theme: any;
+  isDark: boolean;
 }) {
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(90));
@@ -164,11 +182,18 @@ function GradientTextarea({
           height={h}
         >
           <Defs>
-            <SvgGrad id="inputGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor="#0AC4FF" />
-              <Stop offset="0.52" stopColor="#0AC4FF" />
-              <Stop offset="1" stopColor="#1a4258ff" />
-            </SvgGrad>
+            {isDark ? (
+              <SvgGrad id="inputGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="#0AC4FF" />
+                <Stop offset="0.52" stopColor="#0AC4FF" />
+                <Stop offset="1" stopColor="#1a4258ff" />
+              </SvgGrad>
+            ) : (
+              <SvgGrad id="inputGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={theme.colors.border} />
+                <Stop offset="1" stopColor={theme.colors.border} />
+              </SvgGrad>
+            )}
           </Defs>
           <Rect
             x={1}
@@ -177,8 +202,8 @@ function GradientTextarea({
             height={h - 2}
             rx={R}
             ry={R}
-            fill="transparent"
-            stroke="url(#inputGrad)"
+            fill={isDark ? "transparent" : "rgba(255, 255, 255, 0.6)"}
+            stroke={isDark ? "url(#inputGrad)" : theme.colors.border}
             strokeWidth={1}
           />
         </Svg>
@@ -188,11 +213,11 @@ function GradientTextarea({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={palette.white}
+        placeholderTextColor={theme.colors.textMuted}
         multiline
         maxLength={maxLength}
         textAlignVertical="top"
-        style={styles.textarea}
+        style={[styles.textarea, { color: theme.colors.text }]}
       />
     </View>
   );
@@ -210,21 +235,18 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    color: palette.white,
     fontSize: ms(18),
     fontWeight: '800',
     marginBottom: vs(6),
     fontFamily: 'SourceSansPro-Regular',
   },
   desc: {
-    color: palette.white,
     fontSize: ms(14),
     lineHeight: ms(20),
     fontFamily: 'SourceSansPro-Regular',
   },
 
   fieldLabel: {
-    color: palette.white,
     fontSize: ms(16),
     fontWeight: '800',
     marginBottom: vs(8),
@@ -239,7 +261,6 @@ const styles = StyleSheet.create({
   textarea: {
     minHeight: vs(95),
     borderRadius: s(10),
-    color: palette.white,
     fontSize: ms(14.5),
     lineHeight: ms(21),
     paddingHorizontal: s(8),
@@ -249,7 +270,6 @@ const styles = StyleSheet.create({
 
   helper: {
     marginTop: vs(8),
-    color: palette.white,
     fontSize: ms(12),
     fontWeight: '500',
     fontFamily: 'SourceSansPro-Regular',

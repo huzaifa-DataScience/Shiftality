@@ -172,7 +172,7 @@ export default function GradientHintBox({
             height={h - stroke}
             rx={radius}
             ry={radius}
-            fill={bgColor}
+            fill={isDark ? bgColor : (bgColor === 'transparent' ? 'rgba(255, 255, 255, 0.6)' : bgColor)}
             stroke={isDark ? "url(#borderGrad)" : theme.colors.border}
             strokeWidth={stroke}
           />

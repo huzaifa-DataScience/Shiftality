@@ -7,7 +7,7 @@ import {
   moderateScale as ms,
   scale,
 } from 'react-native-size-matters';
-import { palette } from '../../theme';
+import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
 
 type Props = {
   total: number;
@@ -16,9 +16,16 @@ type Props = {
 };
 
 export default function Stepper({ total, current, width = scale(300) }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
+  
   return (
     <View style={[styles.stepperWrap, { width }]}>
-      <View style={styles.stepperRail} />
+      <View style={[
+        styles.stepperRail,
+        { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }
+      ]} />
       {Array.from({ length: total }).map((_, i) => {
         const idx = i + 1;
         const active = idx <= current;
@@ -26,7 +33,10 @@ export default function Stepper({ total, current, width = scale(300) }: Props) {
         return (
           <View key={idx} style={[styles.stepDotWrap, { left: dotLeft }]}>
             <LinearGradient
-              colors={active ? ['#7FD0FF', '#4AA9FF'] : ['#1F2A3B', '#1F2A3B']}
+              colors={active 
+                ? (isDark ? ['#7FD0FF', '#4AA9FF'] : theme.colors.primaryGradient)
+                : (isDark ? ['#1F2A3B', '#1F2A3B'] : ['#E5E7EB', '#E5E7EB'])
+              }
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={styles.stepDot}
@@ -34,7 +44,11 @@ export default function Stepper({ total, current, width = scale(300) }: Props) {
               <Text
                 style={[
                   styles.stepNum,
-                  { color: active ? '#0B1626' : '#AAB5C5' },
+                  { 
+                    color: active 
+                      ? (isDark ? '#0B1626' : theme.colors.onPrimary)
+                      : (isDark ? '#AAB5C5' : theme.colors.textMuted)
+                  },
                 ]}
               >
                 {idx}
@@ -54,7 +68,6 @@ const styles = StyleSheet.create({
     left: s(12),
     right: s(12),
     height: vs(4),
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: s(2),
   },
   stepDotWrap: { position: 'absolute', top: vs(12) },
@@ -72,7 +85,6 @@ const styles = StyleSheet.create({
   stepNum: {
     fontSize: ms(12),
     fontWeight: '700',
-    color: palette.white,
     fontFamily: 'SourceSansPro-Regular',
   },
 });

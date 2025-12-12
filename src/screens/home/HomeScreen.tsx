@@ -158,15 +158,16 @@ export default function HomeScreen() {
 
     if (!isJourneyDateValid) {
       errors.journeyStartDate = 'Please select a journey start date';
-    } else {
-      // Check if date is in the past
-      const journeyDate = new Date(journeyStartDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (journeyDate < today) {
-        errors.journeyStartDate = 'Journey start date cannot be in the past';
-      }
     }
+    //  else {
+    //   // Check if date is in the past
+    //   const journeyDate = new Date(journeyStartDate);
+    //   const today = new Date();
+    //   today.setHours(0, 0, 0, 0);
+    //   if (journeyDate < today) {
+    //     errors.journeyStartDate = 'Journey start date cannot be in the past';
+    //   }
+    // }
 
     if (!isNorthStarValid) {
       errors.northStar = 'Please describe your North Star goal';
@@ -192,7 +193,13 @@ export default function HomeScreen() {
     if (isDndStartValid && isDndEndValid) {
       const dndStartTime = new Date(dndStart);
       const dndEndTime = new Date(dndEnd);
-      if (dndStartTime >= dndEndTime) {
+
+      // Compare only time portion (hours and minutes)
+      const startMinutes =
+        dndStartTime.getHours() * 60 + dndStartTime.getMinutes();
+      const endMinutes = dndEndTime.getHours() * 60 + dndEndTime.getMinutes();
+
+      if (startMinutes >= endMinutes) {
         errors.dndTimes = 'Do Not Disturb end time must be after start time';
       }
     }

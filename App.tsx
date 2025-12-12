@@ -13,8 +13,6 @@ import store from './src/store/store';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from './src/lib/toastConfig.tsx';
 import { navigationRef } from './src/lib/navigationRef';
-import ThemeToggleButton from './src/components/ThemeToggleButton';
-
 function NavigationWithTheme() {
   const theme = useAppTheme();
   
@@ -62,7 +60,6 @@ function AppContent() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <NavigationWithTheme />
-      <ThemeToggleButton />
       <Toast config={toastConfig} />
     </View>
   );

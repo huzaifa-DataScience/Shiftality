@@ -14,6 +14,7 @@ import {
   moderateScale as ms,
 } from 'react-native-size-matters';
 import GradientInput from './GradientInput';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 const caretPng = require('../assets/caret-down.png');
 
@@ -36,6 +37,9 @@ const GradientSelect: React.FC<Props> = ({
   minHeight = vs(48),
   containerStyle,
 }) => {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const [open, setOpen] = useState(false);
 
   return (
@@ -56,13 +60,24 @@ const GradientSelect: React.FC<Props> = ({
         onRequestClose={() => setOpen(false)}
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setOpen(false)}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.sheetTitle}>{sheetTitle}</Text>
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: theme.colors.background },
+            ]}
+          >
+            <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>
+              {sheetTitle}
+            </Text>
 
             <FlatList
               data={options}
               keyExtractor={item => item}
-              ItemSeparatorComponent={() => <View style={styles.sep} />}
+              ItemSeparatorComponent={() => (
+                <View
+                  style={[styles.sep, { backgroundColor: theme.colors.border }]}
+                />
+              )}
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => {
@@ -71,10 +86,18 @@ const GradientSelect: React.FC<Props> = ({
                   }}
                   style={({ pressed }) => [
                     styles.optionRow,
-                    pressed && { backgroundColor: 'rgba(255,255,255,0.06)' },
+                    pressed && {
+                      backgroundColor: isDark
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(0,0,0,0.05)',
+                    },
                   ]}
                 >
-                  <Text style={styles.optionText}>{item}</Text>
+                  <Text
+                    style={[styles.optionText, { color: theme.colors.text }]}
+                  >
+                    {item}
+                  </Text>
                 </Pressable>
               )}
             />
@@ -93,13 +116,11 @@ const styles = StyleSheet.create({
   },
   modalSheet: {
     maxHeight: '60%',
-    backgroundColor: '#0E1520',
     paddingBottom: vs(12),
     borderTopLeftRadius: s(18),
     borderTopRightRadius: s(18),
   },
   sheetTitle: {
-    color: '#FFF',
     fontSize: ms(16),
     fontWeight: '700',
     paddingHorizontal: s(16),
@@ -111,13 +132,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(16),
   },
   optionText: {
-    color: '#E9F1FF',
     fontSize: ms(14),
     fontFamily: 'SourceSansPro-Regular',
   },
   sep: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     marginLeft: s(16),
   },
 });

@@ -373,7 +373,7 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
                 display="inline"
                 onChange={onDatePickerChange}
                 style={{
-                  backgroundColor: isDark ? theme.colors.card : '#FFFFFF',
+                  backgroundColor: isDark ? theme.colors.background : '#FFFFFF',
                 }}
                 themeVariant={isDark ? 'dark' : 'light'}
               />
