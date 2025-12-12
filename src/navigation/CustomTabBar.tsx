@@ -14,7 +14,7 @@ import {
   scale,
   verticalScale as vs,
 } from 'react-native-size-matters';
-import { palette } from '../theme';
+import { palette, useAppTheme, useThemeMode } from '../theme';
 import JournalModal from '../components/JournalModal';
 
 // --- sizes ---
@@ -54,17 +54,22 @@ export default function CustomTabBar({
   showJournalModal,
   onCloseJournal,
 }: CustomTabBarProps) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   return (
     <>
       <View
-        style={[styles.shell, { backgroundColor: palette.darkBlue }]}
+        style={[
+          { backgroundColor: theme.colors.background, borderRadius: scale(30) },
+        ]}
         pointerEvents="box-none"
       >
         <View style={styles.shadowWrap}>
           {/* light cap behind bar */}
           <View style={styles.topCapWrap} pointerEvents="none">
             <LinearGradient
-              colors={['#7FD0FF', '#49A8FF']}
+              colors={['#49A8FF', '#49A8FF']}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={styles.topCap}
@@ -74,7 +79,11 @@ export default function CustomTabBar({
           {/* main bar */}
           <View style={styles.barWrap}>
             <LinearGradient
-              colors={['#1f5b79ff', '#15283bff', '#090c0fff']}
+              colors={
+                isDark
+                  ? ['#1f5b79ff', '#15283bff', '#090c0fff']
+                  : ['#7FD0FF', '#7FD0FF', '#ffff', '#fff']
+              }
               locations={[0, 0.55, 1]}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
@@ -109,9 +118,17 @@ export default function CustomTabBar({
                       style={[
                         styles.icon,
                         {
-                          tintColor: focused
-                            ? '#8EDAFF'
-                            : 'rgba(255,255,255,0.92)',
+                          tintColor: isDark
+                            ? focused
+                              ? '#8EDAFF'
+                              : 'rgba(255,255,255,0.92)'
+                            : focused
+                            ? isDark
+                              ? '#000000'
+                              : '#FFFFFF'
+                            : isDark
+                            ? 'rgba(255,255,255,0.92)'
+                            : 'rgba(0, 0, 0, 0.81)',
                         },
                       ]}
                       resizeMode="contain"
@@ -136,7 +153,10 @@ export default function CustomTabBar({
           >
             <Image
               source={ICONS.hexaIcon.inactive}
-              style={styles.hexImage}
+              style={[
+                styles.hexImage,
+                { tintColor: isDark ? '#00C2FF' : '#00C2FF' },
+              ]}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -157,6 +177,7 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 18,
+    borderRadius: scale(30),
   },
 
   // cap

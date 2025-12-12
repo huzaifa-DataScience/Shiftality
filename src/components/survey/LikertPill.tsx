@@ -18,7 +18,7 @@ import {
   verticalScale as vs,
   moderateScale as ms,
 } from 'react-native-size-matters';
-import { palette } from '../../theme';
+import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
 
 const DEFAULT_H = vs(44);
 
@@ -37,6 +37,9 @@ const OutlinePill = ({
   stroke = 1,
   borderRadius = s(24),
 }: OutlineProps) => {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const [h, setH] = useState(DEFAULT_H);
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     setH(Math.max(DEFAULT_H, Math.round(e.nativeEvent.layout.height)));
@@ -67,11 +70,18 @@ const OutlinePill = ({
         viewBox={`0 0 ${width} ${h}`}
       >
         <Defs>
-          <SvgGrad id="pillBorderGrad" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor="#0AC4FF" />
-            <Stop offset="0.52" stopColor="#0AC4FF" />
-            <Stop offset="1" stopColor="#1a4258ff" />
-          </SvgGrad>
+          {isDark ? (
+            <SvgGrad id="pillBorderGrad" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor="#0AC4FF" />
+              <Stop offset="0.52" stopColor="#0AC4FF" />
+              <Stop offset="1" stopColor="#1a4258ff" />
+            </SvgGrad>
+          ) : (
+            <SvgGrad id="pillBorderGrad" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={theme.colors.border} />
+              <Stop offset="1" stopColor={theme.colors.border} />
+            </SvgGrad>
+          )}
         </Defs>
         <Rect
           x={stroke / 2}
@@ -81,14 +91,14 @@ const OutlinePill = ({
           rx={borderRadius}
           ry={borderRadius}
           fill="transparent"
-          stroke="url(#pillBorderGrad)"
+          stroke={isDark ? "url(#pillBorderGrad)" : theme.colors.border}
           strokeWidth={stroke}
         />
       </Svg>
       <View
         style={[
           styles.pillInnerBase,
-          { borderRadius, backgroundColor: 'rgba(3, 149, 193, 0.1)' },
+          { borderRadius, backgroundColor: isDark ? 'rgba(3, 149, 193, 0.1)' : 'rgba(0, 0, 0, 0.05)' },
         ]}
       >
         {children}
@@ -102,12 +112,14 @@ type FilledProps = {
   onPress?: () => void;
   children: React.ReactNode;
   borderRadius?: number;
+  gradientColors?: string[];
 };
 const FilledPill = ({
   width,
   onPress,
   children,
   borderRadius = s(24),
+  gradientColors,
 }: FilledProps) => (
   <TouchableOpacity
     activeOpacity={0.92}
@@ -116,7 +128,7 @@ const FilledPill = ({
   >
     <LinearGradient
       // light TL  →  deep BR, with a mid-blue stop
-      colors={['#2a84b9ff', '#0890dfff', '#0e5ea4ff']}
+      colors={gradientColors || ['#2a84b9ff', '#0890dfff', '#0e5ea4ff']}
       locations={[0, 0.52, 1]}
       start={{ x: 0.08, y: 0.05 }}
       end={{ x: 0.92, y: 0.98 }}
@@ -148,13 +160,29 @@ export default function LikertPill({
   onPress,
   borderRadius = s(24),
 }: PillProps) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
+
+  // Use theme gradient for filled pill
+  const filledGradient = isDark
+    ? ['#2a84b9ff', '#0890dfff', '#0e5ea4ff']
+    : [theme.colors.primaryGradient[0], theme.colors.primaryGradient[1], theme.colors.primaryGradient[1]];
+
   return selected ? (
-    <FilledPill width={width} onPress={onPress} borderRadius={borderRadius}>
-      <Text style={styles.textSelected}>{label}</Text>
+    <FilledPill
+      width={width}
+      onPress={onPress}
+      borderRadius={borderRadius}
+      gradientColors={filledGradient}
+    >
+      <Text style={[styles.textSelected, { color: theme.colors.onPrimary }]}>
+        {label}
+      </Text>
     </FilledPill>
   ) : (
     <OutlinePill width={width} onPress={onPress} borderRadius={borderRadius}>
-      <Text style={styles.textIdle}>{label}</Text>
+      <Text style={[styles.textIdle, { color: theme.colors.text }]}>{label}</Text>
     </OutlinePill>
   );
 }
@@ -165,6 +193,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textIdle: { color: palette.white, fontSize: ms(14), fontWeight: '700' },
-  textSelected: { color: palette.white, fontSize: ms(14), fontWeight: '800' },
+  textIdle: { fontSize: ms(14), fontWeight: '700' },
+  textSelected: { fontSize: ms(14), fontWeight: '800' },
 });

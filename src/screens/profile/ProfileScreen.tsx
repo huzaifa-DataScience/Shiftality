@@ -24,8 +24,9 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 
-import { palette } from '../../theme';
+import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
+import GradientBackground from '../../components/GradientBackground';
 import GradientHintBox from '../../components/GradientHintBox';
 import TripleRingGauge from '../../components/TripleRingGauge';
 import PrimaryButton from '../../components/PrimaryButton';
@@ -49,6 +50,8 @@ export default function ProfileScreen({
 }: ProfileScreenProps = {}) {
   const navigation = useNavigation();
   const route = useRoute<any>();
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
 
   const total = useSelector(selectTotalSurveyPoints);
   const finance = useSelector(selectSectionPoints('Finance'));
@@ -248,200 +251,241 @@ export default function ProfileScreen({
   // ------- RENDER -------
   return (
     <>
-      <ScrollView style={{ backgroundColor: palette.darkBlue }}>
-        <View style={styles.root}>
-          {/* Close button for modal mode */}
-          {onClose && (
-            <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-              <Text style={styles.modalCloseText}>✕ Close</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Profile intro card */}
-          <GradientCardHome
-            style={{
-              marginVertical: vs(20),
-              marginTop: onClose ? scale(20) : scale(50),
-              width: scale(330),
-            }}
-          >
-            <View style={{ marginBottom: s(10) }}>
-              <Text style={styles.firstSectitle}>
-                {`${displayName}'s Shiftality Profile`}
-              </Text>
-              <Text style={styles.subSectitle}>
-                {
-                  "Based on your scan results, here's your\npersonalized reality shift blueprint"
-                }
-              </Text>
-            </View>
-
-            <GradientHintBox
-              title="Your 1-Year North Star"
-              text={northStarText}
-            />
-            <View style={{ height: scale(20) }} />
-            <GradientHintBox
-              title="Your 1-Year Shadow Star"
-              text={shadowPathText}
-            />
-          </GradientCardHome>
-
-          {/* Domain strengths */}
-          <GradientCardHome style={{ width: scale(330) }}>
-            <View style={{ marginBottom: s(10) }}>
-              <Text style={styles.Sectitle}>{'Domain Strengths'}</Text>
-              <Text style={styles.subSectitle}>
-                {
-                  'Your ability to create positive shifts in\nthese specific areas'
-                }
-              </Text>
-
-              <View style={{ rowGap: vs(22) }}>
-                {[0, 1].map(row => (
-                  <View
-                    key={row}
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    {STRENGTHS.slice(row * 3, row * 3 + 3).map((it, idx) => {
-                      const idBase = `ds-${row}-${idx}`;
-
-                      return (
-                        <View
-                          key={idBase}
-                          style={{ width: s(100), alignItems: 'center' }}
-                        >
-                          <TripleRingGauge
-                            idBase={idBase}
-                            valuePct={it.pct}
-                            size={s(90)}
-                          />
-                          <Text
-                            style={{
-                              color: palette.white,
-                              textAlign: 'center',
-                              marginTop: vs(8),
-                              opacity: 0.92,
-                            }}
-                          >
-                            {it.label}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                ))}
-              </View>
-            </View>
-          </GradientCardHome>
-
-          {/* Shift insights */}
-          <GradientCardHome
-            style={{ marginVertical: vs(20), width: scale(330) }}
-          >
-            <View style={{ marginBottom: s(10) }}>
-              <Text style={styles.Sectitle}>{'Your Shiftily Insights '}</Text>
-              <Text style={styles.subSectitle}>
-                {
-                  'Personalized patterns from your\nscan to help you create meaningful\nshifts'
-                }
-              </Text>
-            </View>
-
-            <GradientHintBox
-              title="Your Shift Pattern"
-              text={shiftPatternText}
-            />
-          </GradientCardHome>
-
-          {/* What might slow your shift */}
-          <GradientCardHome
-            style={{
-              width: scale(330),
-              marginBottom: vs(20),
-            }}
-          >
-            <View style={{ marginBottom: s(10) }}>
-              <Text style={styles.Sectitle}>
-                {'What might slow your shift'}
-              </Text>
-            </View>
-
-            <GradientHintBox
-              title="Perfection loop"
-              text={
-                "When things aren't perfect, you may delay or avoid starting."
-              }
-            />
-            <View style={{ height: scale(20) }} />
-            <GradientHintBox
-              title="Scarcity lens"
-              text={'You might see opportunities as rare or out of reach.'}
-            />
-            <View style={{ marginTop: scale(20) }}>
-              <Text style={styles.Sectitle}>
-                {'Your best lever right now:'}
-              </Text>
-              <Text style={styles.sublensSectitle}>{bestLeverText}</Text>
-            </View>
-          </GradientCardHome>
-
-          {/* CTA: Start shift */}
-          <GradientCardHome
-            style={{
-              width: scale(330),
-            }}
-          >
-            <View style={{ marginBottom: s(10) }}>
-              <Text style={styles.Sectitle}>{'Start Your Reality Shift'}</Text>
-              <Text style={styles.sublensSectitle}>
-                {
-                  "Daily check-ins are the foundation of your reality shift. By consist tly tracking your beliefs, you create awareness of your thought patterns and can consciously choose empowering beliefs over limiting ones. This simple practice compounds over time, gradually shifting your reality toward your highest potential.\n\nThese daily checks keep your shift measurable. YES on Empowering adds +1; YES on Shadow subtracts-1; totals cap at ±10. Over time your Shift Map stows ii' you're trending toward your Highest Vibration or drifting toward your Shadow Path."
-                }
-              </Text>
-
-              <View style={{ height: scale(10) }} />
-
-              <PrimaryButton
-                textColor={palette.white}
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  color: palette.white,
-                  fontSize: ms(14.5),
-                  fontWeight: '700',
-                  fontFamily: 'SourceSansPro-Regular',
-                }}
-                title={'Start Your Reality Shift'}
-                onPress={() => navigation.navigate('Search' as never)}
-              />
-
-              <View style={{ height: scale(10) }} />
-
+      <GradientBackground>
+        <ScrollView style={{ flex: 1 }}>
+          <View style={styles.root}>
+            {/* Close button for modal mode */}
+            {onClose && (
               <TouchableOpacity
-                activeOpacity={0.9}
-                style={styles.ctaWrap}
-                onPress={() => console.log('Edit Belief Set')}
+                style={styles.modalCloseButton}
+                onPress={onClose}
               >
-                <LinearGradient
-                  colors={['#143f65ff', '#1C2A3A']}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={styles.cta}
-                >
-                  <Text style={styles.ctaTextMuted}>Edit Belief Set</Text>
-                </LinearGradient>
+                <Text style={styles.modalCloseText}>✕ Close</Text>
               </TouchableOpacity>
-            </View>
-          </GradientCardHome>
+            )}
 
-          {/* Empowering & Shadow beliefs (reusable block) */}
-          <BeliefsEditor />
-        </View>
-      </ScrollView>
+            {/* Profile intro card */}
+            <GradientCardHome
+              style={{
+                marginVertical: vs(20),
+                marginTop: onClose ? scale(20) : scale(50),
+                width: scale(330),
+              }}
+            >
+              <View style={{ marginBottom: s(10) }}>
+                <Text
+                  style={[styles.firstSectitle, { color: theme.colors.text }]}
+                >
+                  {`${displayName}'s Shiftality Profile`}
+                </Text>
+                <Text
+                  style={[
+                    styles.subSectitle,
+                    { color: theme.colors.textMuted },
+                  ]}
+                >
+                  {
+                    "Based on your scan results, here's your\npersonalized reality shift blueprint"
+                  }
+                </Text>
+              </View>
+
+              <GradientHintBox
+                title="Your 1-Year North Star"
+                text={northStarText}
+              />
+              <View style={{ height: scale(20) }} />
+              <GradientHintBox
+                title="Your 1-Year Shadow Star"
+                text={shadowPathText}
+              />
+            </GradientCardHome>
+
+            {/* Domain strengths */}
+            <GradientCardHome style={{ width: scale(330) }}>
+              <View style={{ marginBottom: s(10) }}>
+                <Text style={[styles.Sectitle, { color: theme.colors.text }]}>
+                  {'Domain Strengths'}
+                </Text>
+                <Text
+                  style={[
+                    styles.subSectitle,
+                    { color: theme.colors.textMuted },
+                  ]}
+                >
+                  {
+                    'Your ability to create positive shifts in\nthese specific areas'
+                  }
+                </Text>
+
+                <View style={{ rowGap: vs(22) }}>
+                  {[0, 1].map(row => (
+                    <View
+                      key={row}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      {STRENGTHS.slice(row * 3, row * 3 + 3).map((it, idx) => {
+                        const idBase = `ds-${row}-${idx}`;
+
+                        return (
+                          <View
+                            key={idBase}
+                            style={{ width: s(100), alignItems: 'center' }}
+                          >
+                            <TripleRingGauge
+                              idBase={idBase}
+                              valuePct={it.pct}
+                              size={s(90)}
+                            />
+                            <Text
+                              style={{
+                                color: theme.colors.text,
+                                textAlign: 'center',
+                                marginTop: vs(8),
+                                opacity: 0.92,
+                              }}
+                            >
+                              {it.label}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </GradientCardHome>
+
+            {/* Shift insights */}
+            <GradientCardHome
+              style={{ marginVertical: vs(20), width: scale(330) }}
+            >
+              <View style={{ marginBottom: s(10) }}>
+                <Text style={[styles.Sectitle, { color: theme.colors.text }]}>
+                  {'Your Shiftily Insights '}
+                </Text>
+                <Text
+                  style={[
+                    styles.subSectitle,
+                    { color: theme.colors.textMuted },
+                  ]}
+                >
+                  {
+                    'Personalized patterns from your\nscan to help you create meaningful\nshifts'
+                  }
+                </Text>
+              </View>
+
+              <GradientHintBox
+                title="Your Shift Pattern"
+                text={shiftPatternText}
+              />
+            </GradientCardHome>
+
+            {/* What might slow your shift */}
+            <GradientCardHome
+              style={{
+                width: scale(330),
+                marginBottom: vs(20),
+              }}
+            >
+              <View style={{ marginBottom: s(10) }}>
+                <Text style={[styles.Sectitle, { color: theme.colors.text }]}>
+                  {'What might slow your shift'}
+                </Text>
+              </View>
+
+              <GradientHintBox
+                title="Perfection loop"
+                text={
+                  "When things aren't perfect, you may delay or avoid starting."
+                }
+              />
+              <View style={{ height: scale(20) }} />
+              <GradientHintBox
+                title="Scarcity lens"
+                text={'You might see opportunities as rare or out of reach.'}
+              />
+              <View style={{ marginTop: scale(20) }}>
+                <Text style={[styles.Sectitle, { color: theme.colors.text }]}>
+                  {'Your best lever right now:'}
+                </Text>
+                <Text
+                  style={[
+                    styles.sublensSectitle,
+                    { color: theme.colors.textMuted },
+                  ]}
+                >
+                  {bestLeverText}
+                </Text>
+              </View>
+            </GradientCardHome>
+
+            {/* CTA: Start shift */}
+            <GradientCardHome
+              style={{
+                width: scale(330),
+              }}
+            >
+              <View style={{ marginBottom: s(10) }}>
+                <Text style={[styles.Sectitle, { color: theme.colors.text }]}>
+                  {'Start Your Reality Shift'}
+                </Text>
+                <Text
+                  style={[
+                    styles.sublensSectitle,
+                    { color: theme.colors.textMuted },
+                  ]}
+                >
+                  {
+                    "Daily check-ins are the foundation of your reality shift. By consist tly tracking your beliefs, you create awareness of your thought patterns and can consciously choose empowering beliefs over limiting ones. This simple practice compounds over time, gradually shifting your reality toward your highest potential.\n\nThese daily checks keep your shift measurable. YES on Empowering adds +1; YES on Shadow subtracts-1; totals cap at ±10. Over time your Shift Map stows ii' you're trending toward your Highest Vibration or drifting toward your Shadow Path."
+                  }
+                </Text>
+
+                <View style={{ height: scale(10) }} />
+
+                <PrimaryButton
+                  style={{
+                    width: '100%',
+                  }}
+                  title={'Start Your Reality Shift'}
+                  onPress={() => navigation.navigate('Search' as never)}
+                />
+
+                <View style={{ height: scale(10) }} />
+
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  style={styles.ctaWrap}
+                  onPress={() => console.log('Edit Belief Set')}
+                >
+                  <LinearGradient
+                    colors={theme.colors.cardGradient}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={styles.cta}
+                  >
+                    <Text
+                      style={[
+                        styles.ctaTextMuted,
+                        { color: theme.colors.text },
+                      ]}
+                    >
+                      Edit Belief Set
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </GradientCardHome>
+
+            {/* Empowering & Shadow beliefs (reusable block) */}
+            <BeliefsEditor />
+          </View>
+        </ScrollView>
+      </GradientBackground>
 
       {/* ───────── Journal Bottom Sheet (Profile) ───────── */}
       <Modal
@@ -463,15 +507,22 @@ export default function ProfileScreen({
             />
 
             {/* Bottom sheet */}
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>
+            <View
+              style={[styles.modalCard, { backgroundColor: theme.colors.card }]}
+            >
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
                 {isAddingJournal ? 'Add Journal Entry' : 'Journal'}
               </Text>
 
               {!isAddingJournal && (
                 <>
                   {visibleJournals.length === 0 ? (
-                    <Text style={styles.emptyText}>
+                    <Text
+                      style={[
+                        styles.emptyText,
+                        { color: theme.colors.textMuted },
+                      ]}
+                    >
                       No journal entries yet. Start by adding your first one.
                     </Text>
                   ) : (
@@ -482,13 +533,29 @@ export default function ProfileScreen({
                       keyboardShouldPersistTaps="handled"
                     >
                       {visibleJournals.map(entry => (
-                        <View key={entry.id} style={styles.journalItem}>
+                        <View
+                          key={entry.id}
+                          style={[
+                            styles.journalItem,
+                            { backgroundColor: theme.colors.card },
+                          ]}
+                        >
                           <View style={styles.journalHeaderRow}>
                             <View style={{ flex: 1 }}>
-                              <Text style={styles.journalItemTitle}>
+                              <Text
+                                style={[
+                                  styles.journalItemTitle,
+                                  { color: theme.colors.text },
+                                ]}
+                              >
                                 {entry.title}
                               </Text>
-                              <Text style={styles.journalItemMeta}>
+                              <Text
+                                style={[
+                                  styles.journalItemMeta,
+                                  { color: theme.colors.textMuted },
+                                ]}
+                              >
                                 {entry.date} · {entry.time}
                               </Text>
                             </View>
@@ -503,7 +570,10 @@ export default function ProfileScreen({
                           </View>
 
                           <Text
-                            style={styles.journalItemDesc}
+                            style={[
+                              styles.journalItemDesc,
+                              { color: theme.colors.textMuted },
+                            ]}
                             numberOfLines={3}
                           >
                             {entry.description}
@@ -527,11 +597,18 @@ export default function ProfileScreen({
                     <TouchableOpacity
                       style={[
                         styles.modalButton,
-                        { backgroundColor: '#2b3950' },
+                        { backgroundColor: theme.colors.card },
                       ]}
                       onPress={closeJournalSheet}
                     >
-                      <Text style={styles.modalButtonText}>Close</Text>
+                      <Text
+                        style={[
+                          styles.modalButtonText,
+                          { color: theme.colors.text },
+                        ]}
+                      >
+                        Close
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </>
@@ -539,7 +616,11 @@ export default function ProfileScreen({
 
               {isAddingJournal && (
                 <>
-                  <Text style={styles.modalLabel}>Title</Text>
+                  <Text
+                    style={[styles.modalLabel, { color: theme.colors.text }]}
+                  >
+                    Title
+                  </Text>
                   <GradientInput
                     value={journalTitle}
                     onChangeText={(t: string) => {
@@ -549,7 +630,11 @@ export default function ProfileScreen({
                     placeholder="Give your journal a title"
                   />
 
-                  <Text style={styles.modalLabel}>Description</Text>
+                  <Text
+                    style={[styles.modalLabel, { color: theme.colors.text }]}
+                  >
+                    Description
+                  </Text>
                   <GradientInput
                     value={journalDesc}
                     onChangeText={(t: string) => {
@@ -558,30 +643,60 @@ export default function ProfileScreen({
                     }}
                     placeholder="What happened today? How do you feel?"
                     multiline
-                    inputStyle={{ minHeight: vs(80) }}
+                    style={{ minHeight: vs(80) }}
                   />
 
                   <View style={styles.rowBetween}>
                     <View style={{ flex: 1, marginRight: s(6) }}>
-                      <Text style={styles.modalLabel}>Date</Text>
+                      <Text
+                        style={[
+                          styles.modalLabel,
+                          { color: theme.colors.text },
+                        ]}
+                      >
+                        Date
+                      </Text>
                       <TouchableOpacity
-                        style={styles.pickerButton}
+                        style={[
+                          styles.pickerButton,
+                          { borderColor: theme.colors.border },
+                        ]}
                         onPress={() => setShowDatePicker(true)}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.pickerButtonText}>
+                        <Text
+                          style={[
+                            styles.pickerButtonText,
+                            { color: theme.colors.text },
+                          ]}
+                        >
                           {formatDate(journalDate)}
                         </Text>
                       </TouchableOpacity>
                     </View>
                     <View style={{ flex: 1, marginLeft: s(6) }}>
-                      <Text style={styles.modalLabel}>Time</Text>
+                      <Text
+                        style={[
+                          styles.modalLabel,
+                          { color: theme.colors.text },
+                        ]}
+                      >
+                        Time
+                      </Text>
                       <TouchableOpacity
-                        style={styles.pickerButton}
+                        style={[
+                          styles.pickerButton,
+                          { borderColor: theme.colors.border },
+                        ]}
                         onPress={() => setShowTimePicker(true)}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.pickerButtonText}>
+                        <Text
+                          style={[
+                            styles.pickerButtonText,
+                            { color: theme.colors.text },
+                          ]}
+                        >
                           {formatTime(journalTime)}
                         </Text>
                       </TouchableOpacity>
@@ -592,7 +707,7 @@ export default function ProfileScreen({
                     <DateTimePicker
                       value={journalDate}
                       mode="date"
-                      themeVariant="dark"
+                      themeVariant={themeMode === 'dark' ? 'dark' : 'light'}
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                       onChange={onChangeDate}
                     />
@@ -603,7 +718,7 @@ export default function ProfileScreen({
                       value={journalTime}
                       mode="time"
                       is24Hour={false}
-                      themeVariant="dark"
+                      themeVariant={themeMode === 'dark' ? 'dark' : 'light'}
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                       onChange={onChangeTime}
                     />
@@ -617,23 +732,37 @@ export default function ProfileScreen({
                     <TouchableOpacity
                       style={[
                         styles.modalButton,
-                        { backgroundColor: '#2b3950' },
+                        { backgroundColor: theme.colors.card },
                       ]}
                       onPress={() => {
                         setIsAddingJournal(false);
                         setJournalError(null);
                       }}
                     >
-                      <Text style={styles.modalButtonText}>Cancel</Text>
+                      <Text
+                        style={[
+                          styles.modalButtonText,
+                          { color: theme.colors.text },
+                        ]}
+                      >
+                        Cancel
+                      </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
                         styles.modalButton,
-                        { backgroundColor: '#00BFFF' },
+                        { backgroundColor: theme.colors.primary },
                       ]}
                       onPress={handleSaveJournal}
                     >
-                      <Text style={styles.modalButtonText}>Save</Text>
+                      <Text
+                        style={[
+                          styles.modalButtonText,
+                          { color: theme.colors.onPrimary },
+                        ]}
+                      >
+                        Save
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </>
@@ -665,7 +794,6 @@ const styles = StyleSheet.create({
     fontFamily: 'SourceSansPro-Regular',
   },
   firstSectitle: {
-    color: palette.white,
     fontSize: ms(22),
     fontWeight: '600',
     marginVertical: vs(4),
@@ -673,7 +801,6 @@ const styles = StyleSheet.create({
     fontFamily: 'SourceSansPro-Regular',
   },
   Sectitle: {
-    color: palette.white,
     fontSize: ms(22),
     fontWeight: '600',
     marginVertical: vs(4),
@@ -681,7 +808,6 @@ const styles = StyleSheet.create({
     fontFamily: 'SourceSansPro-Regular',
   },
   subSectitle: {
-    color: palette.white,
     fontSize: ms(16),
     fontWeight: '500',
     marginVertical: vs(8),
@@ -689,7 +815,6 @@ const styles = StyleSheet.create({
     fontFamily: 'SourceSansPro-Regular',
   },
   sublensSectitle: {
-    color: palette.white,
     fontSize: ms(15),
     fontWeight: '500',
     marginVertical: vs(8),
@@ -714,13 +839,11 @@ const styles = StyleSheet.create({
   },
   gaugePct: {
     position: 'absolute',
-    color: palette.white,
     fontWeight: '800',
     fontSize: ms(13),
     fontFamily: 'SourceSansPro-Regular',
   },
   cellLabel: {
-    color: palette.white,
     textAlign: 'center',
     fontSize: ms(12),
     lineHeight: ms(16),
@@ -737,7 +860,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ctaTextMuted: {
-    color: palette.txtBlue,
     fontSize: ms(14.5),
     fontWeight: '700',
     opacity: 0.9,
@@ -763,14 +885,12 @@ const styles = StyleSheet.create({
     maxHeight: vs(520),
   },
   modalTitle: {
-    color: palette.white,
     fontSize: ms(18),
     fontWeight: '800',
     marginBottom: vs(10),
     fontFamily: 'SourceSansPro-Regular',
   },
   modalLabel: {
-    color: palette.white,
     fontSize: ms(14),
     fontWeight: '700',
     marginTop: vs(10),
@@ -784,12 +904,10 @@ const styles = StyleSheet.create({
   pickerButton: {
     borderRadius: s(12),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
     paddingVertical: vs(10),
     paddingHorizontal: s(10),
   },
   pickerButtonText: {
-    color: palette.white,
     fontSize: ms(14),
     fontFamily: 'SourceSansPro-Regular',
   },
@@ -811,7 +929,6 @@ const styles = StyleSheet.create({
     marginLeft: s(8),
   },
   modalButtonText: {
-    color: palette.white,
     fontSize: ms(14),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
@@ -830,13 +947,11 @@ const styles = StyleSheet.create({
     paddingBottom: vs(8),
   },
   journalItem: {
-    backgroundColor: '#141D2C',
     borderRadius: s(14),
     paddingVertical: vs(10),
     paddingHorizontal: s(12),
     marginBottom: vs(10),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -848,7 +963,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   journalItemTitle: {
-    color: palette.white,
     fontSize: ms(15),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',

@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { palette } from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 import GradientCardHome from '../../components/GradientCardHome';
+import GradientBackground from '../../components/GradientBackground';
 import GradientHintBox from '../../components/GradientHintBox';
 import OutlinePillWithIcon from '../../components/OutlinePillWithIcon';
 import StatsOverviewBox, { StatItem } from '../../components/StatsOverviewBox';
@@ -45,6 +46,7 @@ import GradientCardLockshift from '../../components/GradientCardLockshift';
 export default function SearchScreen(props: any) {
   const anchorDay = props?.route?.params?.anchorDate;
   const navigation = useNavigation();
+  const theme = useAppTheme();
   const onboarding = useSelector(selectHomeOnboarding);
   const [selected, setSelected] = useState<'map' | 'grid'>('grid');
   const [checkins, setCheckins] = useState<Checkin[]>([]);
@@ -303,151 +305,164 @@ export default function SearchScreen(props: any) {
   };
 
   return (
-    <View style={styles.root}>
-      <View style={styles.titleWrapper}>
-        <Text style={styles.title}>Your Reality Shift Dashboard</Text>
-      </View>
-      <ScrollView
-        style={{ backgroundColor: palette.darkBlue, marginVertical: scale(30) }}
-        showsVerticalScrollIndicator={false}
-      >
-        <GradientCardLockshift style={{ width: scale(330) }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              gap: s(12),
-              marginBottom: s(25),
-              justifyContent: 'flex-end',
-            }}
-          >
-            <OutlinePillWithIcon
-              width={s(100)}
-              label="Demo"
-              icon={require('../../assets/play.png')}
-              onPress={() => navigation.navigate('DemoScreen')}
-            />
-            <OutlinePillWithIcon
-              width={s(100)}
-              label="Setting"
-              icon={require('../../assets/gear.png')}
-              onPress={() => navigation.navigate('setting')}
-            />
-          </View>
-          <Text style={styles.title}>
-            Hey {firstName || 'there'}, ready to shift?
+    <GradientBackground>
+      <View style={styles.root}>
+        <View style={styles.titleWrapper}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Your Reality Shift Dashboard
           </Text>
-          <Text style={styles.subTitle}>
-            Your daily reality shift journey continues
-          </Text>
-          <View style={{ height: scale(10) }} />
-          {isLoading ? (
+        </View>
+        <ScrollView
+          style={{ flex: 1, paddingVertical: scale(30) }}
+          showsVerticalScrollIndicator={false}
+        >
+          <GradientCardLockshift style={{ width: scale(330) }}>
             <View
               style={{
-                width: scale(280),
-                borderRadius: s(18),
-                shadowColor: '#000',
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 6,
-                padding: scale(10),
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: scale(280),
+                flexDirection: 'row',
+                gap: s(12),
+                marginBottom: s(25),
+                justifyContent: 'flex-end',
               }}
             >
-              <ActivityIndicator size="large" color={palette.white} />
+              <OutlinePillWithIcon
+                width={s(100)}
+                label="Demo"
+                icon={require('../../assets/play.png')}
+                onPress={() => navigation.navigate('DemoScreen')}
+              />
+              <OutlinePillWithIcon
+                width={s(100)}
+                label="Setting"
+                icon={require('../../assets/gear.png')}
+                onPress={() => navigation.navigate('setting')}
+              />
             </View>
-          ) : (
-            <TodaysShiftView
-              checkins={checkins}
-              anchorDay={anchorDay}
-              onCheckinUpdate={handleCheckinUpdate}
-            />
-          )}
-        </GradientCardLockshift>
+            <Text style={[styles.title, { color: theme.colors.text }]}>
+              Hey {firstName || 'there'}, ready to shift?
+            </Text>
+            <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
+              Your daily reality shift journey continues
+            </Text>
+            <View style={{ height: scale(10) }} />
+            {isLoading ? (
+              <View
+                style={{
+                  width: scale(280),
+                  borderRadius: s(18),
+                  shadowColor: '#000',
+                  shadowOpacity: 0.25,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 6,
+                  padding: scale(10),
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: scale(280),
+                }}
+              >
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              </View>
+            ) : (
+              <TodaysShiftView
+                checkins={checkins}
+                anchorDay={anchorDay}
+                onCheckinUpdate={handleCheckinUpdate}
+              />
+            )}
+          </GradientCardLockshift>
 
-        <View style={{ height: scale(20) }} />
+          <View style={{ height: scale(20) }} />
 
-        <GradientHintBox
-          title="Highest Vibration (North Star)"
-          text={highestText}
-          style={{ width: scale(330) }}
-        />
-        <View style={{ height: scale(20) }} />
-        <GradientHintBox
-          title="Shadow Path"
-          text={lowestText}
-          style={{ width: scale(330) }}
-        />
-        <View style={{ height: scale(20) }} />
+          <GradientHintBox
+            title="Highest Vibration (North Star)"
+            text={highestText}
+            style={{ width: scale(330) }}
+          />
+          <View style={{ height: scale(20) }} />
+          <GradientHintBox
+            title="Shadow Path"
+            text={lowestText}
+            style={{ width: scale(330) }}
+          />
+          <View style={{ height: scale(20) }} />
 
-        <StatsOverviewBox
-          data={statsData}
-          style={{ width: scale(330) }}
-          onItemPress={item => {
-            if (item.label === 'Journal') {
-              openJournalSheet();
-            }
-          }}
-        />
+          <StatsOverviewBox
+            data={statsData}
+            style={{ width: scale(330) }}
+            onItemPress={item => {
+              if (item.label === 'Journal') {
+                openJournalSheet();
+              }
+            }}
+          />
 
-        <View style={{ height: scale(20) }} />
+          <View style={{ height: scale(20) }} />
 
-        <GradientCardHome>
-          <Text style={styles.title}>Shift Likelihood</Text>
-          <Text style={styles.subTitle}>
-            Based on your last 30 days. Avg score {avgScore.toFixed(1) / 10}
-          </Text>
-          <View style={styles.gaugeContainer}>
-            <TripleRingGauge
-              valuePct={shiftPct}
-              idBase="shiftGauge"
-              size={s(110)}
-            />
+          <GradientCardHome>
+            <Text style={[styles.title, { color: theme.colors.text }]}>
+              Shift Likelihood
+            </Text>
+            <Text style={[styles.subTitle, { color: theme.colors.textMuted }]}>
+              Based on your last 30 days. Avg score {(avgScore / 10).toFixed(1)}
+            </Text>
+            <View style={styles.gaugeContainer}>
+              <TripleRingGauge
+                valuePct={shiftPct}
+                idBase="shiftGauge"
+                size={s(110)}
+              />
+            </View>
+            <Text
+              style={[styles.bottomText, { color: theme.colors.textMuted }]}
+            >
+              {statusLabel}
+            </Text>
+          </GradientCardHome>
+
+          <View style={{ height: scale(20) }} />
+
+          {/* Toggle Buttons */}
+          <GradientCardHome>
+            <View style={styles.toggleRow}>
+              <LikertPill
+                label="Shift Map"
+                width={s(120)}
+                borderRadius={s(12)}
+                selected={selected === 'map'}
+                onPress={() => setSelected('map')}
+              />
+              <LikertPill
+                label="Shift Grid"
+                width={s(120)}
+                borderRadius={s(12)}
+                selected={selected === 'grid'}
+                onPress={() => setSelected('grid')}
+              />
+            </View>
+          </GradientCardHome>
+
+          {/* Graph Display */}
+          <View style={styles.chartWrapper}>
+            {selected === 'map' ? (
+              <ShiftMapChart
+                isLoading={isLoading}
+                checkinsApi={checkinsApi}
+                onPointPress={handleMapPointPress}
+              />
+            ) : (
+              <ShiftGridChart isLoading={isLoading} checkinsApi={checkinsApi} />
+            )}
           </View>
-          <Text style={styles.bottomText}>{statusLabel}</Text>
-        </GradientCardHome>
+        </ScrollView>
 
-        <View style={{ height: scale(20) }} />
-
-        {/* Toggle Buttons */}
-        <GradientCardHome>
-          <View style={styles.toggleRow}>
-            <LikertPill
-              label="Shift Map"
-              width={s(120)}
-              borderRadius={s(12)}
-              selected={selected === 'map'}
-              onPress={() => setSelected('map')}
-            />
-            <LikertPill
-              label="Shift Grid"
-              width={s(120)}
-              borderRadius={s(12)}
-              selected={selected === 'grid'}
-              onPress={() => setSelected('grid')}
-            />
-          </View>
-        </GradientCardHome>
-
-        {/* Graph Display */}
-        <View style={styles.chartWrapper}>
-          {selected === 'map' ? (
-            <ShiftMapChart
-              isLoading={isLoading}
-              checkinsApi={checkinsApi}
-              onPointPress={handleMapPointPress}
-            />
-          ) : (
-            <ShiftGridChart isLoading={isLoading} checkinsApi={checkinsApi} />
-          )}
-        </View>
-      </ScrollView>
-
-      {/* ───────── Journal Modal ───────── */}
-      <JournalModal visible={journalModalVisible} onClose={closeJournalSheet} />
-    </View>
+        {/* ───────── Journal Modal ───────── */}
+        <JournalModal
+          visible={journalModalVisible}
+          onClose={closeJournalSheet}
+        />
+      </View>
+    </GradientBackground>
   );
 }
 
@@ -455,20 +470,17 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: palette.darkBlue,
   },
   titleWrapper: {
     marginTop: scale(50),
   },
   title: {
     fontSize: scale(22),
-    color: palette.white,
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
   },
   subTitle: {
     fontSize: scale(16),
-    color: palette.white,
     fontWeight: '400',
     lineHeight: scale(30),
     fontFamily: 'SourceSansPro-Regular',
@@ -480,7 +492,6 @@ const styles = StyleSheet.create({
   },
   bottomText: {
     textAlign: 'center',
-    color: '#FFFFFF',
     fontSize: ms(13.5),
     marginTop: vs(12),
     fontFamily: 'SourceSansPro-Regular',

@@ -26,7 +26,7 @@ import Toast from 'react-native-toast-message';
 
 import GradientBoxWithButton from '../components/GradientBoxWithButton';
 import GradientHintBoxWithLikert from '../components/GradientHintBoxWithLikert';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 import { Checkin } from '../lib/dataClient';
 import { createCheckin, getBeliefs } from '../lib/authService';
 
@@ -41,6 +41,9 @@ export default function TodaysShiftView({
   anchorDay,
   onCheckinUpdate,
 }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   console.log('🚀 ~ anchorDay:', anchorDay);
   const [showDetails, setShowDetails] = useState(true); // Default to true (show detailed view)
 
@@ -227,7 +230,17 @@ export default function TodaysShiftView({
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.panel} onLayout={onLayout}>
+      <View
+        style={[
+          styles.panel,
+          !isDark && {
+            backgroundColor: 'rgba(255, 255, 255, 0.6)',
+            borderWidth: 1,
+            borderColor: 'rgba(255, 255, 255, 0.3)',
+          },
+        ]}
+        onLayout={onLayout}
+      >
         {w > 0 && (
           <Svg
             pointerEvents="none"
@@ -237,11 +250,18 @@ export default function TodaysShiftView({
             viewBox={`0 0 ${w} ${h}`}
           >
             <Defs>
-              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#0AC4FF" />
-                <Stop offset="0.52" stopColor="#0AC4FF" />
-                <Stop offset="1" stopColor="#1a4258ff" />
-              </SvgGrad>
+              {isDark ? (
+                <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#0AC4FF" />
+                  <Stop offset="0.52" stopColor="#0AC4FF" />
+                  <Stop offset="1" stopColor="#1a4258ff" />
+                </SvgGrad>
+              ) : (
+                <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor={theme.colors.border} />
+                  <Stop offset="1" stopColor={theme.colors.border} />
+                </SvgGrad>
+              )}
             </Defs>
             <Rect
               x={0.5}
@@ -251,31 +271,43 @@ export default function TodaysShiftView({
               rx={s(12)}
               ry={s(12)}
               fill="transparent"
-              stroke="url(#borderGrad)"
+              stroke={isDark ? 'url(#borderGrad)' : theme.colors.border}
               strokeWidth={1}
             />
           </Svg>
         )}
 
         {/* Header */}
-        <Text style={styles.title}>Today's Shift</Text>
-        <Text style={styles.desc}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>
+          Today's Shift
+        </Text>
+        <Text style={[styles.desc, { color: theme.colors.textMuted }]}>
           Check what felt true today. Empowering Beliefs raise your score;
           Shadow Beliefs lower it. Max ±10 per day.
         </Text>
 
         {/* Empowering Beliefs */}
-        <Text style={styles.sectionTitle}>Empowering Beliefs (YES = +1)</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+          Empowering Beliefs (YES = +1)
+        </Text>
         <View style={styles.sectionToolbar}>
-          <Text style={styles.sectionCounter}>
+          <Text style={[styles.sectionCounter, { color: theme.colors.text }]}>
             {empoweringYesCount}/{empoweringBeliefs.length}
           </Text>
           <View style={styles.sectionActions}>
             <TouchableOpacity onPress={() => markAll(empoweringBeliefs, 'yes')}>
-              <Text style={styles.actionText}>Mark all YES</Text>
+              <Text
+                style={[styles.actionText, { color: theme.colors.textMuted }]}
+              >
+                Mark all YES
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => markAll(empoweringBeliefs, 'no')}>
-              <Text style={styles.actionText}>Mark all NO</Text>
+              <Text
+                style={[styles.actionText, { color: theme.colors.textMuted }]}
+              >
+                Mark all NO
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -290,19 +322,32 @@ export default function TodaysShiftView({
         ))}
 
         {/* Shadow Beliefs */}
-        <Text style={[styles.sectionTitle, { marginTop: vs(16) }]}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { marginTop: vs(16), color: theme.colors.primary },
+          ]}
+        >
           Shadow Beliefs (YES = -1)
         </Text>
         <View style={styles.sectionToolbar}>
-          <Text style={styles.sectionCounter}>
+          <Text style={[styles.sectionCounter, { color: theme.colors.text }]}>
             {shadowYesCount}/{shadowBeliefs.length}
           </Text>
           <View style={styles.sectionActions}>
             <TouchableOpacity onPress={() => markAll(shadowBeliefs, 'yes')}>
-              <Text style={styles.actionText}>Mark all YES</Text>
+              <Text
+                style={[styles.actionText, { color: theme.colors.textMuted }]}
+              >
+                Mark all YES
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => markAll(shadowBeliefs, 'no')}>
-              <Text style={styles.actionText}>Mark all NO</Text>
+              <Text
+                style={[styles.actionText, { color: theme.colors.textMuted }]}
+              >
+                Mark all NO
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -317,7 +362,7 @@ export default function TodaysShiftView({
         ))}
 
         {/* ✅ Correct Score Display */}
-        <Text style={styles.scoreText}>
+        <Text style={[styles.scoreText, { color: theme.colors.text }]}>
           Today's score: (+{empoweringYesCount}) + (-{shadowYesCount}) ={' '}
           {rawScore}
         </Text>
@@ -329,10 +374,12 @@ export default function TodaysShiftView({
         >
           <Image
             source={require('../assets/clear_choices.png')}
-            style={styles.clearIcon}
+            style={[styles.clearIcon, { tintColor: theme.colors.primary }]}
             resizeMode="contain"
           />
-          <Text style={styles.clearText}>Clear choices</Text>
+          <Text style={[styles.clearText, { color: theme.colors.textMuted }]}>
+            Clear choices
+          </Text>
         </TouchableOpacity>
 
         {/* Lock Button */}
@@ -342,12 +389,14 @@ export default function TodaysShiftView({
           style={{ marginTop: vs(14) }}
         >
           <LinearGradient
-            colors={['#143f65ff', '#1C2A3A']}
+            colors={theme.colors.cardGradient}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={styles.lockButton}
           >
-            <Text style={styles.lockText}>Lock Today's Shift</Text>
+            <Text style={[styles.lockText, { color: theme.colors.text }]}>
+              Lock Today's Shift
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -377,28 +426,24 @@ const styles = StyleSheet.create({
     padding: scale(10),
   },
   title: {
-    color: palette.white,
     fontSize: s(20),
     fontWeight: '700',
     marginBottom: vs(6),
     fontFamily: 'SourceSansPro-Regular',
   },
   desc: {
-    color: palette.white,
     fontSize: s(14),
     lineHeight: s(19),
     marginBottom: vs(14),
     fontFamily: 'SourceSansPro-Regular',
   },
   sectionTitle: {
-    color: '#9AD9FF',
     fontWeight: '700',
     fontSize: s(14),
     marginVertical: vs(6),
     fontFamily: 'SourceSansPro-Regular',
   },
   scoreText: {
-    color: palette.white,
     fontSize: s(15),
     fontWeight: '600',
     marginTop: vs(14),
@@ -412,7 +457,6 @@ const styles = StyleSheet.create({
     borderRadius: s(30),
   },
   lockText: {
-    color: palette.txtBlue,
     fontSize: s(14.5),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
@@ -426,11 +470,9 @@ const styles = StyleSheet.create({
   clearIcon: {
     width: s(18),
     height: s(18),
-    tintColor: '#9AD9FF',
     marginRight: s(10),
   },
   clearText: {
-    color: '#EAF4FF',
     fontSize: s(15),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',
@@ -442,7 +484,6 @@ const styles = StyleSheet.create({
     marginVertical: vs(6),
   },
   sectionCounter: {
-    color: '#f4f5f6ff',
     fontSize: s(13),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
@@ -453,7 +494,6 @@ const styles = StyleSheet.create({
     columnGap: s(14),
   },
   actionText: {
-    color: '#f9fbfbff',
     fontSize: s(12.5),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',

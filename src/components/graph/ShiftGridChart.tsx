@@ -29,7 +29,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import GradientCardHome from '../GradientCardHome';
-import { palette } from '../../theme';
+import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
 import type { DensePoint } from '../../lib/dataClient';
 import { buildDenseSeries } from '../../lib/dataClient';
 import { useJournals } from '../../contexts/JournalContext';
@@ -37,7 +37,7 @@ import { getCheckins, getProfile } from '../../lib/authService';
 
 type Props = {
   isLoading: boolean;
-  checkinsApi: checkinsApi[];
+  checkinsApi: DensePoint[];
 };
 
 const CHART_HEIGHT = vs(200); // Fixed height like web version
@@ -58,6 +58,9 @@ const MONTHS = [
 ];
 
 export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const { setSelectedFilterDate, clearSelectedFilterDate, selectedFilterDate } =
     useJournals();
   const [width, setWidth] = useState(0);
@@ -267,28 +270,76 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
         </View>
       )}
 
-      <Text style={styles.title}>{chartTitle}</Text>
+      <Text style={[styles.title, { color: theme.colors.text }]}>
+        {chartTitle}
+      </Text>
 
       {selectedDate ? (
         <View style={styles.selectedDateContainer}>
-          <View style={styles.selectedDateBox}>
-            <Text style={styles.selectedDateText}>
+          <View
+            style={[
+              styles.selectedDateBox,
+              {
+                borderColor: isDark
+                  ? 'rgba(10, 196, 255, 0.5)'
+                  : theme.colors.border,
+                backgroundColor: isDark
+                  ? 'rgba(10, 196, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 0.8)',
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.selectedDateText,
+                { color: isDark ? '#00BFFF' : theme.colors.primary },
+              ]}
+            >
               {formatDate(selectedDate)}
             </Text>
           </View>
           <TouchableOpacity
             onPress={handleClearDate}
-            style={styles.clearButton}
+            style={[
+              styles.clearButton,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255, 59, 48, 0.2)'
+                  : 'rgba(239, 68, 68, 0.1)',
+                borderColor: isDark
+                  ? 'rgba(255, 59, 48, 0.5)'
+                  : 'rgba(239, 68, 68, 0.3)',
+              },
+            ]}
           >
-            <Text style={styles.clearText}>Clear</Text>
+            <Text style={[styles.clearText, { color: '#EF4444' }]}>Clear</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity
           onPress={openDatePicker}
-          style={styles.selectDateButton}
+          style={[
+            styles.selectDateButton,
+            {
+              borderColor: isDark
+                ? 'rgba(10, 196, 255, 0.5)'
+                : theme.colors.border,
+              backgroundColor: isDark
+                ? 'rgba(10, 196, 255, 0.1)'
+                : 'rgba(255, 255, 255, 0.8)',
+            },
+          ]}
         >
-          <Text style={styles.selectDateText}>
+          <Text
+            style={[
+              styles.selectDateText,
+              {
+                color: isDark
+                  ? 'rgba(255, 255, 255, 0.7)'
+                  : theme.colors.textMuted,
+              },
+            ]}
+          >
             Please select date to filter
           </Text>
         </TouchableOpacity>
@@ -321,8 +372,10 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
                 mode="date"
                 display="inline"
                 onChange={onDatePickerChange}
-                style={{ backgroundColor: palette.white }}
-                themeVariant="light"
+                style={{
+                  backgroundColor: isDark ? theme.colors.card : '#FFFFFF',
+                }}
+                themeVariant={isDark ? 'dark' : 'light'}
               />
             </Pressable>
           </Pressable>
@@ -340,11 +393,18 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
             viewBox={`0 0 ${width} ${CHART_HEIGHT}`}
           >
             <Defs>
-              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#0AC4FF" />
-                <Stop offset="0.52" stopColor="#0AC4FF" />
-                <Stop offset="1" stopColor="#1a4258ff" />
-              </SvgGrad>
+              {isDark ? (
+                <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#0AC4FF" />
+                  <Stop offset="0.52" stopColor="#0AC4FF" />
+                  <Stop offset="1" stopColor="#1a4258ff" />
+                </SvgGrad>
+              ) : (
+                <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor={theme.colors.border} />
+                  <Stop offset="1" stopColor={theme.colors.border} />
+                </SvgGrad>
+              )}
             </Defs>
             <Rect
               x={1}
@@ -353,8 +413,8 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
               height={CHART_HEIGHT - 2}
               rx={s(12)}
               ry={s(12)}
-              fill="transparent"
-              stroke="url(#borderGrad)"
+              fill={isDark ? 'transparent' : 'rgba(255, 255, 255, 0.6)'}
+              stroke={isDark ? 'url(#borderGrad)' : theme.colors.border}
               strokeWidth={1}
             />
           </Svg>
@@ -370,7 +430,7 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
                   x2={width - s(24)}
                   y1={centerY}
                   y2={centerY}
-                  stroke="rgba(255,255,255,0.3)"
+                  stroke={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
                   strokeWidth={1}
                   strokeDasharray="3,5"
                 />
@@ -399,14 +459,16 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
               ]}
             >
               {maxCumulative > 0 && (
-                <Text style={styles.yLabelText}>
-                  +{maxCumulative.toFixed(0) / 10}
+                <Text style={[styles.yLabelText, { color: theme.colors.text }]}>
+                  +{(maxCumulative / 10).toFixed(0)}
                 </Text>
               )}
-              <Text style={styles.yLabelText}>0</Text>
+              <Text style={[styles.yLabelText, { color: theme.colors.text }]}>
+                0
+              </Text>
               {maxCumulative > 0 && (
-                <Text style={styles.yLabelText}>
-                  -{maxCumulative.toFixed(0) / 10}
+                <Text style={[styles.yLabelText, { color: theme.colors.text }]}>
+                  -{(maxCumulative / 10).toFixed(0)}
                 </Text>
               )}
             </View>
@@ -414,7 +476,9 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
             {/* No-data message */}
             {(!series || series.length === 0) && (
               <View style={styles.noDataWrapper}>
-                <Text style={styles.noDataText}>
+                <Text
+                  style={[styles.noDataText, { color: theme.colors.textMuted }]}
+                >
                   Lock your first Shift to start seeing dots here.
                 </Text>
               </View>
@@ -430,7 +494,10 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
               return (
                 <Text
                   key={`${month.label}-${idx}`}
-                  style={[styles.monthLabel, { left: leftPosition }]}
+                  style={[
+                    styles.monthLabel,
+                    { left: leftPosition, color: theme.colors.text },
+                  ]}
                 >
                   {month.label}
                 </Text>
@@ -441,13 +508,13 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
 
         {/* Legends */}
         <View style={styles.legendRowOne}>
-          <Legend color="#22C55E" label="Above Baseline" />
-          <Legend color="#EF4444" label="Below Baseline" />
+          <Legend color="#22C55E" label="Above Baseline" theme={theme} />
+          <Legend color="#EF4444" label="Below Baseline" theme={theme} />
         </View>
         <View style={styles.legendRowOne}>
-          <Legend color="#EAB308" label="At Baseline" />
+          <Legend color="#EAB308" label="At Baseline" theme={theme} />
           <View style={{ marginLeft: scale(22) }}>
-            <Legend color="#94A3B8" label="No Check-in" />
+            <Legend color="#94A3B8" label="No Check-in" theme={theme} />
           </View>
         </View>
       </View>
@@ -455,10 +522,20 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
   );
 }
 
-const Legend = ({ color, label }: { color: string; label: string }) => (
+const Legend = ({
+  color,
+  label,
+  theme,
+}: {
+  color: string;
+  label: string;
+  theme: any;
+}) => (
   <View style={styles.legendItem}>
     <View style={[styles.colorBox, { backgroundColor: color }]} />
-    <Text style={styles.legendLabel}>{label}</Text>
+    <Text style={[styles.legendLabel, { color: theme.colors.text }]}>
+      {label}
+    </Text>
   </View>
 );
 
@@ -466,7 +543,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: ms(17),
     fontWeight: '700',
-    color: palette.white,
     marginBottom: vs(12),
     fontFamily: 'SourceSansPro-Regular',
   },
@@ -487,7 +563,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   yLabelText: {
-    color: '#FFFFFF',
     fontSize: ms(10),
     fontFamily: 'SourceSansPro-Regular',
   },
@@ -500,7 +575,6 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     position: 'absolute',
-    color: '#FFFFFF',
     fontSize: ms(10),
     fontFamily: 'SourceSansPro-Regular',
     transform: [{ translateX: -s(15) }], // Center the label on its position
@@ -523,7 +597,6 @@ const styles = StyleSheet.create({
     marginRight: s(6),
   },
   legendLabel: {
-    color: palette.white,
     fontSize: ms(12.5),
     fontFamily: 'SourceSansPro-Regular',
   },
@@ -535,7 +608,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noDataText: {
-    color: '#CBD5F5',
     fontSize: ms(12.5),
     textAlign: 'center',
     fontFamily: 'SourceSansPro-Regular',
@@ -545,14 +617,11 @@ const styles = StyleSheet.create({
     paddingVertical: vs(12),
     borderRadius: s(12),
     borderWidth: 1,
-    borderColor: 'rgba(10, 196, 255, 0.5)',
-    backgroundColor: 'rgba(10, 196, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: vs(12),
   },
   selectDateText: {
-    color: 'rgba(255, 255, 255, 0.7)',
     fontSize: ms(14),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',
@@ -569,11 +638,8 @@ const styles = StyleSheet.create({
     paddingVertical: vs(12),
     borderRadius: s(12),
     borderWidth: 1,
-    borderColor: 'rgba(10, 196, 255, 0.5)',
-    backgroundColor: 'rgba(10, 196, 255, 0.1)',
   },
   selectedDateText: {
-    color: '#00BFFF',
     fontSize: ms(15),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',
@@ -581,13 +647,10 @@ const styles = StyleSheet.create({
   clearButton: {
     paddingHorizontal: s(16),
     paddingVertical: vs(12),
-    backgroundColor: 'rgba(255, 59, 48, 0.2)',
     borderRadius: s(8),
     borderWidth: 1,
-    borderColor: 'rgba(255, 59, 48, 0.5)',
   },
   clearText: {
-    color: '#FF3B30',
     fontSize: ms(14),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',

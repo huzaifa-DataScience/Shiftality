@@ -30,13 +30,13 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import GradientCardHome from '../GradientCardHome';
-import { palette } from '../../theme';
+import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
 import { DensePoint, buildDenseSeries } from '../../lib/dataClient';
 import { useJournals } from '../../contexts/JournalContext';
 import { getCheckins, getProfile } from '../../lib/authService';
 
 type Props = {
-  checkinsApi: checkinsApi;
+  checkinsApi: DensePoint[];
   onPointPress?: (isoDate: string) => void;
   isLoading: boolean;
 };
@@ -80,6 +80,9 @@ export default function ShiftMapChart({
   checkinsApi,
   onPointPress,
 }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const { setSelectedFilterDate, clearSelectedFilterDate, selectedFilterDate } =
     useJournals();
   const [w, setW] = useState(0);
@@ -391,31 +394,77 @@ export default function ShiftMapChart({
       )}
 
       <View style={styles.headerRow}>
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>
           Shift Map {expandedMonthLabel ? `- ${expandedMonthLabel}` : ''}
         </Text>
       </View>
 
       {selectedDate ? (
         <View style={styles.selectedDateContainer}>
-          <View style={styles.selectedDateBox}>
-            <Text style={styles.selectedDateText}>
+          <View
+            style={[
+              styles.selectedDateBox,
+              {
+                borderColor: isDark
+                  ? 'rgba(10, 196, 255, 0.5)'
+                  : theme.colors.border,
+                backgroundColor: isDark
+                  ? 'rgba(10, 196, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 0.8)',
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.selectedDateText,
+                { color: isDark ? '#00BFFF' : theme.colors.primary },
+              ]}
+            >
               {formatDate(selectedDate)}
             </Text>
           </View>
           <TouchableOpacity
             onPress={handleClearDate}
-            style={styles.clearButton}
+            style={[
+              styles.clearButton,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255, 59, 48, 0.2)'
+                  : 'rgba(239, 68, 68, 0.1)',
+                borderColor: isDark
+                  ? 'rgba(255, 59, 48, 0.5)'
+                  : 'rgba(239, 68, 68, 0.3)',
+              },
+            ]}
           >
-            <Text style={styles.clearText}>Clear</Text>
+            <Text style={[styles.clearText, { color: '#EF4444' }]}>Clear</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity
           onPress={openDatePicker}
-          style={styles.selectDateButton}
+          style={[
+            styles.selectDateButton,
+            {
+              borderColor: isDark
+                ? 'rgba(10, 196, 255, 0.5)'
+                : theme.colors.border,
+              backgroundColor: isDark
+                ? 'rgba(10, 196, 255, 0.1)'
+                : 'rgba(255, 255, 255, 0.8)',
+            },
+          ]}
         >
-          <Text style={styles.selectDateText}>
+          <Text
+            style={[
+              styles.selectDateText,
+              {
+                color: isDark
+                  ? 'rgba(255, 255, 255, 0.7)'
+                  : theme.colors.textMuted,
+              },
+            ]}
+          >
             Please select date to filter
           </Text>
         </TouchableOpacity>
@@ -448,8 +497,10 @@ export default function ShiftMapChart({
                 mode="date"
                 display="inline"
                 onChange={onDatePickerChange}
-                style={{ backgroundColor: palette.white }}
-                themeVariant="light"
+                style={{
+                  backgroundColor: isDark ? theme.colors.card : '#FFFFFF',
+                }}
+                themeVariant={isDark ? 'dark' : 'light'}
               />
             </Pressable>
           </Pressable>
@@ -467,11 +518,18 @@ export default function ShiftMapChart({
             viewBox={`0 0 ${w} ${h}`}
           >
             <Defs>
-              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#0AC4FF" />
-                <Stop offset="0.52" stopColor="#0AC4FF" />
-                <Stop offset="1" stopColor="#1a4258ff" />
-              </SvgGrad>
+              {isDark ? (
+                <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#0AC4FF" />
+                  <Stop offset="0.52" stopColor="#0AC4FF" />
+                  <Stop offset="1" stopColor="#1a4258ff" />
+                </SvgGrad>
+              ) : (
+                <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor={theme.colors.border} />
+                  <Stop offset="1" stopColor={theme.colors.border} />
+                </SvgGrad>
+              )}
             </Defs>
             <Rect
               x={1}
@@ -480,8 +538,8 @@ export default function ShiftMapChart({
               height={h - 2}
               rx={s(12)}
               ry={s(12)}
-              fill="transparent"
-              stroke="url(#borderGrad)"
+              fill={isDark ? 'transparent' : 'rgba(255, 255, 255, 0.6)'}
+              stroke={isDark ? 'url(#borderGrad)' : theme.colors.border}
               strokeWidth={1}
             />
           </Svg>
@@ -503,7 +561,7 @@ export default function ShiftMapChart({
                   y1="0"
                   x2={initialSpacing + index * spacing}
                   y2="100%"
-                  stroke="rgba(255,255,255,0.1)"
+                  stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
                   strokeWidth="1"
                   strokeDasharray="3,5"
                 />
@@ -522,14 +580,22 @@ export default function ShiftMapChart({
                 curved
                 thickness={3}
                 hideDataPoints={false}
-                dataPointsColor="#00BFFF"
+                dataPointsColor={isDark ? '#00BFFF' : theme.colors.primary}
                 dataPointsRadius={5}
                 hideRules={false}
-                rulesColor="rgba(255,255,255,0.1)"
+                rulesColor={
+                  isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+                }
                 rulesType="dotted"
-                yAxisTextStyle={styles.yAxisText}
-                xAxisLabelTextStyle={styles.xAxisLabel}
-                color="#00BFFF"
+                yAxisTextStyle={[
+                  styles.yAxisText,
+                  { color: theme.colors.text },
+                ]}
+                xAxisLabelTextStyle={[
+                  styles.xAxisLabel,
+                  { color: theme.colors.text },
+                ]}
+                color={isDark ? '#00BFFF' : theme.colors.primary}
                 noOfSections={Y_AXIS_LABELS.length - 1}
                 maxValue={Y_MAX + Y_OFFSET}
                 yAxisLabelTexts={Y_AXIS_LABELS}
@@ -549,7 +615,7 @@ export default function ShiftMapChart({
         </View>
 
         <View style={styles.footerBox}>
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>
             Current Position: {currentPosition?.toFixed(2)}
           </Text>
         </View>
@@ -568,7 +634,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: ms(17),
     fontWeight: '700',
-    color: palette.white,
     fontFamily: 'SourceSansPro-Regular',
   },
   backButton: {
@@ -598,14 +663,11 @@ const styles = StyleSheet.create({
     paddingVertical: vs(12),
     borderRadius: s(12),
     borderWidth: 1,
-    borderColor: 'rgba(10, 196, 255, 0.5)',
-    backgroundColor: 'rgba(10, 196, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: vs(12),
   },
   selectDateText: {
-    color: 'rgba(255, 255, 255, 0.7)',
     fontSize: ms(14),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',
@@ -622,11 +684,8 @@ const styles = StyleSheet.create({
     paddingVertical: vs(12),
     borderRadius: s(12),
     borderWidth: 1,
-    borderColor: 'rgba(10, 196, 255, 0.5)',
-    backgroundColor: 'rgba(10, 196, 255, 0.1)',
   },
   selectedDateText: {
-    color: '#00BFFF',
     fontSize: ms(15),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',
@@ -634,13 +693,10 @@ const styles = StyleSheet.create({
   clearButton: {
     paddingHorizontal: s(16),
     paddingVertical: vs(12),
-    backgroundColor: 'rgba(255, 59, 48, 0.2)',
     borderRadius: s(8),
     borderWidth: 1,
-    borderColor: 'rgba(255, 59, 48, 0.5)',
   },
   clearText: {
-    color: '#FF3B30',
     fontSize: ms(14),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',
@@ -671,12 +727,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(10),
   },
   yAxisText: {
-    color: '#FFFFFF',
     fontSize: ms(10),
     fontFamily: 'SourceSansPro-Regular',
   },
   xAxisLabel: {
-    color: '#FFFFFF',
     fontSize: ms(10),
     fontFamily: 'SourceSansPro-Regular',
   },
@@ -685,7 +739,6 @@ const styles = StyleSheet.create({
     marginLeft: scale(20),
   },
   footerText: {
-    color: palette.white,
     fontSize: ms(13),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',

@@ -20,7 +20,7 @@ import {
   verticalScale as vs,
   moderateScale as ms,
 } from 'react-native-size-matters';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 export type StatItem = {
   icon: ImageSourcePropType;
@@ -35,6 +35,9 @@ type Props = {
 };
 
 const StatsOverviewBox = ({ data, style, onItemPress }: Props) => {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(80));
 
@@ -56,11 +59,18 @@ const StatsOverviewBox = ({ data, style, onItemPress }: Props) => {
           viewBox={`0 0 ${w} ${h}`}
         >
           <Defs>
-            <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor="#0AC4FF" />
-              <Stop offset="0.52" stopColor="#0AC4FF" />
-              <Stop offset="1" stopColor="#1a4258ff" />
-            </SvgGrad>
+            {isDark ? (
+              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="#0AC4FF" />
+                <Stop offset="0.52" stopColor="#0AC4FF" />
+                <Stop offset="1" stopColor="#1a4258ff" />
+              </SvgGrad>
+            ) : (
+              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={theme.colors.border} />
+                <Stop offset="1" stopColor={theme.colors.border} />
+              </SvgGrad>
+            )}
           </Defs>
           <Rect
             x={1}
@@ -70,7 +80,7 @@ const StatsOverviewBox = ({ data, style, onItemPress }: Props) => {
             rx={s(12)}
             ry={s(12)}
             fill="transparent"
-            stroke="url(#borderGrad)"
+            stroke={isDark ? 'url(#borderGrad)' : theme.colors.border}
             strokeWidth={1}
           />
         </Svg>
@@ -87,11 +97,15 @@ const StatsOverviewBox = ({ data, style, onItemPress }: Props) => {
           >
             <Image
               source={item.icon}
-              style={styles.icon}
+              style={[styles.icon, { tintColor: theme.colors.text }]}
               resizeMode="contain"
             />
-            <Text style={styles.value}>{item.value}</Text>
-            <Text style={styles.label}>{item.label}</Text>
+            <Text style={[styles.value, { color: theme.colors.primary }]}>
+              {item.value}
+            </Text>
+            <Text style={[styles.label, { color: theme.colors.text }]}>
+              {item.label}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -122,16 +136,13 @@ const styles = StyleSheet.create({
     width: s(22),
     height: s(22),
     marginBottom: vs(6),
-    tintColor: palette.white,
   },
   value: {
-    color: '#00BFFF',
     fontSize: ms(16),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
   },
   label: {
-    color: palette.white,
     fontSize: ms(13),
     fontWeight: '600',
     marginTop: vs(2),

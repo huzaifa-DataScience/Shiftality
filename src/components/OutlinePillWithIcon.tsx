@@ -21,7 +21,7 @@ import {
   verticalScale as vs,
   moderateScale as ms,
 } from 'react-native-size-matters';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 const PILL_H = vs(44);
 const PILL_R = s(24);
@@ -47,6 +47,9 @@ export default function OutlinePillWithIcon({
   style,
   textStyle,
 }: OutlinePillWithIconProps) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const [h, setH] = useState(PILL_H);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
@@ -77,11 +80,18 @@ export default function OutlinePillWithIcon({
         viewBox={`0 0 ${width} ${h}`}
       >
         <Defs>
-          <SvgGrad id="pillBorderGrad" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor="#0AC4FF" />
-            <Stop offset="0.52" stopColor="#0AC4FF" />
-            <Stop offset="1" stopColor="#1a4258ff" />
-          </SvgGrad>
+          {isDark ? (
+            <SvgGrad id="pillBorderGrad" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor="#0AC4FF" />
+              <Stop offset="0.52" stopColor="#0AC4FF" />
+              <Stop offset="1" stopColor="#1a4258ff" />
+            </SvgGrad>
+          ) : (
+            <SvgGrad id="pillBorderGrad" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={theme.colors.border} />
+              <Stop offset="1" stopColor={theme.colors.border} />
+            </SvgGrad>
+          )}
         </Defs>
         <Rect
           x={stroke / 2}
@@ -91,7 +101,7 @@ export default function OutlinePillWithIcon({
           rx={PILL_R}
           ry={PILL_R}
           fill="transparent"
-          stroke="url(#pillBorderGrad)"
+          stroke={isDark ? "url(#pillBorderGrad)" : theme.colors.border}
           strokeWidth={stroke}
         />
       </Svg>
@@ -103,12 +113,12 @@ export default function OutlinePillWithIcon({
           style={{
             width: iconSize,
             height: iconSize,
-            tintColor: palette.white,
+            tintColor: theme.colors.text,
             marginRight: s(8),
           }}
           resizeMode="contain"
         />
-        <Text style={[styles.label, textStyle]}>{label}</Text>
+        <Text style={[styles.label, { color: theme.colors.text }, textStyle]}>{label}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -123,7 +133,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   label: {
-    color: palette.white,
     fontSize: ms(14),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',

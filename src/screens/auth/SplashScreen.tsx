@@ -1,24 +1,22 @@
 // src/screens/auth/SplashScreen.tsx
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Image,
-  StyleSheet,
-  Animated,
-  StatusBar,
-} from 'react-native';
+import { Image, StyleSheet, Animated, StatusBar } from 'react-native';
 import {
   scale as s,
   verticalScale as vs,
   moderateScale as ms,
 } from 'react-native-size-matters';
-import { palette } from '../../theme/colors';
+import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
+import GradientBackground from '../../components/GradientBackground';
 
 interface SplashScreenProps {
   onFinish: () => void;
 }
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -84,8 +82,8 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
   }, [fadeAnim, scaleAnim, pulseAnim, onFinish]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <GradientBackground style={styles.container}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <Animated.View
         style={[
           styles.content,
@@ -110,16 +108,16 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           />
         </Animated.View>
       </Animated.View>
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.darkBlue,
     justifyContent: 'center',
     alignItems: 'center',
+    // backgroundColor is set dynamically
   },
   content: {
     alignItems: 'center',
@@ -134,4 +132,3 @@ const styles = StyleSheet.create({
     height: vs(200),
   },
 });
-

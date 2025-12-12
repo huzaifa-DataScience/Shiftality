@@ -9,12 +9,9 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 import { scale as s } from 'react-native-size-matters';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
-// Nice Shiftality blue sweep
-const GRAD = [
-  { offset: '0%', color: '#0390bbff' },
-  { offset: '100%', color: '#059cd8ff' },
-];
+// Gradient colors - will be set dynamically based on theme
 
 type Props = {
   /** e.g. 0.4 for 40% */
@@ -30,6 +27,10 @@ export default function TripleRingGauge({
   size = s(108),
   idBase,
 }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
+
   // geometry
   const cx = size / 2;
   const cy = size / 2;
@@ -62,6 +63,25 @@ export default function TripleRingGauge({
     return `${filled} ${empty}`; // simple dash for a single arc
   };
 
+  // Gradient colors based on theme
+  const gradColors = isDark
+    ? [
+        { offset: '0%', color: '#0390bbff' },
+        { offset: '100%', color: '#059cd8ff' },
+      ]
+    : [
+        { offset: '0%', color: '#4CC3FF' },
+        { offset: '100%', color: '#61C3FF' },
+      ];
+
+  // Track color based on theme
+  const trackColor = isDark
+    ? 'rgba(238, 217, 217, 0.08)'
+    : 'rgba(0, 0, 0, 0.08)';
+
+  // Text color based on theme
+  const textColor = isDark ? '#FFFFFF' : theme.colors.text;
+
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
@@ -75,7 +95,7 @@ export default function TripleRingGauge({
               x2="1"
               y2="0"
             >
-              {GRAD.map(g => (
+              {gradColors.map(g => (
                 <Stop
                   key={`${ring.gradId}-${g.offset}`}
                   offset={g.offset}
@@ -94,7 +114,7 @@ export default function TripleRingGauge({
               cx={cx}
               cy={cy}
               r={ring.r}
-              stroke="rgba(238, 217, 217, 0.08)"
+              stroke={trackColor}
               strokeWidth={track}
               fill="none"
             />
@@ -120,7 +140,7 @@ export default function TripleRingGauge({
         <SvgText
           x={cx - 5}
           y={cy + 4} // slight visual centering
-          fill="#FFFFFF"
+          fill={textColor}
           fontWeight="800"
           fontSize={size * 0.12}
           textAnchor="middle"

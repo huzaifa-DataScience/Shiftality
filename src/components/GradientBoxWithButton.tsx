@@ -19,7 +19,7 @@ import Svg, {
   Rect,
 } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 import { getCheckins, CheckinPayload } from '../lib/authService';
 
@@ -40,6 +40,9 @@ export default function GradientBoxWithButton({
   onPressDetails,
   tickIcon,
 }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(45));
 
@@ -115,11 +118,18 @@ export default function GradientBoxWithButton({
           viewBox={`0 0 ${w} ${h}`}
         >
           <Defs>
-            <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor="#0AC4FF" />
-              <Stop offset="0.52" stopColor="#0AC4FF" />
-              <Stop offset="1" stopColor="#1a4258ff" />
-            </SvgGrad>
+            {isDark ? (
+              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="#0AC4FF" />
+                <Stop offset="0.52" stopColor="#0AC4FF" />
+                <Stop offset="1" stopColor="#1a4258ff" />
+              </SvgGrad>
+            ) : (
+              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={theme.colors.border} />
+                <Stop offset="1" stopColor={theme.colors.border} />
+              </SvgGrad>
+            )}
           </Defs>
           <Rect
             x={1}
@@ -128,16 +138,22 @@ export default function GradientBoxWithButton({
             height={h - 2}
             rx={s(12)}
             ry={s(12)}
-            fill="#111B2C"
-            stroke="url(#borderGrad)"
+            fill={isDark ? '#111B2C' : 'rgba(255, 255, 255, 0.6)'}
+            stroke={isDark ? 'url(#borderGrad)' : theme.colors.border}
             strokeWidth={1}
           />
         </Svg>
       )}
 
       <View style={styles.inner}>
-        {title && <Text style={styles.title}>{title}</Text>}
-        <Text style={styles.text}>{text}</Text>
+        {title && (
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            {title}
+          </Text>
+        )}
+        <Text style={[styles.text, { color: theme.colors.textMuted }]}>
+          {text}
+        </Text>
 
         <View style={{ alignItems: 'center', marginTop: vs(12) }}>
           {tickIcon && (
@@ -147,15 +163,19 @@ export default function GradientBoxWithButton({
               resizeMode="contain"
             />
           )}
-          <Text style={styles.successText}>{successText}</Text>
+          <Text style={[styles.successText, { color: theme.colors.text }]}>
+            {successText}
+          </Text>
         </View>
 
-        <Text style={styles.subText}>
+        <Text style={[styles.subText, { color: theme.colors.textMuted }]}>
           Progress isn't always perfect, and that's perfectly okay. You showed
           up today, and that matters.
         </Text>
 
-        <Text style={styles.scoreText}>{finalScoreText}</Text>
+        <Text style={[styles.scoreText, { color: theme.colors.text }]}>
+          {finalScoreText}
+        </Text>
 
         <TouchableOpacity
           activeOpacity={0.8}
@@ -163,12 +183,14 @@ export default function GradientBoxWithButton({
           style={{ marginTop: vs(12) }}
         >
           <LinearGradient
-            colors={['#143f65ff', '#1C2A3A']}
+            colors={theme.colors.cardGradient}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={styles.cta}
           >
-            <Text style={styles.ctaText}>View Details</Text>
+            <Text style={[styles.ctaText, { color: theme.colors.text }]}>
+              View Details
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -183,7 +205,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: ms(20),
     fontWeight: '700',
-    color: palette.white,
     marginBottom: vs(6),
     lineHeight: ms(22),
     fontFamily: 'SourceSansPro-Regular',
@@ -192,13 +213,11 @@ const styles = StyleSheet.create({
     fontSize: ms(15),
     fontWeight: '500',
     lineHeight: ms(19),
-    color: palette.white,
     fontFamily: 'SourceSansPro-Regular',
   },
   successText: {
     fontSize: ms(14),
     fontWeight: '700',
-    color: '#04ac6eff',
     textAlign: 'center',
     lineHeight: ms(18),
     fontFamily: 'SourceSansPro-Regular',
@@ -206,7 +225,6 @@ const styles = StyleSheet.create({
   subText: {
     fontSize: ms(15),
     fontWeight: '500',
-    color: palette.white,
     marginTop: vs(6),
     textAlign: 'left',
     lineHeight: ms(18),
@@ -215,7 +233,6 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: ms(14),
     fontWeight: '500',
-    color: palette.white,
     marginTop: vs(8),
     fontFamily: 'SourceSansPro-Regular',
   },
@@ -227,7 +244,6 @@ const styles = StyleSheet.create({
     borderRadius: s(30),
   },
   ctaText: {
-    color: palette.txtBlue,
     fontSize: ms(14.5),
     fontWeight: '700',
     opacity: 0.9,

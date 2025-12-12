@@ -26,7 +26,7 @@ import Svg, {
   Rect,
 } from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 type Props = {
   text?: string; // now optional (used for static copy OR placeholder)
@@ -110,6 +110,9 @@ export default function GradientHintBox({
   onPressDelete,
   deleteIcon,
 }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const [w, setW] = useState(0);
   const [h, setH] = useState(minHeight);
 
@@ -149,11 +152,18 @@ export default function GradientHintBox({
           viewBox={`0 0 ${w} ${h}`}
         >
           <Defs>
-            <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor="#0AC4FF" />
-              <Stop offset="0.52" stopColor="#0AC4FF" />
-              <Stop offset="1" stopColor="#1a4258ff" />
-            </SvgGrad>
+            {isDark ? (
+              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="#0AC4FF" />
+                <Stop offset="0.52" stopColor="#0AC4FF" />
+                <Stop offset="1" stopColor="#1a4258ff" />
+              </SvgGrad>
+            ) : (
+              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={theme.colors.border} />
+                <Stop offset="1" stopColor={theme.colors.border} />
+              </SvgGrad>
+            )}
           </Defs>
           <Rect
             x={stroke / 2}
@@ -163,7 +173,7 @@ export default function GradientHintBox({
             rx={radius}
             ry={radius}
             fill={bgColor}
-            stroke="url(#borderGrad)"
+            stroke={isDark ? "url(#borderGrad)" : theme.colors.border}
             strokeWidth={stroke}
           />
         </Svg>
@@ -175,7 +185,7 @@ export default function GradientHintBox({
             <View style={{ flex: 1 }}>
               {!!title && (
                 <Text
-                  style={[styles.title, { color: palette.white }, titleStyle]}
+                  style={[styles.title, { color: theme.colors.text }, titleStyle]}
                   numberOfLines={2}
                 >
                   {title}
@@ -190,7 +200,7 @@ export default function GradientHintBox({
                 //   style={styles.recoChip}
                 // >
                 <View style={styles.recoChip}>
-                  <Text style={styles.recoText}>{recommendedText}</Text>
+                  <Text style={[styles.recoText, { color: theme.colors.text }]}>{recommendedText}</Text>
                 </View>
                 // {/* </LinearGradient> */}
               )}
@@ -251,7 +261,7 @@ export default function GradientHintBox({
         )}
 
         {showCopy && (
-          <Text style={[styles.copy, { color: palette.white }, textStyle]}>
+          <Text style={[styles.copy, { color: theme.colors.text }, textStyle]}>
             {text}
           </Text>
         )}
@@ -264,24 +274,24 @@ export default function GradientHintBox({
             ]}
           >
             {!!inputLabel && (
-              <Text style={styles.inputLabel}>{inputLabel}</Text>
+              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>{inputLabel}</Text>
             )}
 
             <TextInput
               value={inputValue}
               onChangeText={onChangeInputText}
               placeholder={effectivePlaceholder}
-              placeholderTextColor="rgba(255,255,255,0.6)"
+              placeholderTextColor={theme.colors.textMuted}
               multiline
               textAlignVertical="top"
-              style={[styles.textArea, inputStyleOverride]}
+              style={[styles.textArea, { color: theme.colors.text }, inputStyleOverride]}
               {...restInputProps}
             />
           </View>
         )}
 
         {!!secondaryText && (
-          <Text style={styles.secondary}>{secondaryText}</Text>
+          <Text style={[styles.secondary, { color: theme.colors.textMuted }]}>{secondaryText}</Text>
         )}
 
         {!!footerActionLabel && (
@@ -297,7 +307,7 @@ export default function GradientHintBox({
                 style={styles.footerIcon}
               />
             ) : null}
-            <Text style={styles.footerText}>{footerActionLabel}</Text>
+            <Text style={[styles.footerText, { color: theme.colors.text }]}>{footerActionLabel}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -334,7 +344,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   recoText: {
-    color: palette.white,
     fontSize: ms(16),
     fontWeight: '700',
     textAlign: 'center',
@@ -365,7 +374,6 @@ const styles = StyleSheet.create({
     marginTop: vs(14),
   },
   inputLabel: {
-    color: palette.white,
     fontWeight: '800',
     fontSize: ms(15),
     marginBottom: vs(8),
@@ -373,15 +381,12 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: vs(90),
     paddingHorizontal: s(12),
-    color: palette.white,
     fontSize: ms(14),
     lineHeight: ms(20),
     fontFamily: 'SourceSansPro-Regular',
   },
 
   secondary: {
-    color: palette.white,
-    opacity: 0.9,
     marginTop: vs(10),
     fontSize: ms(14.5),
     fontWeight: '700',
@@ -400,7 +405,6 @@ const styles = StyleSheet.create({
     marginRight: s(10),
   },
   footerText: {
-    color: palette.white,
     fontSize: ms(15),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',

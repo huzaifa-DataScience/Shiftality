@@ -24,6 +24,7 @@ import Svg, {
   Stop,
   Rect,
 } from 'react-native-svg';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 type BaseProps = {
   radius?: number;
@@ -39,6 +40,8 @@ type BaseProps = {
   onPress?: () => void;
   placeholderText?: string;
 };
+
+type Props = BaseProps & TextInputProps;
 
 const GradientInput: React.FC<Props> = ({
   radius = s(12),
@@ -67,6 +70,17 @@ const GradientInput: React.FC<Props> = ({
     [minHeight],
   );
 
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
+
+  // Theme-aware border: gradient in dark mode, solid in light mode
+  const borderStartColor = '#0AC4FF'; // Cyan
+  const borderEndColor = isDark
+    ? '#1a4258ff'
+    : '#9CA3AF'; // Dark blue in dark mode, darker gray in light mode
+  const useGradient = isDark; // Only use gradient in dark mode
+
   const contentPaddingLeft = leftIconSource ? s(12) : 0;
   const contentPaddingRight = rightIconSource ? s(40) : 0;
 
@@ -79,24 +93,40 @@ const GradientInput: React.FC<Props> = ({
           height={h}
           viewBox={`0 0 ${w} ${h}`}
         >
-          <Defs>
-            <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor="#0AC4FF" />
-              <Stop offset="0.52" stopColor="#0AC4FF" />
-              <Stop offset="1" stopColor="#1a4258ff" />
-            </SvgGrad>
-          </Defs>
-          <Rect
-            x={stroke / 2}
-            y={stroke / 2}
-            width={w - stroke}
-            height={h - stroke}
-            rx={radius}
-            ry={radius}
-            fill="transparent"
-            stroke="url(#borderGrad)"
-            strokeWidth={stroke}
-          />
+          {useGradient ? (
+            <>
+              <Defs>
+                <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor={borderStartColor} />
+                  <Stop offset="0.52" stopColor={borderStartColor} />
+                  <Stop offset="1" stopColor={borderEndColor} />
+                </SvgGrad>
+              </Defs>
+              <Rect
+                x={stroke / 2}
+                y={stroke / 2}
+                width={w - stroke}
+                height={h - stroke}
+                rx={radius}
+                ry={radius}
+                fill="transparent"
+                stroke="url(#borderGrad)"
+                strokeWidth={stroke}
+              />
+            </>
+          ) : (
+            <Rect
+              x={stroke / 2}
+              y={stroke / 2}
+              width={w - stroke}
+              height={h - stroke}
+              rx={radius}
+              ry={radius}
+              fill="transparent"
+              stroke={borderEndColor}
+              strokeWidth={stroke}
+            />
+          )}
         </Svg>
       )}
 
@@ -124,14 +154,19 @@ const GradientInput: React.FC<Props> = ({
         >
           <Text
             numberOfLines={1}
-            style={{ color: valueText ? '#FFF' : '#8EA0B6', fontSize: ms(15) }}
+            style={{
+              color: valueText
+                ? theme.colors.text
+                : theme.colors.textMuted,
+              fontSize: ms(15),
+            }}
           >
             {valueText || placeholderText}
           </Text>
         </TouchableOpacity>
       ) : (
         <TextInput
-          placeholderTextColor="#8EA0B6"
+          placeholderTextColor={theme.colors.textMuted}
           style={[
             styles.input,
             {
@@ -140,6 +175,7 @@ const GradientInput: React.FC<Props> = ({
               paddingVertical: vs(8),
               paddingLeft: s(16) + contentPaddingLeft,
               paddingRight: s(16) + contentPaddingRight,
+              color: theme.colors.text,
             },
             style,
           ]}
@@ -169,11 +205,11 @@ const GradientInput: React.FC<Props> = ({
 const styles = StyleSheet.create({
   wrap: { width: '100%', position: 'relative' },
   input: {
-    color: '#FFF',
     fontSize: ms(16),
     fontWeight: '500',
     backgroundColor: 'transparent',
     fontFamily: 'SourceSansPro-Regular',
+    // color is set dynamically
   },
   pressable: { justifyContent: 'center', backgroundColor: 'transparent' },
   leftIcon: {

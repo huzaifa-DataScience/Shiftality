@@ -7,6 +7,7 @@ import {
   moderateScale as ms,
   scale,
 } from 'react-native-size-matters';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 type Props = {
   label: string;
@@ -21,26 +22,65 @@ export default function GradientToggleRow({
   onValueChange,
   style,
 }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
+
+  if (isDark) {
+    return (
+      <LinearGradient
+        colors={['#181C2B', '#1B3D58', '#1E6AA0']} // dark → blue sweep like your cards
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={[styles.box, style]}
+      >
+        <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>
+
+        <View pointerEvents="box-none">
+          <Switch
+            value={value}
+            onValueChange={onValueChange}
+            trackColor={{ false: 'rgba(255,255,255,0.18)', true: '#61C3FF' }}
+            thumbColor={'#FFFFFF'}
+            ios_backgroundColor="rgba(255,255,255,0.18)"
+            style={styles.switch}
+          />
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  // Light mode: glassmorphism effect
   return (
-    <LinearGradient
-      colors={['#181C2B', '#1B3D58', '#1E6AA0']} // dark → blue sweep like your cards
-      start={{ x: 0, y: 0.5 }}
-      end={{ x: 1, y: 0.5 }}
-      style={[styles.box, style]}
+    <View
+      style={[
+        styles.box,
+        {
+          backgroundColor: 'rgba(255, 255, 255, 0.6)',
+          borderWidth: 1,
+          borderColor: 'rgba(255, 255, 255, 0.3)',
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 5,
+        },
+        style,
+      ]}
     >
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>
 
       <View pointerEvents="box-none">
         <Switch
           value={value}
           onValueChange={onValueChange}
-          trackColor={{ false: 'rgba(255,255,255,0.18)', true: '#61C3FF' }}
+          trackColor={{ false: 'rgba(0,0,0,0.1)', true: theme.colors.primary }}
           thumbColor={'#FFFFFF'}
-          ios_backgroundColor="rgba(255,255,255,0.18)"
+          ios_backgroundColor="rgba(0,0,0,0.1)"
           style={styles.switch}
         />
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -55,7 +95,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   label: {
-    color: '#FFFFFF',
     fontSize: ms(18),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',

@@ -11,7 +11,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { ms, s, scale, vs } from 'react-native-size-matters';
 
-import { palette } from '../theme';
+import { useAppTheme } from '../theme/ThemeProvider';
 import GradientCardHome from './GradientCardHome';
 import GradientHintBox from './GradientHintBox';
 import {
@@ -56,6 +56,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
   empoweringAddLabel = '+ Add Empowering Belief',
   shadowAddLabel = '+ Add Shadow Belief',
 }) => {
+  const theme = useAppTheme();
   const [beliefs, setBeliefs] = useState<ApiBeliefQuestion[]>([]);
   const [shadowBeliefs, setShadowBeliefs] = useState<ApiBeliefQuestion[]>([]);
 
@@ -335,7 +336,9 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
       <GradientCardHome
         style={[{ width: scale(330), marginVertical: scale(20) }, cardStyle]}
       >
-        <Text style={styles.sectionTitle}>{empoweringTitle}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          {empoweringTitle}
+        </Text>
         <View style={{ height: scale(10) }} />
 
         {beliefs.map((belief, idx) => {
@@ -377,12 +380,14 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
           onPress={handleAddBelief}
         >
           <LinearGradient
-            colors={['#143f65ff', '#1C2A3A']}
+            colors={theme.colors.cardGradient}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={styles.addButton}
           >
-            <Text style={styles.addButtonText}>{empoweringAddLabel}</Text>
+            <Text style={[styles.addButtonText, { color: theme.colors.text }]}>
+              {empoweringAddLabel}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </GradientCardHome>
@@ -391,7 +396,9 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
       <GradientCardHome
         style={[{ width: scale(330), marginVertical: scale(20) }, cardStyle]}
       >
-        <Text style={styles.sectionTitle}>{shadowTitle}</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          {shadowTitle}
+        </Text>
         <View style={{ height: scale(10) }} />
 
         {shadowBeliefs.map((belief, idx) => {
@@ -435,12 +442,14 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
           onPress={handleAddShadowBelief}
         >
           <LinearGradient
-            colors={['#143f65ff', '#1C2A3A']}
+            colors={theme.colors.cardGradient}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
             style={styles.addButton}
           >
-            <Text style={styles.addButtonText}>{shadowAddLabel}</Text>
+            <Text style={[styles.addButtonText, { color: theme.colors.text }]}>
+              {shadowAddLabel}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </GradientCardHome>
@@ -452,7 +461,6 @@ export default BeliefsEditor;
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    color: palette.white,
     fontSize: ms(22),
     fontWeight: '600',
     marginVertical: vs(4),
@@ -466,7 +474,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addButtonText: {
-    color: palette.txtBlue,
     fontSize: ms(16),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',

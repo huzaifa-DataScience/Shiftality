@@ -7,7 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { palette } from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientInput from '../../components/GradientInput';
 import GradientTimezoneSelect from '../../components/GradientTImeZoneSelect';
@@ -28,11 +28,13 @@ import { useSelector } from 'react-redux';
 import Toast from 'react-native-toast-message';
 import { getProfile, updateProfile } from '../../lib/authService';
 import { selectUser } from '../../store/reducers/profileReducer';
+import GradientBackground from '../../components/GradientBackground';
 
 export default function HomeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const user = useSelector(selectUser);
+  const theme = useAppTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState<{
@@ -96,11 +98,11 @@ export default function HomeScreen() {
         }
         if (userProfile?.profile?.settings?.dnd_end) {
           const today = new Date().toISOString().split('T')[0];
-          setDndEnd(
-            new Date(
-              `${today}T${userProfile?.profile?.settings?.dnd_end}`,
-            ).toISOString(),
-          );
+          // setDndEnd(
+          //   new Date(
+          //     `${today}T${userProfile?.profile?.settings?.dnd_end}`,
+          //   ).toISOString(),
+          // );
         }
         if (userProfile?.allow_notifications !== undefined) {
           setAllowNotifications(userProfile?.profile?.allow_notifications);
@@ -289,180 +291,208 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView style={{ backgroundColor: palette.darkBlue }}>
-      <View style={styles.root}>
-        <GradientCardHome style={{ marginTop: vs(50), width: scale(330) }}>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={styles.title}>Welcome to Shiftality</Text>
-            <Text style={styles.subtitle}>
-              {"Let's set up your personalized reality\nshift journey"}
-            </Text>
-          </View>
-
-          {/* Name */}
-          <Text style={styles.label}>First Name</Text>
-          <GradientInput
-            minHeight={vs(45)}
-            placeholder="Enter Your Name"
-            value={firstName}
-            onChangeText={(t: string) => setFirstName(t)}
-          />
-          {validationErrors.firstName && (
-            <Text style={styles.errorText}>{validationErrors.firstName}</Text>
-          )}
-          <Text style={styles.helper}>2–20 Characters</Text>
-
-          {/* Time Zone */}
-          <Text style={[styles.label, { marginTop: vs(18) }]}>Time Zone</Text>
-          <GradientTimezoneSelect
-            value={timezone}
-            onChange={tz => setTimezone(tz)}
-          />
-          {validationErrors.timezone && (
-            <Text style={styles.errorText}>{validationErrors.timezone}</Text>
-          )}
-
-          {/* Journey Start Date */}
-          <Text style={[styles.label, { marginTop: vs(18) }]}>
-            Journey Start Date *
-          </Text>
-          <GradientDatePicker
-            value={new Date(journeyStartDate)} // string -> Date
-            onChange={d => setJourneyStartDate(d.toISOString())} // Date -> string
-            minimumDate={new Date()}
-          />
-          <Text style={styles.helper}>Cannot be in the past</Text>
-          {validationErrors.journeyStartDate && (
-            <Text style={styles.errorText}>
-              {validationErrors.journeyStartDate}
-            </Text>
-          )}
-        </GradientCardHome>
-
-        {/* CARD 2: North Star + Shadow Path */}
-        <GradientCardHome style={{ marginVertical: vs(20), width: scale(330) }}>
-          <View style={{ alignItems: 'center', marginBottom: s(10) }}>
-            <Text style={styles.Sectitle}>
-              {'Your 1-Year North Star (Highest\nVibration Goal) *'}
-            </Text>
-          </View>
-
-          <GradientHintBox
-            text={northStarPlaceholder}
-            showInput
-            inputValue={northStar}
-            onChangeInputText={t => setNorthStar(t)}
-            inputProps={{
-              multiline: true,
-              textAlignVertical: 'top',
-              style: { minHeight: scale(50) },
-            }}
-          />
-          {validationErrors.northStar && (
-            <Text style={[styles.errorText, { marginTop: vs(8) }]}>
-              {validationErrors.northStar}
-            </Text>
-          )}
-
-          <View style={{ alignItems: 'center', marginVertical: s(15) }}>
-            <Text style={styles.Sectitle}>
-              {"Your 1-Year Shadow Path (What\nYou're Shifting Away From) *"}
-            </Text>
-          </View>
-
-          <GradientHintBox
-            text={shadowPathPlaceholder}
-            showInput
-            inputValue={shadowPath}
-            onChangeInputText={t => setShadowPath(t)}
-            inputProps={{
-              multiline: true,
-              textAlignVertical: 'top',
-              style: { minHeight: scale(50) },
-            }}
-          />
-          {validationErrors.shadowPath && (
-            <Text style={[styles.errorText, { marginTop: vs(8) }]}>
-              {validationErrors.shadowPath}
-            </Text>
-          )}
-        </GradientCardHome>
-
-        {/* CARD 3: Preferred Check-in Time */}
-        <GradientCardHome style={{ marginBottom: vs(20), width: scale(330) }}>
-          <Text style={[styles.cardTitle, { color: palette.white }]}>
-            Preferred Check-in Time *
-          </Text>
-
-          <Text style={[styles.cardSub, { color: palette.white }]}>
-            Choose a time when your day is winding down and you can self-reflect
-            without distractions. This is your moment to honestly assess your
-            beliefs and track your reality shift progress.
-          </Text>
-
-          {/* Preferred Check-in */}
-          <GradientDatePicker
-            mode="time"
-            value={new Date(checkInTime)}
-            onChange={d => setCheckInTime(d.toISOString())}
-          />
-          {validationErrors.checkInTime && (
-            <Text style={styles.errorText}>{validationErrors.checkInTime}</Text>
-          )}
-
-          {/* DND row */}
-          <View style={styles.row2}>
-            <View style={styles.col}>
-              <Text style={[styles.smallLabel, { color: palette.white }]}>
-                Do Not Disturb Start
+    <GradientBackground>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={styles.root}>
+          <GradientCardHome style={{ marginTop: vs(50), width: scale(330) }}>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={[styles.title, { color: theme.colors.text }]}>
+                Welcome to Shiftality
               </Text>
-              <GradientDatePicker
-                mode="time"
-                value={new Date(dndStart)}
-                onChange={d => setDndStart(d.toISOString())}
-              />
+              <Text
+                style={[styles.subtitle, { color: theme.colors.textMuted }]}
+              >
+                {"Let's set up your personalized reality\nshift journey"}
+              </Text>
             </View>
 
-            <View style={styles.col}>
-              <Text style={[styles.smallLabel, { color: palette.white }]}>
-                Do Not Disturb End
-              </Text>
-              <GradientDatePicker
-                mode="time"
-                value={new Date(dndEnd)}
-                onChange={d => setDndEnd(d.toISOString())}
-              />
-            </View>
-          </View>
-          {validationErrors.dndTimes && (
-            <Text style={[styles.errorText, { marginTop: vs(8) }]}>
-              {validationErrors.dndTimes}
+            {/* Name */}
+            <Text style={[styles.label, { color: theme.colors.text }]}>
+              First Name
             </Text>
-          )}
+            <GradientInput
+              minHeight={vs(45)}
+              placeholder="Enter Your Name"
+              value={firstName}
+              onChangeText={(t: string) => setFirstName(t)}
+            />
+            {validationErrors.firstName && (
+              <Text style={styles.errorText}>{validationErrors.firstName}</Text>
+            )}
+            <Text style={[styles.helper, { color: theme.colors.textMuted }]}>
+              2–20 Characters
+            </Text>
 
-          <Text style={[styles.footNote, { color: palette.white }]}>
-            Reminders will be sent every 30 minutes for 2 hours starting at your
-            preferred check-in time. No reminders will be sent during Do Not
-            Disturb hours.
-          </Text>
-        </GradientCardHome>
+            {/* Time Zone */}
+            <Text
+              style={[
+                styles.label,
+                { marginTop: vs(18), color: theme.colors.text },
+              ]}
+            >
+              Time Zone
+            </Text>
+            <GradientTimezoneSelect
+              value={timezone}
+              onChange={tz => setTimezone(tz)}
+            />
+            {validationErrors.timezone && (
+              <Text style={styles.errorText}>{validationErrors.timezone}</Text>
+            )}
 
-        <GradientToggleRow
-          style={{ width: scale(370), marginBottom: vs(20) }}
-          label="Allow Notifications"
-          value={allowNotifications}
-          onValueChange={v => setAllowNotifications(v)}
-        />
+            {/* Journey Start Date */}
+            <Text
+              style={[
+                styles.label,
+                { marginTop: vs(18), color: theme.colors.text },
+              ]}
+            >
+              Journey Start Date *
+            </Text>
+            <GradientDatePicker
+              value={new Date(journeyStartDate)} // string -> Date
+              onChange={d => setJourneyStartDate(d.toISOString())} // Date -> string
+              minimumDate={new Date()}
+            />
+            <Text style={[styles.helper, { color: theme.colors.textMuted }]}>
+              Cannot be in the past
+            </Text>
+            {validationErrors.journeyStartDate && (
+              <Text style={styles.errorText}>
+                {validationErrors.journeyStartDate}
+              </Text>
+            )}
+          </GradientCardHome>
 
-        <PrimaryButton
-          disabled={!canContinue || isLoading}
-          loading={isLoading}
-          style={{ width: '95%', alignSelf: 'center' }}
-          title="Continue to Shiftality Scan"
-          onPress={handleContinue}
-        />
-      </View>
-    </ScrollView>
+          {/* CARD 2: North Star + Shadow Path */}
+          <GradientCardHome
+            style={{ marginVertical: vs(20), width: scale(330) }}
+          >
+            <View style={{ alignItems: 'center', marginBottom: s(10) }}>
+              <Text style={[styles.Sectitle, { color: theme.colors.text }]}>
+                {'Your 1-Year North Star (Highest\nVibration Goal) *'}
+              </Text>
+            </View>
+
+            <GradientHintBox
+              text={northStarPlaceholder}
+              showInput
+              inputValue={northStar}
+              onChangeInputText={t => setNorthStar(t)}
+              inputProps={{
+                multiline: true,
+                textAlignVertical: 'top',
+                style: { minHeight: scale(50) },
+              }}
+            />
+            {validationErrors.northStar && (
+              <Text style={[styles.errorText, { marginTop: vs(8) }]}>
+                {validationErrors.northStar}
+              </Text>
+            )}
+
+            <View style={{ alignItems: 'center', marginVertical: s(15) }}>
+              <Text style={[styles.Sectitle, { color: theme.colors.text }]}>
+                {"Your 1-Year Shadow Path (What\nYou're Shifting Away From) *"}
+              </Text>
+            </View>
+
+            <GradientHintBox
+              text={shadowPathPlaceholder}
+              showInput
+              inputValue={shadowPath}
+              onChangeInputText={t => setShadowPath(t)}
+              inputProps={{
+                multiline: true,
+                textAlignVertical: 'top',
+                style: { minHeight: scale(50) },
+              }}
+            />
+            {validationErrors.shadowPath && (
+              <Text style={[styles.errorText, { marginTop: vs(8) }]}>
+                {validationErrors.shadowPath}
+              </Text>
+            )}
+          </GradientCardHome>
+
+          {/* CARD 3: Preferred Check-in Time */}
+          <GradientCardHome style={{ marginBottom: vs(20), width: scale(330) }}>
+            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
+              Preferred Check-in Time *
+            </Text>
+
+            <Text style={[styles.cardSub, { color: theme.colors.textMuted }]}>
+              Choose a time when your day is winding down and you can
+              self-reflect without distractions. This is your moment to honestly
+              assess your beliefs and track your reality shift progress.
+            </Text>
+
+            {/* Preferred Check-in */}
+            <GradientDatePicker
+              mode="time"
+              value={new Date(checkInTime)}
+              onChange={d => setCheckInTime(d.toISOString())}
+            />
+            {validationErrors.checkInTime && (
+              <Text style={styles.errorText}>
+                {validationErrors.checkInTime}
+              </Text>
+            )}
+
+            {/* DND row */}
+            <View style={styles.row2}>
+              <View style={styles.col}>
+                <Text style={[styles.smallLabel, { color: theme.colors.text }]}>
+                  Do Not Disturb Start
+                </Text>
+                <GradientDatePicker
+                  mode="time"
+                  value={new Date(dndStart)}
+                  onChange={d => setDndStart(d.toISOString())}
+                />
+              </View>
+
+              <View style={styles.col}>
+                <Text style={[styles.smallLabel, { color: theme.colors.text }]}>
+                  Do Not Disturb End
+                </Text>
+                <GradientDatePicker
+                  mode="time"
+                  value={new Date(dndEnd)}
+                  onChange={d => setDndEnd(d.toISOString())}
+                />
+              </View>
+            </View>
+            {validationErrors.dndTimes && (
+              <Text style={[styles.errorText, { marginTop: vs(8) }]}>
+                {validationErrors.dndTimes}
+              </Text>
+            )}
+
+            <Text style={[styles.footNote, { color: theme.colors.textMuted }]}>
+              Reminders will be sent every 30 minutes for 2 hours starting at
+              your preferred check-in time. No reminders will be sent during Do
+              Not Disturb hours.
+            </Text>
+          </GradientCardHome>
+
+          <GradientToggleRow
+            style={{ width: scale(370), marginBottom: vs(20) }}
+            label="Allow Notifications"
+            value={allowNotifications}
+            onValueChange={v => setAllowNotifications(v)}
+          />
+
+          <PrimaryButton
+            disabled={!canContinue || isLoading}
+            loading={isLoading}
+            style={{ width: '95%', alignSelf: 'center' }}
+            title="Continue to Shiftality Scan"
+            onPress={handleContinue}
+          />
+        </View>
+      </ScrollView>
+    </GradientBackground>
   );
 }
 
@@ -473,7 +503,6 @@ const styles = StyleSheet.create({
     paddingBottom: scale(30),
   },
   title: {
-    color: '#FFFFFF',
     fontSize: ms(26),
     fontWeight: '800',
     textAlign: 'center',
@@ -481,14 +510,12 @@ const styles = StyleSheet.create({
     fontFamily: 'SourceSansPro-Regular',
   },
   Sectitle: {
-    color: '#FFFFFF',
     fontSize: ms(22),
     fontWeight: '600',
     marginVertical: vs(4),
     fontFamily: 'SourceSansPro-Regular',
   },
   subtitle: {
-    color: '#B0B6C3',
     fontSize: ms(14),
     textAlign: 'center',
     width: '80%',
@@ -497,7 +524,6 @@ const styles = StyleSheet.create({
     fontFamily: 'SourceSansPro-Regular',
   },
   label: {
-    color: '#FFFFFF',
     fontSize: ms(14),
     marginTop: vs(16),
     marginBottom: vs(6),
@@ -505,7 +531,6 @@ const styles = StyleSheet.create({
     fontFamily: 'SourceSansPro-Regular',
   },
   helper: {
-    color: 'rgba(255,255,255,0.6)',
     fontSize: ms(12),
     marginTop: vs(6),
     fontFamily: 'SourceSansPro-Regular',

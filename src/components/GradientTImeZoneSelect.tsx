@@ -13,7 +13,7 @@ import {
   moderateScale as ms,
 } from 'react-native-size-matters';
 import GradientInput from './GradientInput';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 // PNG icon (adjust path if yours differs)
 const caretPng = require('../assets/caret-down.png');
@@ -31,6 +31,9 @@ const GradientTimezoneSelect: React.FC<Props> = ({
   onChange,
   minHeight = vs(48),
 }) => {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const [open, setOpen] = useState(false);
 
   const timezones = useMemo(() => {
@@ -77,8 +80,8 @@ const GradientTimezoneSelect: React.FC<Props> = ({
         onRequestClose={() => setOpen(false)}
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setOpen(false)}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.sheetTitle}>Select Time Zone</Text>
+          <View style={[styles.modalSheet, { backgroundColor: theme.colors.cardBackground }]}>
+            <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>Select Time Zone</Text>
             <FlatList
               data={timezones}
               keyExtractor={item => item}
@@ -90,10 +93,10 @@ const GradientTimezoneSelect: React.FC<Props> = ({
                   }}
                   style={({ pressed }) => [
                     styles.optionRow,
-                    pressed && { backgroundColor: 'rgba(255,255,255,0.06)' },
+                    pressed && { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
                   ]}
                 >
-                  <Text style={styles.optionText}>{item}</Text>
+                  <Text style={[styles.optionText, { color: theme.colors.text }]}>{item}</Text>
                 </Pressable>
               )}
             />
@@ -112,13 +115,11 @@ const styles = StyleSheet.create({
   },
   modalSheet: {
     maxHeight: '60%',
-    backgroundColor: '#0E1520',
     paddingBottom: vs(12),
     borderTopLeftRadius: s(18),
     borderTopRightRadius: s(18),
   },
   sheetTitle: {
-    color: '#FFF',
     fontSize: ms(16),
     fontWeight: '700',
     paddingHorizontal: s(16),
@@ -130,7 +131,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(16),
   },
   optionText: {
-    color: '#E9F1FF',
     fontSize: ms(14),
     fontFamily: 'SourceSansPro-Regular',
   },

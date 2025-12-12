@@ -9,7 +9,7 @@ import {
   verticalScale as vs,
 } from 'react-native-size-matters';
 import GradientInput from './GradientInput';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 
 const calendarPng = require('../assets/calendar.png');
 
@@ -31,6 +31,9 @@ const GradientDatePicker: React.FC<Props> = ({
   mode = 'date', // 👈 default is date
   hideIcon = false, // 👈 default is false (show icon)
 }) => {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const [show, setShow] = useState(false);
 
   const fmt = (d: Date) => {
@@ -103,8 +106,8 @@ const GradientDatePicker: React.FC<Props> = ({
                 display={mode === 'time' ? 'spinner' : 'inline'}
                 onChange={onChangeNative}
                 minimumDate={effectiveMinDate}
-                style={{ backgroundColor: palette.white }}
-                themeVariant="light"
+                style={{ backgroundColor: isDark ? theme.colors.cardBackground : '#FFFFFF' }}
+                themeVariant={isDark ? 'dark' : 'light'}
               />
             </Pressable>
           </Pressable>

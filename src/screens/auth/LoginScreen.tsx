@@ -22,7 +22,8 @@ import { useDispatch } from 'react-redux';
 import GradientCard from '../../components/GradientCard';
 import GradientInput from '../../components/GradientInput';
 import PrimaryButton from '../../components/PrimaryButton';
-import { palette } from '../../theme';
+import GradientBackground from '../../components/GradientBackground';
+import { useAppTheme } from '../../theme/ThemeProvider';
 import type { AuthStackParamList } from '../../navigation/AuthStack';
 import { login } from '../../lib/authService';
 import { setUserProfile } from '../../store/reducers/profileReducer';
@@ -41,6 +42,7 @@ export default function LoginScreen({
 }) {
   const navigation = useNavigation<Nav>();
   const dispatch = useDispatch();
+  const theme = useAppTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -142,86 +144,94 @@ export default function LoginScreen({
     }
   };
 
+  const formContent = (
+    <GradientCard style={{ marginTop: vs(24), width: scale(330) }}>
+      {/* Header */}
+      <View style={{ alignItems: 'center' }}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>
+          Sign In
+        </Text>
+        <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
+          Best and popular apps for live education course from home
+        </Text>
+      </View>
+
+      {/* Email */}
+      <Text style={[styles.label, { color: theme.colors.text }]}>Email</Text>
+      <GradientInput
+        placeholder="Enter your email"
+        autoCapitalize="none"
+        keyboardType="email-address"
+        value={email}
+        onChangeText={setEmail}
+      />
+
+      {/* Password */}
+      <Text style={[styles.label, { color: theme.colors.text }]}>Password</Text>
+      <View style={styles.inputWithIcon}>
+        <GradientInput
+          placeholder="************"
+          secureTextEntry={!showPwd}
+          value={password}
+          onChangeText={setPassword}
+          style={{ paddingRight: s(44) }}
+        />
+        <TouchableOpacity
+          onPress={() => setShowPwd(v => !v)}
+          style={styles.eyeBtn}
+          hitSlop={{ top: vs(8), bottom: vs(8), left: s(8), right: s(8) }}
+        >
+          <Image
+            source={showPwd ? eyeOpen : eyeClosed}
+            style={styles.eyeIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* Forgot password */}
+      <TouchableOpacity
+        onPress={() => {
+          /* TODO: navigate to ForgotPassword when you add it */
+        }}
+      >
+        <Text style={[styles.forgot, { color: theme.colors.text }]}>
+          Forget Password?
+        </Text>
+      </TouchableOpacity>
+
+      <View style={{ height: vs(16) }} />
+
+      {/* CTA */}
+      <PrimaryButton
+        title={loading ? 'Signing In...' : 'Sign In'}
+        onPress={handleSignIn}
+        loading={loading}
+        disabled={loading}
+      />
+
+      {/* Footer */}
+      <Text style={[styles.footerText, { color: theme.colors.textMuted }]}>
+        Don't have account?{' '}
+        <Text
+          style={[styles.link, { color: theme.colors.primary }]}
+          onPress={() => navigation.navigate('Signup')}
+        >
+          Sign Up
+        </Text>
+      </Text>
+    </GradientCard>
+  );
+
   return (
-    <View style={[styles.root, { backgroundColor: palette.darkBlue }]}>
+    <GradientBackground style={styles.root}>
       <ScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <GradientCard style={{ marginTop: vs(24), width: scale(330) }}>
-          {/* Header */}
-          <View style={{ alignItems: 'center' }}>
-            <Text style={styles.title}>Sign In</Text>
-            <Text style={styles.subtitle}>
-              Best and popular apps for live education course from home
-            </Text>
-          </View>
-
-          {/* Email */}
-          <Text style={styles.label}>Email</Text>
-          <GradientInput
-            placeholder="Enter your email"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
-
-          {/* Password */}
-          <Text style={styles.label}>Password</Text>
-          <View style={styles.inputWithIcon}>
-            <GradientInput
-              placeholder="************"
-              secureTextEntry={!showPwd}
-              value={password}
-              onChangeText={setPassword}
-              style={{ paddingRight: s(44) }}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPwd(v => !v)}
-              style={styles.eyeBtn}
-              hitSlop={{ top: vs(8), bottom: vs(8), left: s(8), right: s(8) }}
-            >
-              <Image
-                source={showPwd ? eyeOpen : eyeClosed}
-                style={styles.eyeIcon}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Forgot password */}
-          <TouchableOpacity
-            onPress={() => {
-              /* TODO: navigate to ForgotPassword when you add it */
-            }}
-          >
-            <Text style={styles.forgot}>Forget Password?</Text>
-          </TouchableOpacity>
-
-          <View style={{ height: vs(16) }} />
-
-          {/* CTA */}
-          <PrimaryButton
-            title={loading ? 'Signing In...' : 'Sign In'}
-            onPress={handleSignIn}
-            loading={loading}
-            disabled={loading}
-          />
-
-          {/* Footer */}
-          <Text style={styles.footerText}>
-            Don’t have account?{' '}
-            <Text
-              style={styles.link}
-              onPress={() => navigation.navigate('Signup')}
-            >
-              Sign Up
-            </Text>
-          </Text>
-        </GradientCard>
+        {formContent}
       </ScrollView>
-    </View>
+    </GradientBackground>
   );
 }
 
@@ -235,29 +245,29 @@ const styles = StyleSheet.create({
     paddingBottom: vs(64),
   },
   title: {
-    color: '#FFFFFF',
     fontSize: ms(26),
     fontWeight: '700',
     textAlign: 'center',
     marginTop: vs(4),
     fontFamily: 'SourceSansPro-Regular',
+    // color is set dynamically
   },
   subtitle: {
-    color: '#B0B6C3',
     fontSize: ms(14),
     textAlign: 'center',
     width: '80%',
     marginTop: vs(6),
     lineHeight: ms(20),
     fontFamily: 'SourceSansPro-Regular',
+    // color is set dynamically
   },
   label: {
-    color: '#FFFFFF',
     fontSize: ms(14),
     marginTop: vs(16),
     marginBottom: vs(6),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',
+    // color is set dynamically
   },
   inputWithIcon: {
     position: 'relative',
@@ -276,21 +286,21 @@ const styles = StyleSheet.create({
   },
   forgot: {
     alignSelf: 'flex-end',
-    color: '#FFFFFF',
     fontSize: ms(14),
     marginTop: vs(8),
     opacity: 0.9,
     fontFamily: 'SourceSansPro-Regular',
+    // color is set dynamically
   },
   footerText: {
-    color: '#B0B6C3',
     marginTop: vs(18),
     fontSize: ms(14),
     textAlign: 'center',
     fontFamily: 'SourceSansPro-Regular',
+    // color is set dynamically
   },
   link: {
-    color: '#3DA9FF',
     fontWeight: '600',
+    // color is set dynamically
   },
 });

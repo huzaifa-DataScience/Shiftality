@@ -14,43 +14,52 @@ import {
   moderateScale as ms,
 } from 'react-native-size-matters';
 import PrimaryButton from '../../components/PrimaryButton';
-import { palette } from '../../theme/colors';
+import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
+import GradientBackground from '../../components/GradientBackground';
 
 export default function WelcomeScreen({ navigation }: any) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
+
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: palette.darkBlue }]}>
-      <StatusBar barStyle="light-content" />
+    <GradientBackground style={styles.root}>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      <Image
-        source={require('../../assets/WelcomeIcon.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
-
-      <View style={styles.body}>
-        <View style={styles.headerBlock}>
-          <Text style={[styles.title, { color: palette.white }]}>
-            Welcome to SHIFTALITY
-          </Text>
-          <Text style={[styles.sub, { color: 'rgba(255,255,255,0.8)' }]}>
-            Best and popular apps for live education{'\n'}course from home
-          </Text>
-        </View>
-
-        <PrimaryButton
-          backgroundColor={palette.white}
-          textColor={palette.darkBlue}
-          title="Get started"
-          onPress={() => navigation.navigate('Login')}
+        <Image
+          source={require('../../assets/WelcomeIcon.png')}
+          style={styles.logo}
+          resizeMode="contain"
         />
-      </View>
-    </SafeAreaView>
+
+        <View style={styles.body}>
+          <View style={styles.headerBlock}>
+            <Text style={[styles.title, { color: theme.colors.text }]}>
+              Welcome to SHIFTALITY
+            </Text>
+            <Text style={[styles.sub, { color: theme.colors.textMuted }]}>
+              Best and popular apps for live education{'\n'}course from home
+            </Text>
+          </View>
+
+          <PrimaryButton
+            title="Get started"
+            onPress={() => navigation.navigate('Login')}
+          />
+        </View>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-
+  root: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
   // Use verticalScale for vertical spacing/height of the hero image
   logo: {
     width: '100%',
@@ -81,6 +90,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: vs(70),
     fontFamily: 'SourceSansPro-Regular',
+    // color is set dynamically
   },
 
   sub: {
@@ -88,5 +98,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: ms(20),
     fontFamily: 'SourceSansPro-Regular',
+    // color is set dynamically
   },
 });

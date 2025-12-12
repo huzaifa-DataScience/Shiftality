@@ -13,7 +13,7 @@ import {
   moderateScale as ms,
 } from 'react-native-size-matters';
 
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 import LikertPill from './survey/LikertPill';
 
 type Choice = 'yes' | 'no' | null;
@@ -32,6 +32,9 @@ export default function GradientHintBoxWithLikert({
   selected, // <- controlled when defined (including null)
   defaultSelected = null, // <- for uncontrolled mode only
 }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const isDark = themeMode === 'dark';
   const isControlled = selected !== undefined;
   const [internal, setInternal] = useState<Choice>(defaultSelected);
 
@@ -65,11 +68,18 @@ export default function GradientHintBoxWithLikert({
           height={h}
         >
           <Defs>
-            <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor="#0AC4FF" />
-              <Stop offset="0.52" stopColor="#0AC4FF" />
-              <Stop offset="1" stopColor="#1a4258ff" />
-            </SvgGrad>
+            {isDark ? (
+              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="#0AC4FF" />
+                <Stop offset="0.52" stopColor="#0AC4FF" />
+                <Stop offset="1" stopColor="#1a4258ff" />
+              </SvgGrad>
+            ) : (
+              <SvgGrad id="borderGrad" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={theme.colors.border} />
+                <Stop offset="1" stopColor={theme.colors.border} />
+              </SvgGrad>
+            )}
           </Defs>
           <Rect
             x={0.5}
@@ -78,15 +88,15 @@ export default function GradientHintBoxWithLikert({
             height={h - 1}
             rx={s(12)}
             ry={s(12)}
-            fill="transparent"
-            stroke="url(#borderGrad)"
+            fill={isDark ? "transparent" : "rgba(255, 255, 255, 0.6)"}
+            stroke={isDark ? "url(#borderGrad)" : theme.colors.border}
             strokeWidth={1}
           />
         </Svg>
       )}
 
       <View style={styles.inner}>
-        <Text style={styles.text}>{text}</Text>
+        <Text style={[styles.text, { color: theme.colors.text }]}>{text}</Text>
 
         <View style={styles.likertRow}>
           <LikertPill
@@ -115,7 +125,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: {
-    color: palette.white,
     fontSize: ms(15),
     lineHeight: ms(21),
     fontWeight: '600',
