@@ -657,7 +657,9 @@ export default function DemoScreen() {
         <View style={{ height: scale(20) }} />
 
         {/* ───────── Test Reminders (reusable component) ───────── */}
-        <ReminderTestSection cardStyle={{ width: scale(330) }} />
+        <ReminderTestSection
+          cardStyle={{ width: scale(330), alignSelf: 'center' }}
+        />
 
         <View style={{ height: scale(20) }} />
 

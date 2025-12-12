@@ -26,7 +26,7 @@ const GradientCardHome: React.FC<Props> = ({
       <View
         style={[
           styles.stack,
-          { backgroundColor: theme.colors.cardBackground },
+          { backgroundColor: theme.colors.card, alignSelf: 'center' },
           style,
         ]}
       >

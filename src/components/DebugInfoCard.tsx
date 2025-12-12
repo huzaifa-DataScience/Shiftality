@@ -46,8 +46,22 @@ const LabeledRow = ({
   scaledFontSize: (size: number) => number;
 }) => (
   <View style={styles.row}>
-    <Text style={[styles.label, { color: theme.colors.textMuted, fontSize: scaledFontSize(14) }]}>{label}</Text>
-    <Text style={[styles.value, { color: theme.colors.text, fontSize: scaledFontSize(14.5) }]}>{String(value)}</Text>
+    <Text
+      style={[
+        styles.label,
+        { color: theme.colors.textMuted, fontSize: scaledFontSize(14) },
+      ]}
+    >
+      {label}
+    </Text>
+    <Text
+      style={[
+        styles.value,
+        { color: theme.colors.text, fontSize: scaledFontSize(14.5) },
+      ]}
+    >
+      {String(value)}
+    </Text>
   </View>
 );
 
@@ -60,7 +74,15 @@ const InnerBorder: React.FC<{
   theme: any;
   isDark: boolean;
   scaledFontSize: (size: number) => number;
-}> = ({ title, children, radius = s(12), stroke = 1, theme, isDark, scaledFontSize }) => {
+}> = ({
+  title,
+  children,
+  radius = s(12),
+  stroke = 1,
+  theme,
+  isDark,
+  scaledFontSize,
+}) => {
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(40));
   const gradId = useMemo(() => `ib_${Math.random().toString(36).slice(2)}`, []);
@@ -108,7 +130,14 @@ const InnerBorder: React.FC<{
         </Svg>
       )}
 
-      <Text style={[styles.innerTitle, { color: theme.colors.text, fontSize: scaledFontSize(14.5) }]}>{title}</Text>
+      <Text
+        style={[
+          styles.innerTitle,
+          { color: theme.colors.text, fontSize: scaledFontSize(14.5) },
+        ]}
+      >
+        {title}
+      </Text>
       <View style={{ marginTop: vs(8) }}>{children}</View>
     </View>
   );
@@ -144,37 +173,128 @@ export default function DebugInfoCard({
     <GradientCardHome
       style={{
         width: scale(330),
+        alignSelf: 'center',
       }}
     >
-      <Text style={[styles.title, { color: theme.colors.text, fontSize: scaledFontSize(18) }]}>Debug Information</Text>
-      <Text style={[styles.sub, { color: theme.colors.textMuted, fontSize: scaledFontSize(16) }]}>
+      <Text
+        style={[
+          styles.title,
+          { color: theme.colors.text, fontSize: scaledFontSize(18) },
+        ]}
+      >
+        Debug Information
+      </Text>
+      <Text
+        style={[
+          styles.sub,
+          { color: theme.colors.textMuted, fontSize: scaledFontSize(16) },
+        ]}
+      >
         System information and belief profile validation
       </Text>
 
       <View style={styles.sectionGap} />
 
-      <LabeledRow label="Timezone:" value={timezone} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
-      <LabeledRow label="Journey Start:" value={journeyStart} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
-      <LabeledRow label="Today:" value={today} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
-      <LabeledRow label="Total Check-ins:" value={totalCheckins} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
-      <LabeledRow label="Latest Check-in:" value={latestCheckin} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
-      <LabeledRow label="Next Anchor:" value={nextAnchor} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <LabeledRow
+        label="Timezone:"
+        value={timezone}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
+      <LabeledRow
+        label="Journey Start:"
+        value={journeyStart}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
+      <LabeledRow
+        label="Today:"
+        value={today}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
+      <LabeledRow
+        label="Total Check-ins:"
+        value={totalCheckins}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
+      <LabeledRow
+        label="Latest Check-in:"
+        value={latestCheckin}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
+      <LabeledRow
+        label="Next Anchor:"
+        value={nextAnchor}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
 
       <View style={styles.blockGap} />
-      <Text style={[styles.h2, { color: theme.colors.text, fontSize: scaledFontSize(16) }]}>Belief Profile</Text>
-      <LabeledRow label="Archetype:" value={archetype} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
-      <LabeledRow label="BaseLine:" value={baselineIndex} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
-      <LabeledRow label="Empowering:" value={empowering} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
-      <LabeledRow label="Shadow:" value={shadow} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <Text
+        style={[
+          styles.h2,
+          { color: theme.colors.text, fontSize: scaledFontSize(16) },
+        ]}
+      >
+        Belief Profile
+      </Text>
+      <LabeledRow
+        label="Archetype:"
+        value={archetype}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
+      <LabeledRow
+        label="BaseLine:"
+        value={baselineIndex}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
+      <LabeledRow
+        label="Empowering:"
+        value={empowering}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
+      <LabeledRow
+        label="Shadow:"
+        value={shadow}
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      />
 
       <View style={styles.blockGap} />
 
-      <InnerBorder title="Last 10 Check-in Dates:" theme={theme} isDark={isDark} scaledFontSize={scaledFontSize}>
+      <InnerBorder
+        title="Last 10 Check-in Dates:"
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      >
         <View style={styles.gridRow}>
           {cols.map((c, i) => (
             <View key={i} style={styles.gridCol}>
               {c.map((d, j) => (
-                <Text key={`${i}-${j}`} style={[styles.gridText, { color: theme.colors.text, fontSize: scaledFontSize(14) }]}>
+                <Text
+                  key={`${i}-${j}`}
+                  style={[
+                    styles.gridText,
+                    { color: theme.colors.text, fontSize: scaledFontSize(14) },
+                  ]}
+                >
                   {d}
                 </Text>
               ))}
@@ -185,8 +305,18 @@ export default function DebugInfoCard({
 
       <View style={styles.blockGap} />
 
-      <InnerBorder title="Forward-only rule:" theme={theme} isDark={isDark} scaledFontSize={scaledFontSize}>
-        <Text style={[styles.ruleText, { color: theme.colors.text, fontSize: scaledFontSize(14) }]}>
+      <InnerBorder
+        title="Forward-only rule:"
+        theme={theme}
+        isDark={isDark}
+        scaledFontSize={scaledFontSize}
+      >
+        <Text
+          style={[
+            styles.ruleText,
+            { color: theme.colors.text, fontSize: scaledFontSize(14) },
+          ]}
+        >
           Demo never writes backward dates. Anchor = latest saved day +1; if
           none, use journey_start_date; else today.
         </Text>
