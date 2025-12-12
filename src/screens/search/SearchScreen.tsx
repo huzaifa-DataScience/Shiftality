@@ -307,15 +307,23 @@ export default function SearchScreen(props: any) {
   return (
     <GradientBackground>
       <View style={styles.root}>
-        <View style={styles.titleWrapper}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>
-            Your Reality Shift Dashboard
-          </Text>
-        </View>
         <ScrollView
           style={{ flex: 1, paddingVertical: scale(30) }}
           showsVerticalScrollIndicator={false}
         >
+          <Text
+            style={[
+              styles.title,
+              {
+                color: theme.colors.text,
+                textAlign: 'center',
+                paddingVertical: vs(10),
+                paddingTop: vs(25),
+              },
+            ]}
+          >
+            Your Reality Shift Dashboard
+          </Text>
           <GradientCardLockshift style={{ width: scale(330) }}>
             <View
               style={{
