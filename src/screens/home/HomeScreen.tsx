@@ -551,8 +551,9 @@ export default function HomeScreen() {
 
           <GradientToggleRow
             style={{
-              width: scale(325),
+              width: scale(330),
               marginBottom: vs(20),
+              alignSelf: 'center',
             }}
             label="Allow Notifications"
             value={allowNotifications}

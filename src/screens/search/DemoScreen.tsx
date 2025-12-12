@@ -466,6 +466,7 @@ export default function DemoScreen() {
         style={{
           flex: 1,
           marginVertical: scale(20),
+          marginTop: scale(60),
         }}
         showsVerticalScrollIndicator={false}
       >

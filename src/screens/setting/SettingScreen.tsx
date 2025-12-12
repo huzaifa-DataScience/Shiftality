@@ -128,12 +128,12 @@ export default function SettingScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           alignItems: 'center',
-          paddingTop: scale(20),
+          marginTop: scale(60),
           paddingBottom: scale(20),
         }}
         showsVerticalScrollIndicator={false}
       >
-        <GradientCardHome style={{ width: scale(330) }}>
+        <GradientCardHome style={{ width: scale(330), alignSelf: 'center' }}>
           <Text
             style={[
               styles.title,
@@ -229,13 +229,14 @@ export default function SettingScreen() {
         <View style={{ height: scale(20) }} />
 
         <GradientHintBox
+          style={{ width: scale(330), alignSelf: 'center' }}
           title="Reflection"
           text={'Add mood, energy, and notes to your daily\ncheck-ins'}
         />
         <View style={{ height: scale(20) }} />
 
         <GradientHintBox
-          style={{ width: scale(330) }}
+          style={{ width: scale(330), alignSelf: 'center' }}
           title="Reflection (optional)"
           text={
             "When enabled, you'll see Mood (1-5), Energy (1-5),and Note fields on Today's Shift\n\nWhen enabled, you'll see Mood (1-5), Energy (1-5), and Note fields on Today's Shift"
