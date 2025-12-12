@@ -28,13 +28,7 @@ export default function GradientBackground({
 
   if (isDark) {
     return (
-      <View
-        style={[
-          styles.container,
-          { backgroundColor: theme.colors.background },
-          style,
-        ]}
-      >
+      <View style={[styles.container, { backgroundColor: '#1A1F2E' }, style]}>
         {children}
       </View>
     );
