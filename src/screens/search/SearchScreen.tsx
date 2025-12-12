@@ -431,7 +431,7 @@ export default function SearchScreen(props: any) {
           <View style={{ height: scale(20) }} />
 
           {/* Toggle Buttons */}
-          <GradientCardHome>
+          <GradientCardHome style={{ width: scale(330), alignSelf: 'center' }}>
             <View style={styles.toggleRow}>
               <LikertPill
                 label="Shift Map"

@@ -249,7 +249,7 @@ export default function ShiftGridChart({ isLoading, checkinsApi }: Props) {
   }, [selectedDate]);
 
   return (
-    <GradientCardHome>
+    <GradientCardHome style={{ width: scale(330), alignSelf: 'center' }}>
       {isLoading && (
         <View
           style={[

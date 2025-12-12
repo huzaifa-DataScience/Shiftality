@@ -372,7 +372,7 @@ export default function ShiftMapChart({
   }, [expandedMonth, monthData]);
 
   return (
-    <GradientCardHome>
+    <GradientCardHome style={{ width: scale(330), alignSelf: 'center' }}>
       {isLoading && (
         <View
           style={[
