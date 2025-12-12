@@ -15,7 +15,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 
-import { palette } from '../../theme';
+import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
+import { useFontSize } from '../../theme/FontSizeProvider';
 import GradientCardHome from '../../components/GradientCardHome';
 import GradientHintBox from '../../components/GradientHintBox';
 import GradientInput from '../../components/GradientInput';
@@ -25,6 +26,7 @@ import DebugInfoCard from '../../components/DebugInfoCard';
 import AppImage from '../../components/AppImage';
 import ReminderTestSection from '../../components/ReminderTestSection';
 import BlueHeader from '../../components/BlueHeader';
+import GradientBackground from '../../components/GradientBackground';
 
 import {
   getCheckins,
@@ -93,6 +95,10 @@ export default function DemoScreen() {
   const dispatch = useDispatch();
   const onboarding = useSelector(selectHomeOnboarding);
   const beliefProfile = useSelector(selectBeliefProfile);
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const { scaledFontSize } = useFontSize();
+  const isDark = themeMode === 'dark';
 
   const clear_choices = require('../../assets/clear_choices.png');
 
@@ -381,7 +387,7 @@ export default function DemoScreen() {
     //     text2: error.message || 'Failed to trigger daily shift',
     //   });
     // }
-    navigation.navigate('Main', {
+    (navigation as any).navigate('Main', {
       screen: 'Search',
       params: { anchorDate: anchorDate },
     });
@@ -455,10 +461,10 @@ export default function DemoScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <GradientBackground>
       <ScrollView
         style={{
-          backgroundColor: palette.darkBlue,
+          flex: 1,
           marginVertical: scale(20),
         }}
         showsVerticalScrollIndicator={false}
@@ -467,6 +473,7 @@ export default function DemoScreen() {
         <GradientCardHome
           style={{
             width: scale(330),
+            alignSelf: 'center',
           }}
         >
           <TouchableOpacity
@@ -479,8 +486,8 @@ export default function DemoScreen() {
           >
             <Text
               style={{
-                color: '#fff',
-                fontSize: ms(14),
+                color: theme.colors.text,
+                fontSize: scaledFontSize(14),
                 lineHeight: 28,
                 fontFamily: 'SourceSansPro-Regular',
               }}
@@ -488,8 +495,20 @@ export default function DemoScreen() {
               {'< Back'}
             </Text>
           </TouchableOpacity>
-          <Text style={styles.h1}>Demo (for testing)</Text>
-          <Text style={styles.sub}>
+          <Text
+            style={[
+              styles.h1,
+              { color: theme.colors.text, fontSize: scaledFontSize(18) },
+            ]}
+          >
+            Demo (for testing)
+          </Text>
+          <Text
+            style={[
+              styles.sub,
+              { color: theme.colors.textMuted, fontSize: scaledFontSize(16) },
+            ]}
+          >
             Generate test data and debug your belief tracking journey
           </Text>
 
@@ -504,7 +523,14 @@ export default function DemoScreen() {
           />
 
           <View style={styles.fieldBlock}>
-            <Text style={styles.label}>Days to Generate (1–30)</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: theme.colors.text, fontSize: scaledFontSize(14) },
+              ]}
+            >
+              Days to Generate (1–30)
+            </Text>
             <GradientInput
               keyboardType="number-pad"
               value={days}
@@ -514,7 +540,14 @@ export default function DemoScreen() {
 
             <View style={{ height: vs(14) }} />
 
-            <Text style={styles.label}>Generation Mode</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: theme.colors.text, fontSize: scaledFontSize(14) },
+              ]}
+            >
+              Generation Mode
+            </Text>
             <GradientSelect
               value={mode}
               options={generationModes}
@@ -536,8 +569,15 @@ export default function DemoScreen() {
 
           {isGenerating ? (
             <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" color="#0AC4FF" />
-              <Text style={styles.loaderText}>Generating demo data...</Text>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text
+                style={[
+                  styles.loaderText,
+                  { color: theme.colors.text, fontSize: scaledFontSize(14) },
+                ]}
+              >
+                Generating demo data...
+              </Text>
             </View>
           ) : (
             <>
@@ -558,12 +598,20 @@ export default function DemoScreen() {
                 style={{ marginTop: vs(10) }}
               >
                 <LinearGradient
-                  colors={['#143f65ff', '#1C2A3A']}
+                  colors={theme.colors.cardGradient}
                   start={{ x: 0, y: 0.5 }}
                   end={{ x: 1, y: 0.5 }}
                   style={[styles.cta, { opacity: 0.95 }]}
                 >
-                  <Text style={[styles.ctaText, { color: palette.txtBlue }]}>
+                  <Text
+                    style={[
+                      styles.ctaText,
+                      {
+                        color: theme.colors.text,
+                        fontSize: scaledFontSize(15),
+                      },
+                    ]}
+                  >
                     Trigger Daily Shift
                   </Text>
                 </LinearGradient>
@@ -579,7 +627,14 @@ export default function DemoScreen() {
             onPress={onReset}
           >
             <AppImage source={clear_choices} style={styles.refresh} />
-            <Text style={styles.rowTxt}>Reset demo data</Text>
+            <Text
+              style={[
+                styles.rowTxt,
+                { color: theme.colors.text, fontSize: scaledFontSize(15) },
+              ]}
+            >
+              Reset demo data
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -588,7 +643,14 @@ export default function DemoScreen() {
             onPress={onFreshStart}
           >
             <AppImage source={clear_choices} style={styles.refresh} />
-            <Text style={styles.rowTxt}>Complete Fresh Start</Text>
+            <Text
+              style={[
+                styles.rowTxt,
+                { color: theme.colors.text, fontSize: scaledFontSize(15) },
+              ]}
+            >
+              Complete Fresh Start
+            </Text>
           </TouchableOpacity>
         </GradientCardHome>
 
@@ -614,7 +676,7 @@ export default function DemoScreen() {
           last10Dates={last10Dates}
         />
       </ScrollView>
-    </View>
+    </GradientBackground>
   );
 }
 
@@ -622,30 +684,25 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: palette.darkBlue,
   },
   title: {
     fontSize: scale(18),
     fontWeight: '800',
-    color: palette.white,
     marginBottom: scale(10),
     fontFamily: 'SourceSansPro-Regular',
   },
   subTitle: {
     fontSize: scale(16),
     fontWeight: '500',
-    color: palette.white,
     lineHeight: scale(20),
     fontFamily: 'SourceSansPro-Regular',
   },
   h1: {
-    color: palette.white,
     fontSize: s(18),
     fontWeight: '800',
     fontFamily: 'SourceSansPro-Regular',
   },
   sub: {
-    color: palette.white,
     fontSize: s(16),
     lineHeight: s(22),
     marginTop: vs(6),
@@ -655,7 +712,6 @@ const styles = StyleSheet.create({
     marginTop: vs(10),
   },
   label: {
-    color: palette.white,
     fontWeight: '800',
     fontSize: ms(14),
     marginBottom: vs(8),
@@ -671,7 +727,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ctaText: {
-    color: '#0E2440',
     fontSize: ms(15),
     fontWeight: '800',
     fontFamily: 'SourceSansPro-Regular',
@@ -681,7 +736,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rowTxt: {
-    color: palette.white,
     fontSize: ms(15),
     fontWeight: '700',
     fontFamily: 'SourceSansPro-Regular',
@@ -700,7 +754,6 @@ const styles = StyleSheet.create({
     gap: vs(12),
   },
   loaderText: {
-    color: palette.white,
     fontSize: ms(14),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',

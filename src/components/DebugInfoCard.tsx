@@ -7,7 +7,8 @@ import {
   scale,
 } from 'react-native-size-matters';
 import GradientCardHome from './GradientCardHome';
-import { palette } from '../theme';
+import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
+import { useFontSize } from '../theme/FontSizeProvider';
 import Svg, {
   Defs,
   LinearGradient as SvgGrad,
@@ -34,13 +35,19 @@ type Props = {
 const LabeledRow = ({
   label,
   value,
+  theme,
+  isDark,
+  scaledFontSize,
 }: {
   label: string;
   value: string | number;
+  theme: any;
+  isDark: boolean;
+  scaledFontSize: (size: number) => number;
 }) => (
   <View style={styles.row}>
-    <Text style={styles.label}>{label}</Text>
-    <Text style={styles.value}>{String(value)}</Text>
+    <Text style={[styles.label, { color: theme.colors.textMuted, fontSize: scaledFontSize(14) }]}>{label}</Text>
+    <Text style={[styles.value, { color: theme.colors.text, fontSize: scaledFontSize(14.5) }]}>{String(value)}</Text>
   </View>
 );
 
@@ -50,7 +57,10 @@ const InnerBorder: React.FC<{
   radius?: number;
   stroke?: number;
   children: React.ReactNode;
-}> = ({ title, children, radius = s(12), stroke = 1 }) => {
+  theme: any;
+  isDark: boolean;
+  scaledFontSize: (size: number) => number;
+}> = ({ title, children, radius = s(12), stroke = 1, theme, isDark, scaledFontSize }) => {
   const [w, setW] = useState(0);
   const [h, setH] = useState(vs(40));
   const gradId = useMemo(() => `ib_${Math.random().toString(36).slice(2)}`, []);
@@ -71,11 +81,18 @@ const InnerBorder: React.FC<{
           height={h}
         >
           <Defs>
-            <SvgGrad id={gradId} x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor="#0AC4FF" />
-              <Stop offset="0.52" stopColor="#0AC4FF" />
-              <Stop offset="1" stopColor="#1a4258ff" />
-            </SvgGrad>
+            {isDark ? (
+              <SvgGrad id={gradId} x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor="#0AC4FF" />
+                <Stop offset="0.52" stopColor="#0AC4FF" />
+                <Stop offset="1" stopColor="#1a4258ff" />
+              </SvgGrad>
+            ) : (
+              <SvgGrad id={gradId} x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={theme.colors.border} />
+                <Stop offset="1" stopColor={theme.colors.border} />
+              </SvgGrad>
+            )}
           </Defs>
           <Rect
             x={stroke / 2}
@@ -85,13 +102,13 @@ const InnerBorder: React.FC<{
             rx={radius}
             ry={radius}
             fill="transparent"
-            stroke={`url(#${gradId})`}
+            stroke={isDark ? `url(#${gradId})` : theme.colors.border}
             strokeWidth={stroke}
           />
         </Svg>
       )}
 
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.innerTitle, { color: theme.colors.text, fontSize: scaledFontSize(14.5) }]}>{title}</Text>
       <View style={{ marginTop: vs(8) }}>{children}</View>
     </View>
   );
@@ -110,6 +127,11 @@ export default function DebugInfoCard({
   shadow,
   last10Dates,
 }: Props) {
+  const theme = useAppTheme();
+  const { themeMode } = useThemeMode();
+  const { scaledFontSize } = useFontSize();
+  const isDark = themeMode === 'dark';
+
   // split last10 into 3 columns
   const colSize = Math.ceil(last10Dates.length / 3);
   const cols = [
@@ -124,35 +146,35 @@ export default function DebugInfoCard({
         width: scale(330),
       }}
     >
-      <Text style={styles.title}>Debug Information</Text>
-      <Text style={styles.sub}>
+      <Text style={[styles.title, { color: theme.colors.text, fontSize: scaledFontSize(18) }]}>Debug Information</Text>
+      <Text style={[styles.sub, { color: theme.colors.textMuted, fontSize: scaledFontSize(16) }]}>
         System information and belief profile validation
       </Text>
 
       <View style={styles.sectionGap} />
 
-      <LabeledRow label="Timezone:" value={timezone} />
-      <LabeledRow label="Journey Start:" value={journeyStart} />
-      <LabeledRow label="Today:" value={today} />
-      <LabeledRow label="Total Check-ins:" value={totalCheckins} />
-      <LabeledRow label="Latest Check-in:" value={latestCheckin} />
-      <LabeledRow label="Next Anchor:" value={nextAnchor} />
+      <LabeledRow label="Timezone:" value={timezone} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <LabeledRow label="Journey Start:" value={journeyStart} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <LabeledRow label="Today:" value={today} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <LabeledRow label="Total Check-ins:" value={totalCheckins} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <LabeledRow label="Latest Check-in:" value={latestCheckin} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <LabeledRow label="Next Anchor:" value={nextAnchor} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
 
       <View style={styles.blockGap} />
-      <Text style={styles.h2}>Belief Profile</Text>
-      <LabeledRow label="Archetype:" value={archetype} />
-      <LabeledRow label="BaseLine:" value={baselineIndex} />
-      <LabeledRow label="Empowering:" value={empowering} />
-      <LabeledRow label="Shadow:" value={shadow} />
+      <Text style={[styles.h2, { color: theme.colors.text, fontSize: scaledFontSize(16) }]}>Belief Profile</Text>
+      <LabeledRow label="Archetype:" value={archetype} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <LabeledRow label="BaseLine:" value={baselineIndex} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <LabeledRow label="Empowering:" value={empowering} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
+      <LabeledRow label="Shadow:" value={shadow} theme={theme} isDark={isDark} scaledFontSize={scaledFontSize} />
 
       <View style={styles.blockGap} />
 
-      <InnerBorder title="Last 10 Check-in Dates:">
+      <InnerBorder title="Last 10 Check-in Dates:" theme={theme} isDark={isDark} scaledFontSize={scaledFontSize}>
         <View style={styles.gridRow}>
           {cols.map((c, i) => (
             <View key={i} style={styles.gridCol}>
               {c.map((d, j) => (
-                <Text key={`${i}-${j}`} style={styles.gridText}>
+                <Text key={`${i}-${j}`} style={[styles.gridText, { color: theme.colors.text, fontSize: scaledFontSize(14) }]}>
                   {d}
                 </Text>
               ))}
@@ -163,8 +185,8 @@ export default function DebugInfoCard({
 
       <View style={styles.blockGap} />
 
-      <InnerBorder title="Forward-only rule:">
-        <Text style={styles.ruleText}>
+      <InnerBorder title="Forward-only rule:" theme={theme} isDark={isDark} scaledFontSize={scaledFontSize}>
+        <Text style={[styles.ruleText, { color: theme.colors.text, fontSize: scaledFontSize(14) }]}>
           Demo never writes backward dates. Anchor = latest saved day +1; if
           none, use journey_start_date; else today.
         </Text>
@@ -175,13 +197,11 @@ export default function DebugInfoCard({
 
 const styles = StyleSheet.create({
   title: {
-    color: palette.white,
     fontSize: s(18),
     fontWeight: '800',
     fontFamily: 'SourceSansPro-Regular',
   },
   sub: {
-    color: palette.white,
     fontSize: s(16),
     lineHeight: s(22),
     marginTop: vs(6),
@@ -196,16 +216,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: vs(6),
   },
-  label: { color: '#C9D9F6', fontWeight: '800', fontSize: ms(14) },
+  label: { fontWeight: '800', fontSize: ms(14) },
   value: {
-    color: '#EAF2FF',
     fontSize: ms(14.5),
     fontWeight: '600',
     fontFamily: 'SourceSansPro-Regular',
   },
 
   h2: {
-    color: palette.white,
     fontSize: ms(16),
     fontWeight: '800',
     marginBottom: vs(6),
@@ -218,7 +236,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(12),
   },
   innerTitle: {
-    color: '#EAF2FF',
     fontWeight: '800',
     fontSize: ms(14.5),
     fontFamily: 'SourceSansPro-Regular',
@@ -231,14 +248,12 @@ const styles = StyleSheet.create({
   },
   gridCol: { flex: 1, rowGap: vs(6) },
   gridText: {
-    color: '#EAF2FF',
     fontSize: ms(14),
     lineHeight: ms(18),
     fontFamily: 'SourceSansPro-Regular',
   },
 
   ruleText: {
-    color: '#EAF2FF',
     fontSize: ms(14),
     lineHeight: ms(20),
     fontFamily: 'SourceSansPro-Regular',
