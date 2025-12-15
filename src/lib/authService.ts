@@ -1176,7 +1176,7 @@ export async function updateBeliefQuestion(
     console.log('🧠 [updateBeliefQuestion] id:', id, 'payload:', payload);
 
     const res = await api.post<UpdateBeliefQuestionResponse>(
-      `/functions/v1/update-user-belief`,
+      `/functions/v1/create-user-belief`,
       {
         type: payload.type,
         text: payload.text,
