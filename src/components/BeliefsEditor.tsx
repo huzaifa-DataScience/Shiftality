@@ -190,6 +190,7 @@ const BeliefsEditor: React.FC<BeliefsEditorProps> = ({
 
   const handleDeleteBelief = async (index: number) => {
     const belief = beliefs[index];
+    console.log('Deleting belief:', belief);
 
     // Optimistic local remove
     const next = beliefs.filter((_, i) => i !== index);

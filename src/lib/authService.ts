@@ -1035,7 +1035,7 @@ export async function getBeliefs(
 
     const items: ApiBeliefQuestion[] =
       (Array.isArray(body?.belief_questions) && body.belief_questions) ||
-      (Array.isArray(body?.data) && body.data) ||
+      (Array.isArray(body?.questions) && body.questions) ||
       [];
 
     console.log(
@@ -1164,9 +1164,6 @@ export interface UpdateBeliefQuestionResponse {
   data?: ApiBeliefQuestion | ApiBeliefQuestion[];
 }
 
-/**
- * PATCH /functions/v1/update-belief-question?id=<id>
- */
 export async function updateBeliefQuestion(
   id: string,
   payload: UpdateBeliefQuestionPayload,
@@ -1178,13 +1175,14 @@ export async function updateBeliefQuestion(
 
     console.log('🧠 [updateBeliefQuestion] id:', id, 'payload:', payload);
 
-    const res = await api.patch<UpdateBeliefQuestionResponse>(
-      `/functions/v1/update-belief-question?id=${id}`,
+    const res = await api.post<UpdateBeliefQuestionResponse>(
+      `/functions/v1/update-user-belief`,
       {
         type: payload.type,
         text: payload.text,
         order: payload.order,
         is_active: payload.is_active,
+        belief_id: id,
       },
       {
         headers: {
@@ -1241,24 +1239,24 @@ export interface DeleteBeliefQuestionResponse {
  * DELETE /functions/v1/delete-belief-question?id=<id>
  */
 export async function deleteBeliefQuestion(
-  id: string,
+  belief_id: string,
 ): Promise<DeleteBeliefQuestionResponse> {
   try {
     const authToken = await getAuthToken();
     const SUPABASE_ANON_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
 
-    console.log('🗑 [deleteBeliefQuestion] id:', id);
+    console.log('🗑 [deleteBeliefQuestion] id:', belief_id);
 
-    const res = await api.delete<DeleteBeliefQuestionResponse>(
-      `/functions/v1/delete-belief-question`,
+    const res = await api.post<DeleteBeliefQuestionResponse>(
+      `/functions/v1/delete-user-belief`,
       {
-        params: { id }, // matches your curl ?id=...
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          apikey: SUPABASE_ANON_KEY,
-          'Content-Type': 'application/json',
-        },
+        belief_id, // matches your curl ?id=...
+        // headers: {
+        //   Authorization: `Bearer ${authToken}`,
+        //   apikey: SUPABASE_ANON_KEY,
+        //   'Content-Type': 'application/json',
+        // },
       },
     );
 
