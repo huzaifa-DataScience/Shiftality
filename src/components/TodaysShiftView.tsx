@@ -28,7 +28,16 @@ import GradientBoxWithButton from '../components/GradientBoxWithButton';
 import GradientHintBoxWithLikert from '../components/GradientHintBoxWithLikert';
 import { useAppTheme, useThemeMode } from '../theme/ThemeProvider';
 import { Checkin } from '../lib/dataClient';
-import { createCheckin, getBeliefs } from '../lib/authService';
+import {
+  createCheckin,
+  getBeliefs,
+  type ApiBeliefQuestion,
+} from '../lib/authService';
+
+// Extended type with answer field
+type BeliefWithAnswer = ApiBeliefQuestion & {
+  answer?: 'yes' | 'no' | null;
+};
 
 type Props = {
   onCheckinUpdate: (checkin: Checkin) => void;
@@ -47,14 +56,12 @@ export default function TodaysShiftView({
   console.log('🚀 ~ anchorDay:', anchorDay);
   const [showDetails, setShowDetails] = useState(true); // Default to true (show detailed view)
 
-  // beliefs loaded from API
-  const [empoweringBeliefs, setEmpoweringBeliefs] = useState<string[]>([]);
-  const [shadowBeliefs, setShadowBeliefs] = useState<string[]>([]);
-
-  // State to track selections (yes/no/null)
-  const [responses, setResponses] = useState<
-    Record<string, 'yes' | 'no' | null>
-  >({});
+  // beliefs loaded from API - now storing complete objects with answers
+  const [empoweringBeliefs, setEmpoweringBeliefs] = useState<
+    BeliefWithAnswer[]
+  >([]);
+  console.log('🚀 ~ empoweringBeliefs:', empoweringBeliefs);
+  const [shadowBeliefs, setShadowBeliefs] = useState<BeliefWithAnswer[]>([]);
 
   // ───────────────── LOAD BELIEFS FROM API ─────────────────
   const loadBeliefsFromApi = useCallback(async () => {
@@ -64,25 +71,32 @@ export default function TodaysShiftView({
         getBeliefs('shadow'),
       ]);
 
-      const empTexts = Array.isArray(emp)
+      // Store complete belief objects with answer field initialized to null
+      const empBeliefs: BeliefWithAnswer[] = Array.isArray(emp)
         ? emp
-            .map((b: any) => b?.text || '')
-            .filter((t: string) => t && t.trim().length > 0)
+            .filter((b: any) => b?.text && b.text.trim().length > 0)
+            .map((b: ApiBeliefQuestion) => ({
+              ...b,
+              answer: null as 'yes' | 'no' | null,
+            }))
         : [];
 
-      const shadowTexts = Array.isArray(shadow)
+      const shadowBeliefsData: BeliefWithAnswer[] = Array.isArray(shadow)
         ? shadow
-            .map((b: any) => b?.text || '')
-            .filter((t: string) => t && t.trim().length > 0)
+            .filter((b: any) => b?.text && b.text.trim().length > 0)
+            .map((b: ApiBeliefQuestion) => ({
+              ...b,
+              answer: null as 'yes' | 'no' | null,
+            }))
         : [];
 
-      setEmpoweringBeliefs(empTexts);
-      setShadowBeliefs(shadowTexts);
+      setEmpoweringBeliefs(empBeliefs);
+      setShadowBeliefs(shadowBeliefsData);
 
       console.log(
         '[TodaysShiftView] Loaded beliefs from API',
-        empTexts.length,
-        shadowTexts.length,
+        empBeliefs.length,
+        shadowBeliefsData.length,
       );
     } catch (e) {
       console.log('[TodaysShiftView] Error loading beliefs from API', e);
@@ -128,29 +142,53 @@ export default function TodaysShiftView({
     }, [loadBeliefsFromApi, checkTodaysShift]),
   );
 
-  const countYes = (list: string[]) =>
-    list.reduce((n, key) => n + (responses[key] === 'yes' ? 1 : 0), 0);
+  // Count yes answers from belief objects
+  const countYes = (beliefs: BeliefWithAnswer[]) =>
+    beliefs.reduce((n, belief) => n + (belief.answer === 'yes' ? 1 : 0), 0);
 
   // mark all in a section to 'yes' or 'no'
-  const markAll = (list: string[], value: 'yes' | 'no') => {
-    const patch: Record<string, 'yes' | 'no'> = {};
-    list.forEach(k => {
-      patch[k] = value;
-    });
-    setResponses(prev => ({ ...prev, ...patch }));
+  const markAll = (
+    beliefs: BeliefWithAnswer[],
+    value: 'yes' | 'no',
+    setter: React.Dispatch<React.SetStateAction<BeliefWithAnswer[]>>,
+  ) => {
+    setter(prev =>
+      prev.map(belief => ({
+        ...belief,
+        answer: value,
+      })),
+    );
   };
 
-  const hasAnySelection = Object.values(responses).some(
-    v => v !== null && v !== undefined,
+  const hasAnySelection = [...empoweringBeliefs, ...shadowBeliefs].some(
+    belief => belief.answer !== null && belief.answer !== undefined,
   );
 
-  const handleClear = () => setResponses({});
+  const handleClear = () => {
+    setEmpoweringBeliefs(prev =>
+      prev.map(belief => ({ ...belief, answer: null })),
+    );
+    setShadowBeliefs(prev => prev.map(belief => ({ ...belief, answer: null })));
+  };
 
-  const handleSelect = (text: string, value: 'yes' | 'no' | null) => {
-    setResponses(prev => ({ ...prev, [text]: value }));
+  const handleSelect = (
+    beliefId: string,
+    value: 'yes' | 'no' | null,
+    isEmpowering: boolean,
+  ) => {
+    const setter = isEmpowering ? setEmpoweringBeliefs : setShadowBeliefs;
+    setter(prev =>
+      prev.map((belief, idx) => {
+        // Match by ID if available, otherwise match by generated key
+        const matchKey =
+          belief.id || (isEmpowering ? `emp-${idx}` : `shadow-${idx}`);
+        return matchKey === beliefId ? { ...belief, answer: value } : belief;
+      }),
+    );
   };
 
   const handleLock = async () => {
+    // Calculate counts using answers stored in belief objects
     const empoweringYes = countYes(empoweringBeliefs);
     const shadowYes = countYes(shadowBeliefs);
 
@@ -168,6 +206,10 @@ export default function TodaysShiftView({
       daily_score: dailyScore,
       source: 'user',
       created_at: new Date().toISOString(),
+      questions: {
+        empoweringBeliefs: empoweringBeliefs,
+        shadowBeliefs: shadowBeliefs,
+      },
     };
 
     try {
@@ -295,14 +337,22 @@ export default function TodaysShiftView({
             {empoweringYesCount}/{empoweringBeliefs.length}
           </Text>
           <View style={styles.sectionActions}>
-            <TouchableOpacity onPress={() => markAll(empoweringBeliefs, 'yes')}>
+            <TouchableOpacity
+              onPress={() =>
+                markAll(empoweringBeliefs, 'yes', setEmpoweringBeliefs)
+              }
+            >
               <Text
                 style={[styles.actionText, { color: theme.colors.textMuted }]}
               >
                 Mark all YES
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => markAll(empoweringBeliefs, 'no')}>
+            <TouchableOpacity
+              onPress={() =>
+                markAll(empoweringBeliefs, 'no', setEmpoweringBeliefs)
+              }
+            >
               <Text
                 style={[styles.actionText, { color: theme.colors.textMuted }]}
               >
@@ -314,10 +364,10 @@ export default function TodaysShiftView({
 
         {empoweringBeliefs.map((belief, idx) => (
           <GradientHintBoxWithLikert
-            key={`${belief}-${idx}`}
-            text={belief}
-            selected={responses[belief] ?? null}
-            onSelect={val => handleSelect(belief, val)}
+            key={belief.id || `emp-${idx}`}
+            text={belief.text || ''}
+            selected={belief.answer ?? null}
+            onSelect={val => handleSelect(belief.id || `emp-${idx}`, val, true)}
           />
         ))}
 
@@ -335,14 +385,18 @@ export default function TodaysShiftView({
             {shadowYesCount}/{shadowBeliefs.length}
           </Text>
           <View style={styles.sectionActions}>
-            <TouchableOpacity onPress={() => markAll(shadowBeliefs, 'yes')}>
+            <TouchableOpacity
+              onPress={() => markAll(shadowBeliefs, 'yes', setShadowBeliefs)}
+            >
               <Text
                 style={[styles.actionText, { color: theme.colors.textMuted }]}
               >
                 Mark all YES
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => markAll(shadowBeliefs, 'no')}>
+            <TouchableOpacity
+              onPress={() => markAll(shadowBeliefs, 'no', setShadowBeliefs)}
+            >
               <Text
                 style={[styles.actionText, { color: theme.colors.textMuted }]}
               >
@@ -354,10 +408,12 @@ export default function TodaysShiftView({
 
         {shadowBeliefs.map((belief, idx) => (
           <GradientHintBoxWithLikert
-            key={`${belief}-${idx}`}
-            text={belief}
-            selected={responses[belief] ?? null}
-            onSelect={val => handleSelect(belief, val)}
+            key={belief.id || `shadow-${idx}`}
+            text={belief.text || ''}
+            selected={belief.answer ?? null}
+            onSelect={val =>
+              handleSelect(belief.id || `shadow-${idx}`, val, false)
+            }
           />
         ))}
 

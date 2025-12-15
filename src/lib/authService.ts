@@ -1033,11 +1033,11 @@ export async function getBeliefs(
 
     const body = res.data;
 
-    const items: ApiBeliefQuestion[] =
-      (Array.isArray(body?.belief_questions) && body.belief_questions) ||
-      (Array.isArray(body?.questions) && body.questions) ||
+    let items: ApiBeliefQuestion[] =
+      (body?.questions &&
+        Array.isArray((body.questions as any)[type]) &&
+        (body.questions as any)[type]) ||
       [];
-
     console.log(
       `[getBeliefs] type="${type}" – received ${items.length} belief_questions`,
     );
