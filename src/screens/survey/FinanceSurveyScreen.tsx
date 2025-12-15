@@ -1,5 +1,5 @@
 // src/screens/survey/FinanceSurveyScreen.tsx
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
@@ -22,7 +23,7 @@ import GradientCardHome from '../../components/GradientCardHome';
 import GradientBackground from '../../components/GradientBackground';
 import Stepper from '../../components/survey/Stepper';
 import LikertCard from '../../components/survey/LikertCard';
-import { SECTIONS } from './sections';
+// import { SECTIONS } from './sections'; // ⬅️ no longer needed if you want pure API
 import type { LikertValue } from '../../store/reducers/surveyReducer';
 import PrimaryButton from '../../components/PrimaryButton';
 import { useNavigation } from '@react-navigation/native';
@@ -33,8 +34,20 @@ import { saveSurveyAnswer } from '../../store/reducers/surveyReducer';
 import { selectUser } from '../../store/reducers/profileReducer';
 import { submitQuestionnaire } from '../../lib/authService';
 import Toast from 'react-native-toast-message';
+import { getAuthToken } from '../../lib/authStorage';
+import { api } from '../../lib/apiClient';
+
+// ----------------- TYPES -----------------
 
 type AnswersForStep = Record<number, LikertValue>;
+
+type Section = {
+  title: string;
+  subtitle: string;
+  questions: string[];
+};
+
+// ----------------- CONFIG (replace with env) -----------------
 
 export default function FinanceSurveyScreen() {
   type RootNav = NativeStackNavigationProp<RootStackParamList>;
@@ -51,8 +64,13 @@ export default function FinanceSurveyScreen() {
   );
 
   const scrollRef = useRef<ScrollView>(null);
+
+  // 🔹 NEW: local sections from API
+  const [sections, setSections] = useState<Section[]>([]);
+  const [isLoadingSections, setIsLoadingSections] = useState(true);
+  const [sectionsError, setSectionsError] = useState<string | null>(null);
+
   const [step, setStep] = useState(0);
-  const totalSteps = SECTIONS.length;
   const [allAnswers, setAllAnswers] = useState<Record<number, AnswersForStep>>(
     {},
   );
@@ -67,7 +85,69 @@ export default function FinanceSurveyScreen() {
     [-2]: 's_disagree',
   };
 
+  // ----------------- FETCH SECTIONS FROM API -----------------
+
+  useEffect(() => {
+    const fetchQuestionnaires = async () => {
+      try {
+        const authToken = await getAuthToken();
+        const SUPABASE_ANON_KEY =
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+        const GET_QUESTIONNAIRES_URL = `functions/v1/get-questionnaires`;
+
+        setIsLoadingSections(true);
+        setSectionsError(null);
+
+        const { data: raw } = await api.get(GET_QUESTIONNAIRES_URL, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            apikey: SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('questionnaires raw => ', JSON.stringify(raw, null, 2));
+
+        // If your edge function returns plain array (like in the screenshot)
+        let apiSections: Section[] = [];
+
+        if (Array.isArray(raw)) {
+          apiSections = raw as Section[];
+        } else if (Array.isArray(raw?.data)) {
+          // just in case you later wrap it like { data: [...] }
+          apiSections = raw.data as Section[];
+        }
+
+        if (!apiSections.length) {
+          throw new Error('No questionnaires found');
+        }
+
+        setSections(apiSections);
+        setStep(0);
+      } catch (err: any) {
+        console.error('Error fetching questionnaires:', err);
+        setSectionsError(
+          err?.message || 'Failed to load questionnaires. Please try again.',
+        );
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2:
+            err?.message || 'Failed to load questionnaires. Please try again.',
+        });
+      } finally {
+        setIsLoadingSections(false);
+      }
+    };
+
+    fetchQuestionnaires();
+  }, []);
+
+  const totalSteps = sections.length;
+
   const setAnswer = (qIdx: number, v: LikertValue) => {
+    if (!sections[step]) return;
+
     // UI local state
     setAllAnswers(prev => ({
       ...prev,
@@ -84,13 +164,17 @@ export default function FinanceSurveyScreen() {
     );
   };
 
-  const current = SECTIONS[step];
-  const answersForStep = allAnswers[step] || {};
-  const isStepComplete = current.questions.every((_, i) => !!answersForStep[i]);
+  const current = sections[step];
+  const answersForStep = current ? allAnswers[step] || {} : {};
+  const isStepComplete = current
+    ? current.questions.every((_, i) => !!answersForStep[i])
+    : false;
 
-  // Format all answers with questions for API submission
-  // Groups answers by section/category
+  // ----------------- FORMAT ANSWERS FOR API -----------------
+
   const formatAnswersForAPI = () => {
+    if (!sections.length) return [];
+
     const sectionAnswers: Array<{
       category: string;
       answers: Array<{
@@ -100,7 +184,7 @@ export default function FinanceSurveyScreen() {
       }>;
     }> = [];
 
-    SECTIONS.forEach((section, sectionIndex) => {
+    sections.forEach((section, sectionIndex) => {
       const sectionAnswersList: Array<{
         question_text: string;
         question_index: number;
@@ -133,6 +217,8 @@ export default function FinanceSurveyScreen() {
     return sectionAnswers;
   };
 
+  // ----------------- SUBMIT HANDLER -----------------
+
   const handleCompleteScan = async () => {
     if (!user?.id) {
       Toast.show({
@@ -143,8 +229,17 @@ export default function FinanceSurveyScreen() {
       return;
     }
 
+    if (!sections.length) {
+      Toast.show({
+        type: 'error',
+        text1: 'No Questionnaire',
+        text2: 'Unable to submit. No questionnaire loaded.',
+      });
+      return;
+    }
+
     // Check if all questions are answered
-    const allAnswered = SECTIONS.every((section, sectionIndex) =>
+    const allAnswered = sections.every((section, sectionIndex) =>
       section.questions.every((_, questionIndex) => {
         const key = `${sectionIndex}_${questionIndex}`;
         return surveyAnswers[key] !== undefined && surveyAnswers[key] !== null;
@@ -174,7 +269,6 @@ export default function FinanceSurveyScreen() {
         text2: 'Your answers have been submitted successfully',
       });
 
-      // Navigate after a short delay
       setTimeout(() => {
         navigation.navigate('Main', { screen: 'CenterProfile' });
       }, 500);
@@ -184,30 +278,85 @@ export default function FinanceSurveyScreen() {
         type: 'error',
         text1: 'Submission Failed',
         text2:
-          error.message || 'Failed to submit questionnaire. Please try again.',
+          error?.message || 'Failed to submit questionnaire. Please try again.',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ----------------- NAVIGATION -----------------
+
   const goNext = () => {
+    if (!sections.length) return;
+
     if (step < totalSteps - 1 && isStepComplete) {
       setStep(s => s + 1);
       scrollRef.current?.scrollTo({ y: 0, animated: true });
-    } else {
-      // On last step, call handleCompleteScan
+    } else if (step === totalSteps - 1) {
       handleCompleteScan();
-
-      // navigation.navigate('Main', { screen: 'CenterProfile' });
     }
   };
+
   const goBack = () => {
     if (step > 0) {
       setStep(s => s - 1);
       scrollRef.current?.scrollTo({ y: 0, animated: true });
     }
   };
+
+  // ----------------- RENDER -----------------
+
+  if (isLoadingSections) {
+    return (
+      <GradientBackground>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text
+            style={{
+              marginTop: 8,
+              color: theme.colors.text,
+              fontSize: scaledFontSize(16),
+            }}
+          >
+            Loading questionnaire...
+          </Text>
+        </View>
+      </GradientBackground>
+    );
+  }
+
+  if (!sections.length || !current) {
+    return (
+      <GradientBackground>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 24,
+          }}
+        >
+          <Text
+            style={{
+              color: theme.colors.text,
+              fontSize: scaledFontSize(18),
+              textAlign: 'center',
+              marginBottom: 8,
+            }}
+          >
+            {sectionsError || 'No questionnaire available.'}
+          </Text>
+        </View>
+      </GradientBackground>
+    );
+  }
 
   return (
     <GradientBackground>

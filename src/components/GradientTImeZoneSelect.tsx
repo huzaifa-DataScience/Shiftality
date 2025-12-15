@@ -80,8 +80,15 @@ const GradientTimezoneSelect: React.FC<Props> = ({
         onRequestClose={() => setOpen(false)}
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setOpen(false)}>
-          <View style={[styles.modalSheet, { backgroundColor: theme.colors.cardBackground }]}>
-            <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>Select Time Zone</Text>
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: theme.colors.background },
+            ]}
+          >
+            <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>
+              Select Time Zone
+            </Text>
             <FlatList
               data={timezones}
               keyExtractor={item => item}
@@ -93,10 +100,18 @@ const GradientTimezoneSelect: React.FC<Props> = ({
                   }}
                   style={({ pressed }) => [
                     styles.optionRow,
-                    pressed && { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
+                    pressed && {
+                      backgroundColor: isDark
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(0,0,0,0.05)',
+                    },
                   ]}
                 >
-                  <Text style={[styles.optionText, { color: theme.colors.text }]}>{item}</Text>
+                  <Text
+                    style={[styles.optionText, { color: theme.colors.text }]}
+                  >
+                    {item}
+                  </Text>
                 </Pressable>
               )}
             />

@@ -13,9 +13,9 @@ import store from '../store/store';
 import { clearProfile } from '../store/reducers/profileReducer';
 
 // Supabase configuration - hardcoded values
-const SUPABASE_URL = 'https://rorytwozdwlsqwkrcpku.supabase.co';
+const SUPABASE_URL = 'https://lgzdxwmcysuffncosjvv.supabase.co';
 const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvcnl0d296ZHdsc3F3a3JjcGt1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMDc3NDIsImV4cCI6MjA3NDY4Mzc0Mn0.ce2Nwjgm2cQNmF8_oO8TqoRv8DvyCKfqaREHdgQ3dMI';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnemR4d21jeXN1ZmZuY29zanZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1MTc3NjcsImV4cCI6MjA4MTA5Mzc2N30.5hUQ3lJ5V059AyAk6MooPBmR2F6f6MaYqOzrbix4ank';
 
 // Handle 401 Unauthorized - clear auth and navigate to login
 async function handleUnauthorized() {
