@@ -7,6 +7,7 @@ import {
   ScrollView,
   Switch,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { useAppTheme, useThemeMode } from '../../theme/ThemeProvider';
 import { useFontSize } from '../../theme/FontSizeProvider';
@@ -441,40 +442,47 @@ export default function SettingScreen() {
         {/* Shared Reminder Test component (same as DemoScreen) */}
         <ReminderTestSection cardStyle={{ width: scale(330) }} />
         <View style={{ height: scale(20) }} />
-        <PrimaryButton
+        <View
           style={{
-            width: '50%',
-            height: 'auto',
-            // marginTop: scale(20),
-            alignSelf: 'center',
+            marginBottom: Platform.OS === 'android' ? scale(30) : 0,
+            width: '100%',
           }}
-          title="Logout"
-          onPress={async () => {
-            try {
-              // Clear auth data from AsyncStorage
-              await logout();
+        >
+          <PrimaryButton
+            style={{
+              width: '50%',
+              height: 'auto',
+              // marginTop: scale(20),
+              alignSelf: 'center',
+            }}
+            title="Logout"
+            onPress={async () => {
+              try {
+                // Clear auth data from AsyncStorage
+                await logout();
 
-              // Clear profile from Redux
-              dispatch(clearProfile());
+                // Clear profile from Redux
+                dispatch(clearProfile());
 
-              // Show success message
-              Toast.show({
-                type: 'success',
-                text1: 'Logged out',
-                text2: 'You have been successfully logged out',
-              });
+                // Show success message
+                Toast.show({
+                  type: 'success',
+                  text1: 'Logged out',
+                  text2: 'You have been successfully logged out',
+                });
 
-              // Navigate to auth screen
-              // The RootNavigator will automatically show Auth stack when isAuthenticated is false
-            } catch (error: any) {
-              Toast.show({
-                type: 'error',
-                text1: 'Logout failed',
-                text2: error.message || 'An error occurred while logging out',
-              });
-            }
-          }}
-        />
+                // Navigate to auth screen
+                // The RootNavigator will automatically show Auth stack when isAuthenticated is false
+              } catch (error: any) {
+                Toast.show({
+                  type: 'error',
+                  text1: 'Logout failed',
+                  text2: error.message || 'An error occurred while logging out',
+                });
+              }
+            }}
+          />
+        </View>
         <View style={{ height: scale(40) }} />
       </ScrollView>
     </GradientBackground>
