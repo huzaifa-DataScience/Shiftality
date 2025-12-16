@@ -81,10 +81,10 @@ export default function CustomTabBar({
             <LinearGradient
               colors={
                 isDark
-                  ? ['#1f5b79ff', '#15283bff', '#090c0fff']
-                  : ['#7FD0FF', '#7FD0FF', '#ffff', '#fff']
+                  ? ['#1F5B79', '#15283B', '#090C0F']
+                  : ['#7FD0FF', '#7FD0FF', '#FFFFFF', '#FFFFFF']
               }
-              locations={[0, 0.55, 1]}
+              locations={isDark ? [0, 0.55, 1] : [0, 0.55, 0.85, 1]}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
               style={styles.barBG}
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
-    elevation: 18,
+    // elevation: 18,
     borderRadius: scale(30),
   },
 

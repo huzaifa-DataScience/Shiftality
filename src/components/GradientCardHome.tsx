@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
+    // elevation: 5,
   },
   inner: {
     paddingHorizontal: 20,

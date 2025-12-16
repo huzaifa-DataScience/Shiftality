@@ -59,7 +59,7 @@ const OutlinePill = ({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
-        elevation: 5,
+        // elevation: 5,
       }}
     >
       <Svg
@@ -91,14 +91,19 @@ const OutlinePill = ({
           rx={borderRadius}
           ry={borderRadius}
           fill="transparent"
-          stroke={isDark ? "url(#pillBorderGrad)" : theme.colors.border}
+          stroke={isDark ? 'url(#pillBorderGrad)' : theme.colors.border}
           strokeWidth={stroke}
         />
       </Svg>
       <View
         style={[
           styles.pillInnerBase,
-          { borderRadius, backgroundColor: isDark ? 'rgba(3, 149, 193, 0.1)' : 'rgba(0, 0, 0, 0.05)' },
+          {
+            borderRadius,
+            backgroundColor: isDark
+              ? 'rgba(3, 149, 193, 0.1)'
+              : 'rgba(0, 0, 0, 0.05)',
+          },
         ]}
       >
         {children}
@@ -167,7 +172,11 @@ export default function LikertPill({
   // Use theme gradient for filled pill
   const filledGradient = isDark
     ? ['#2a84b9ff', '#0890dfff', '#0e5ea4ff']
-    : [theme.colors.primaryGradient[0], theme.colors.primaryGradient[1], theme.colors.primaryGradient[1]];
+    : [
+        theme.colors.primaryGradient[0],
+        theme.colors.primaryGradient[1],
+        theme.colors.primaryGradient[1],
+      ];
 
   return selected ? (
     <FilledPill
@@ -182,7 +191,9 @@ export default function LikertPill({
     </FilledPill>
   ) : (
     <OutlinePill width={width} onPress={onPress} borderRadius={borderRadius}>
-      <Text style={[styles.textIdle, { color: theme.colors.text }]}>{label}</Text>
+      <Text style={[styles.textIdle, { color: theme.colors.text }]}>
+        {label}
+      </Text>
     </OutlinePill>
   );
 }

@@ -24,7 +24,13 @@ const GradientCardLockshift: React.FC<Props> = ({
 
   if (isDark) {
     return (
-      <View style={[styles.stack, { backgroundColor: theme.colors.cardBackground }, style]}>
+      <View
+        style={[
+          styles.stack,
+          { backgroundColor: theme.colors.cardBackground },
+          style,
+        ]}
+      >
         {/* Soft diagonal gradient: bright bottom-right, darker mid, subtle fade to top-left */}
         <LinearGradient
           pointerEvents="none"
@@ -75,7 +81,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
+    // elevation: 5,
   },
   inner: {
     paddingHorizontal: 20,

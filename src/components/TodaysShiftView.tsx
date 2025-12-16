@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    // elevation: 6,
     padding: scale(10),
   },
   title: {

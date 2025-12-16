@@ -34,7 +34,9 @@ export default function GradientToggleRow({
         end={{ x: 1, y: 0.5 }}
         style={[styles.box, style]}
       >
-        <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>
+        <Text style={[styles.label, { color: theme.colors.text }]}>
+          {label}
+        </Text>
 
         <View pointerEvents="box-none">
           <Switch
@@ -63,7 +65,7 @@ export default function GradientToggleRow({
           shadowOpacity: 0.08,
           shadowRadius: 16,
           shadowOffset: { width: 0, height: 4 },
-          elevation: 5,
+          // elevation: 5,
         },
         style,
       ]}
