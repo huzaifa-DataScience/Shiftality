@@ -610,7 +610,7 @@ export async function createJournalEntry(
     console.log('📝 [createJournalEntry] payload:', payload);
 
     const res = await api.post<CreateJournalEntryResponse>(
-      '/functions/v1/create-journal-entry',
+      '/functions/v1/create-journal',
       payload,
       {
         headers: {
@@ -1090,10 +1090,13 @@ export async function createBeliefQuestion(
 
     // 🔹 Build body and only attach isRecommended if provided
     const bodyToSend: any = {
-      type: payload.type,
-      text: payload.text,
-      order: payload.order,
-      is_active: payload.is_active ?? true,
+      action: 'create',
+      question: {
+        type: payload.type,
+        text: payload.text,
+        order: payload.order,
+        is_active: payload.is_active ?? true,
+      },
     };
 
     if (typeof payload.isRecommended === 'boolean') {
@@ -1101,7 +1104,7 @@ export async function createBeliefQuestion(
     }
 
     const res = await api.post<CreateBeliefQuestionResponse>(
-      '/functions/v1/create-belief-question',
+      '/functions/v1/update-user-belief-questions',
       bodyToSend,
       {
         headers: {
@@ -1115,8 +1118,8 @@ export async function createBeliefQuestion(
     const body = res.data;
     let belief: ApiBeliefQuestion | undefined;
 
-    if (body?.belief_question) {
-      belief = body.belief_question;
+    if (body?.question) {
+      belief = body.question;
     } else if (Array.isArray(body?.data)) {
       belief = body.data[0];
     } else if (body?.data && typeof body.data === 'object') {
@@ -1176,13 +1179,16 @@ export async function updateBeliefQuestion(
     console.log('🧠 [updateBeliefQuestion] id:', id, 'payload:', payload);
 
     const res = await api.post<UpdateBeliefQuestionResponse>(
-      `/functions/v1/create-user-belief`,
+      `/functions/v1/update-user-belief-questions`,
       {
-        type: payload.type,
-        text: payload.text,
-        order: payload.order,
-        is_active: payload.is_active,
-        belief_id: id,
+        action: 'update',
+        question_id: id,
+        question: {
+          type: payload.type,
+          text: payload.text,
+          order: payload.order,
+          is_active: payload.is_active,
+        },
       },
       {
         headers: {
@@ -1196,8 +1202,8 @@ export async function updateBeliefQuestion(
     const body = res.data;
     let belief: ApiBeliefQuestion | undefined;
 
-    if (body?.belief_question) {
-      belief = body.belief_question;
+    if (body?.question) {
+      belief = body.question;
     } else if (Array.isArray(body?.data)) {
       belief = body.data[0];
     } else if (body?.data && typeof body.data === 'object') {
@@ -1249,9 +1255,10 @@ export async function deleteBeliefQuestion(
     console.log('🗑 [deleteBeliefQuestion] id:', belief_id);
 
     const res = await api.post<DeleteBeliefQuestionResponse>(
-      `/functions/v1/delete-user-belief`,
+      `/functions/v1/update-user-belief-questions`,
       {
-        belief_id, // matches your curl ?id=...
+        action: 'delete',
+        question_id: belief_id, // matches your curl ?id=...
         // headers: {
         //   Authorization: `Bearer ${authToken}`,
         //   apikey: SUPABASE_ANON_KEY,
